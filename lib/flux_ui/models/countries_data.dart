@@ -1,0 +1,227 @@
+import 'package:flutter/material.dart';
+
+class CountryRegion {
+  final String regionName;
+  final List<Country> countries;
+  final Color regionColor;
+
+  CountryRegion({
+    required this.regionName,
+    required this.countries,
+    required this.regionColor,
+  });
+}
+
+class Country {
+  final String name;
+  final String code;
+  final String flag;
+
+  Country({
+    required this.name,
+    required this.code,
+    required this.flag,
+  });
+}
+
+final countriesData = [
+  CountryRegion(
+    regionName: 'East Africa',
+    regionColor: const Color(0xFF4CAF50),
+    countries: [
+      Country(name: 'Kenya', code: 'KE', flag: '🇰🇪'),
+      Country(name: 'Tanzania', code: 'TZ', flag: '🇹🇿'),
+      Country(name: 'Uganda', code: 'UG', flag: '🇺🇬'),
+      Country(name: 'Rwanda', code: 'RW', flag: '🇷🇼'),
+      Country(name: 'Burundi', code: 'BI', flag: '🇧🇮'),
+      Country(name: 'South Sudan', code: 'SS', flag: '🇸🇸'),
+      Country(name: 'Djibouti', code: 'DJ', flag: '🇩🇯'),
+      Country(name: 'Somalia', code: 'SO', flag: '🇸🇴'),
+      Country(name: 'Eritrea', code: 'ER', flag: '🇪🇷'),
+      Country(name: 'Ethiopia', code: 'ET', flag: '🇪🇹'),
+    ],
+  ),
+  CountryRegion(
+    regionName: 'West Africa',
+    regionColor: const Color(0xFFFF9800),
+    countries: [
+      Country(name: 'Nigeria', code: 'NG', flag: '🇳🇬'),
+      Country(name: 'Ghana', code: 'GH', flag: '🇬🇭'),
+      Country(name: 'Senegal', code: 'SN', flag: '🇸🇳'),
+      Country(name: 'Mali', code: 'ML', flag: '🇲🇱'),
+      Country(name: 'Côte d\'Ivoire', code: 'CI', flag: '🇨🇮'),
+      Country(name: 'Benin', code: 'BJ', flag: '🇧🇯'),
+      Country(name: 'Burkina Faso', code: 'BF', flag: '🇧🇫'),
+      Country(name: 'Niger', code: 'NE', flag: '🇳🇪'),
+      Country(name: 'Cameroon', code: 'CM', flag: '🇨🇲'),
+      Country(name: 'Liberia', code: 'LR', flag: '🇱🇷'),
+      Country(name: 'Sierra Leone', code: 'SL', flag: '🇸🇱'),
+      Country(name: 'Gambia', code: 'GM', flag: '🇬🇲'),
+      Country(name: 'Mauritania', code: 'MR', flag: '🇲🇷'),
+      Country(name: 'Cape Verde', code: 'CV', flag: '🇨🇻'),
+      Country(name: 'Guinea', code: 'GN', flag: '🇬🇳'),
+      Country(name: 'Guinea-Bissau', code: 'GW', flag: '🇬🇼'),
+      Country(name: 'Togo', code: 'TG', flag: '🇹🇬'),
+    ],
+  ),
+  CountryRegion(
+    regionName: 'Central Africa',
+    regionColor: const Color(0xFF2196F3),
+    countries: [
+      Country(name: 'Democratic Republic of the Congo', code: 'CD', flag: '🇨🇩'),
+      Country(name: 'Republic of the Congo', code: 'CG', flag: '🇨🇬'),
+      Country(name: 'Gabon', code: 'GA', flag: '🇬🇦'),
+      Country(name: 'Equatorial Guinea', code: 'GQ', flag: '🇬🇶'),
+      Country(name: 'Chad', code: 'TD', flag: '🇹🇩'),
+      Country(name: 'Central African Republic', code: 'CF', flag: '🇨🇫'),
+      Country(name: 'São Tomé and Príncipe', code: 'ST', flag: '🇸🇹'),
+    ],
+  ),
+  CountryRegion(
+    regionName: 'Southern Africa',
+    regionColor: const Color(0xFF9C27B0),
+    countries: [
+      Country(name: 'South Africa', code: 'ZA', flag: '🇿🇦'),
+      Country(name: 'Zimbabwe', code: 'ZW', flag: '🇿🇼'),
+      Country(name: 'Botswana', code: 'BW', flag: '🇧🇼'),
+      Country(name: 'Namibia', code: 'NA', flag: '🇳🇦'),
+      Country(name: 'Mozambique', code: 'MZ', flag: '🇲🇿'),
+      Country(name: 'Zambia', code: 'ZM', flag: '🇿🇲'),
+      Country(name: 'Malawi', code: 'MW', flag: '🇲🇼'),
+      Country(name: 'Angola', code: 'AO', flag: '🇦🇴'),
+      Country(name: 'Lesotho', code: 'LS', flag: '🇱🇸'),
+      Country(name: 'Eswatini', code: 'SZ', flag: '🇸🇿'),
+      Country(name: 'Mauritius', code: 'MU', flag: '🇲🇺'),
+      Country(name: 'Seychelles', code: 'SC', flag: '🇸🇨'),
+      Country(name: 'Madagascar', code: 'MG', flag: '🇲🇬'),
+      Country(name: 'Comoros', code: 'KM', flag: '🇰🇲'),
+    ],
+  ),
+  CountryRegion(
+    regionName: 'North Africa',
+    regionColor: const Color(0xFFF44336),
+    countries: [
+      Country(name: 'Egypt', code: 'EG', flag: '🇪🇬'),
+      Country(name: 'Algeria', code: 'DZ', flag: '🇩🇿'),
+      Country(name: 'Morocco', code: 'MA', flag: '🇲🇦'),
+      Country(name: 'Tunisia', code: 'TN', flag: '🇹🇳'),
+      Country(name: 'Libya', code: 'LY', flag: '🇱🇾'),
+      Country(name: 'Sudan', code: 'SD', flag: '🇸🇩'),
+    ],
+  ),
+  CountryRegion(
+    regionName: 'North America',
+    regionColor: const Color(0xFF00BCD4),
+    countries: [
+      Country(name: 'United States', code: 'US', flag: '🇺🇸'),
+      Country(name: 'Canada', code: 'CA', flag: '🇨🇦'),
+      Country(name: 'Mexico', code: 'MX', flag: '🇲🇽'),
+    ],
+  ),
+  CountryRegion(
+    regionName: 'Central America & Caribbean',
+    regionColor: const Color(0xFF00BCD4),
+    countries: [
+      Country(name: 'Costa Rica', code: 'CR', flag: '🇨🇷'),
+      Country(name: 'Panama', code: 'PA', flag: '🇵🇦'),
+      Country(name: 'Jamaica', code: 'JM', flag: '🇯🇲'),
+      Country(name: 'Cuba', code: 'CU', flag: '🇨🇺'),
+      Country(name: 'Belize', code: 'BZ', flag: '🇧🇿'),
+      Country(name: 'Bahamas', code: 'BS', flag: '🇧🇸'),
+      Country(name: 'Haiti', code: 'HT', flag: '🇭🇹'),
+      Country(name: 'Dominican Republic', code: 'DO', flag: '🇩🇴'),
+      Country(name: 'Trinidad and Tobago', code: 'TT', flag: '🇹🇹'),
+    ],
+  ),
+  CountryRegion(
+    regionName: 'South America',
+    regionColor: const Color(0xFF00BCD4),
+    countries: [
+      Country(name: 'Brazil', code: 'BR', flag: '🇧🇷'),
+      Country(name: 'Argentina', code: 'AR', flag: '🇦🇷'),
+      Country(name: 'Colombia', code: 'CO', flag: '🇨🇴'),
+      Country(name: 'Peru', code: 'PE', flag: '🇵🇪'),
+      Country(name: 'Venezuela', code: 'VE', flag: '🇻🇪'),
+      Country(name: 'Chile', code: 'CL', flag: '🇨🇱'),
+      Country(name: 'Ecuador', code: 'EC', flag: '🇪🇨'),
+      Country(name: 'Bolivia', code: 'BO', flag: '🇧🇴'),
+      Country(name: 'Paraguay', code: 'PY', flag: '🇵🇾'),
+      Country(name: 'Uruguay', code: 'UY', flag: '🇺🇾'),
+      Country(name: 'Guyana', code: 'GY', flag: '🇬🇾'),
+      Country(name: 'Suriname', code: 'SR', flag: '🇸🇷'),
+    ],
+  ),
+  CountryRegion(
+    regionName: 'Europe',
+    regionColor: const Color(0xFF673AB7),
+    countries: [
+      Country(name: 'United Kingdom', code: 'GB', flag: '🇬🇧'),
+      Country(name: 'France', code: 'FR', flag: '🇫🇷'),
+      Country(name: 'Germany', code: 'DE', flag: '🇩🇪'),
+      Country(name: 'Italy', code: 'IT', flag: '🇮🇹'),
+      Country(name: 'Spain', code: 'ES', flag: '🇪🇸'),
+      Country(name: 'Portugal', code: 'PT', flag: '🇵🇹'),
+      Country(name: 'Netherlands', code: 'NL', flag: '🇳🇱'),
+      Country(name: 'Belgium', code: 'BE', flag: '🇧🇪'),
+      Country(name: 'Switzerland', code: 'CH', flag: '🇨🇭'),
+      Country(name: 'Austria', code: 'AT', flag: '🇦🇹'),
+      Country(name: 'Sweden', code: 'SE', flag: '🇸🇪'),
+      Country(name: 'Norway', code: 'NO', flag: '🇳🇴'),
+      Country(name: 'Denmark', code: 'DK', flag: '🇩🇰'),
+      Country(name: 'Finland', code: 'FI', flag: '🇫🇮'),
+      Country(name: 'Poland', code: 'PL', flag: '🇵🇱'),
+      Country(name: 'Czech Republic', code: 'CZ', flag: '🇨🇿'),
+      Country(name: 'Romania', code: 'RO', flag: '🇷🇴'),
+      Country(name: 'Hungary', code: 'HU', flag: '🇭🇺'),
+      Country(name: 'Greece', code: 'GR', flag: '🇬🇷'),
+      Country(name: 'Russia', code: 'RU', flag: '🇷🇺'),
+      Country(name: 'Ukraine', code: 'UA', flag: '🇺🇦'),
+      Country(name: 'Ireland', code: 'IE', flag: '🇮🇪'),
+      Country(name: 'Iceland', code: 'IS', flag: '🇮🇸'),
+      Country(name: 'Luxembourg', code: 'LU', flag: '🇱🇺'),
+      Country(name: 'Malta', code: 'MT', flag: '🇲🇹'),
+      Country(name: 'Cyprus', code: 'CY', flag: '🇨🇾'),
+      Country(name: 'Croatia', code: 'HR', flag: '🇭🇷'),
+      Country(name: 'Serbia', code: 'RS', flag: '🇷🇸'),
+      Country(name: 'Bulgaria', code: 'BG', flag: '🇧🇬'),
+      Country(name: 'Slovakia', code: 'SK', flag: '🇸🇰'),
+      Country(name: 'Slovenia', code: 'SI', flag: '🇸🇮'),
+    ],
+  ),
+  CountryRegion(
+    regionName: 'Middle East & Asia',
+    regionColor: const Color(0xFFFF5722),
+    countries: [
+      Country(name: 'Saudi Arabia', code: 'SA', flag: '🇸🇦'),
+      Country(name: 'United Arab Emirates', code: 'AE', flag: '🇦🇪'),
+      Country(name: 'Israel', code: 'IL', flag: '🇮🇱'),
+      Country(name: 'Turkey', code: 'TR', flag: '🇹🇷'),
+      Country(name: 'India', code: 'IN', flag: '🇮🇳'),
+      Country(name: 'Pakistan', code: 'PK', flag: '🇵🇰'),
+      Country(name: 'Bangladesh', code: 'BD', flag: '🇧🇩'),
+      Country(name: 'China', code: 'CN', flag: '🇨🇳'),
+      Country(name: 'Japan', code: 'JP', flag: '🇯🇵'),
+      Country(name: 'South Korea', code: 'KR', flag: '🇰🇷'),
+      Country(name: 'Thailand', code: 'TH', flag: '🇹🇭'),
+      Country(name: 'Malaysia', code: 'MY', flag: '🇲🇾'),
+      Country(name: 'Singapore', code: 'SG', flag: '🇸🇬'),
+      Country(name: 'Indonesia', code: 'ID', flag: '🇮🇩'),
+      Country(name: 'Philippines', code: 'PH', flag: '🇵🇭'),
+      Country(name: 'Vietnam', code: 'VN', flag: '🇻🇳'),
+      Country(name: 'Cambodia', code: 'KH', flag: '🇰🇭'),
+      Country(name: 'Laos', code: 'LA', flag: '🇱🇦'),
+      Country(name: 'Myanmar', code: 'MM', flag: '🇲🇲'),
+    ],
+  ),
+  CountryRegion(
+    regionName: 'Oceania',
+    regionColor: const Color(0xFF009688),
+    countries: [
+      Country(name: 'Australia', code: 'AU', flag: '🇦🇺'),
+      Country(name: 'New Zealand', code: 'NZ', flag: '🇳🇿'),
+      Country(name: 'Fiji', code: 'FJ', flag: '🇫🇯'),
+      Country(name: 'Samoa', code: 'WS', flag: '🇼🇸'),
+      Country(name: 'Papua New Guinea', code: 'PG', flag: '🇵🇬'),
+    ],
+  ),
+];

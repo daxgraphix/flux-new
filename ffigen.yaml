@@ -1,0 +1,27 @@
+name: RadioBindings
+description: Bindings for radio native library
+output: 'lib/flux_hardware/radio_bindings.dart'
+headers:
+  entry-points:
+    - 'android/app/src/main/cpp/radio.h'
+preamble: |
+  // ignore_for_file: unused_import
+functions:
+  include:
+    - open_radio
+    - close_radio
+    - get_capabilities
+    - get_tuner
+    - set_tuner
+    - get_frequency
+    - set_frequency
+    - hw_seek
+    - get_audio
+    - set_audio
+structs:
+  include:
+    - v4l2_capability
+    - v4l2_tuner
+    - v4l2_frequency
+    - v4l2_hw_freq_seek
+    - v4l2_audio
