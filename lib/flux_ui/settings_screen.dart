@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -225,6 +226,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SnackBar(content: Text('Cache cleared')),
                       );
                     },
+                  ),
+                ),
+                Consumer<RadioEngine>(
+                  builder: (context, engine, child) => _buildTile(
+                    isDark,
+                    icon: Icons.library_music,
+                    title: 'Manage Recordings',
+                    subtitle: '${engine.savedRecordings.length} recordings saved',
+                    onTap: () => _showRecordingsManager(context, engine),
                   ),
                 ),
               ],
@@ -626,27 +636,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Presets
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    for (int i = 0; i < 5; i++) {
-                      engine.updateEqualizerBand(i, 0.0);
-                    }
+                    engine.resetEqualizer();
                   },
                   child: const Text('Flat'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    engine.updateEqualizerBand(0, -2.0);
-                    engine.updateEqualizerBand(1, -1.0);
-                    engine.updateEqualizerBand(2, 0.0);
-                    engine.updateEqualizerBand(3, 1.0);
-                    engine.updateEqualizerBand(4, 2.0);
-                  },
-                  child: const Text('Rock'),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -658,34 +655,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                   child: const Text('Pop'),
                 ),
+                ElevatedButton(
+                  onPressed: () {
+                    engine.updateEqualizerBand(0, -2.0);
+                    engine.updateEqualizerBand(1, -1.0);
+                    engine.updateEqualizerBand(2, 0.0);
+                    engine.updateEqualizerBand(3, 1.0);
+                    engine.updateEqualizerBand(4, 2.0);
+                  },
+                  child: const Text('Rock'),
+                ),
               ],
             ),
             const SizedBox(height: 16),
-            // Bands
-            ...List.generate(5, (index) {
-              return Row(
-                children: [
-                  Text(
-                    'Band ${index + 1}',
-                    style: const TextStyle(color: Colors.white),
+            const Text('Bass Boost', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Text('60Hz', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Expanded(
+                  child: Slider(
+                    value: engine.equalizerBands[0],
+                    min: -10,
+                    max: 10,
+                    onChanged: (value) => engine.updateEqualizerBand(0, value),
+                    activeColor: Colors.red,
+                    inactiveColor: Colors.white24,
                   ),
-                  Expanded(
-                    child: Slider(
-                      value: engine.equalizerBands[index],
-                      min: -10,
-                      max: 10,
-                      onChanged: (value) => engine.updateEqualizerBand(index, value),
-                      activeColor: Colors.red,
-                      inactiveColor: Colors.white24,
-                    ),
+                ),
+                const Text('10kHz', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Text('170Hz', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Expanded(
+                  child: Slider(
+                    value: engine.equalizerBands[1],
+                    min: -10,
+                    max: 10,
+                    onChanged: (value) => engine.updateEqualizerBand(1, value),
+                    activeColor: Colors.red,
+                    inactiveColor: Colors.white24,
                   ),
-                  Text(
-                    '${engine.equalizerBands[index].toStringAsFixed(1)}dB',
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+                const Text('4kHz', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Text('31Hz', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Expanded(
+                  child: Slider(
+                    value: engine.equalizerBands[2],
+                    min: -10,
+                    max: 10,
+                    onChanged: (value) => engine.updateEqualizerBand(2, value),
+                    activeColor: Colors.red,
+                    inactiveColor: Colors.white24,
                   ),
-                ],
-              );
-            }),
+                ),
+                const Text('8kHz', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Text('60Hz', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Expanded(
+                  child: Slider(
+                    value: engine.equalizerBands[3],
+                    min: -10,
+                    max: 10,
+                    onChanged: (value) => engine.updateEqualizerBand(3, value),
+                    activeColor: Colors.red,
+                    inactiveColor: Colors.white24,
+                  ),
+                ),
+                const Text('12kHz', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Text('170Hz', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Expanded(
+                  child: Slider(
+                    value: engine.equalizerBands[4],
+                    min: -10,
+                    max: 10,
+                    onChanged: (value) => engine.updateEqualizerBand(4, value),
+                    activeColor: Colors.red,
+                    inactiveColor: Colors.white24,
+                  ),
+                ),
+                const Text('16kHz', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
           ],
         ),
         actions: [
@@ -782,19 +850,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (engine.isRecording)
-              const Text(
-                'Recording in progress. Tap stop to save.',
-                style: TextStyle(color: Colors.grey),
+              const Column(
+                children: [
+                  CircularProgressIndicator(color: Colors.red),
+                  SizedBox(height: 8),
+                  Text(
+                    'Recording in progress...',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
               )
-            else if (engine.recordingPath != null)
-              Text(
-                'Recording saved at: ${engine.recordingPath}',
-                style: const TextStyle(color: Colors.white),
-              )
-            else
-              const Text(
-                'Start recording the current station.',
-                style: TextStyle(color: Colors.grey),
+            else if (engine.savedRecordings.isNotEmpty)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Saved Recordings:',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  ...engine.savedRecordings.take(3).map((path) => ListTile(
+                    leading: const Icon(Icons.audio_file, color: Colors.red),
+                    title: Text(
+                      File(path).uri.pathSegments.isNotEmpty 
+                          ? File(path).uri.pathSegments.last 
+                          : 'Recording',
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.play_arrow, color: Colors.red),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        engine.playRecording(path);
+                      },
+                    ),
+                  )),
+                ],
+              ),
+            if (engine.savedRecordings.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No recordings yet', style: TextStyle(color: Colors.grey)),
               ),
           ],
         ),
@@ -804,25 +902,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final messenger = ScaffoldMessenger.of(context);
               final navigator = Navigator.of(context);
               if (engine.isRecording) {
-                engine.stopRecording().then((_) {
-                  messenger.showSnackBar(
-                    const SnackBar(content: Text('Recording stopped and saved')),
-                  );
-                  navigator.pop();
-                });
+                engine.stopRecording();
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Recording stopped')),
+                );
+                navigator.pop();
               } else {
-                engine.startRecording().then((_) {
+                if (engine.currentStation == null) {
                   messenger.showSnackBar(
-                    const SnackBar(content: Text('Recording started')),
+                    const SnackBar(content: Text('No station playing')),
                   );
-                  navigator.pop();
-                });
+                  return;
+                }
+                engine.startRecording();
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Recording started')),
+                );
+                navigator.pop();
               }
             },
             child: Text(
               engine.isRecording ? 'Stop' : 'Start',
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(color: engine.isRecording ? Colors.red : Colors.white),
             ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close', style: TextStyle(color: Colors.grey)),
           ),
         ],
       ),
@@ -843,6 +949,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
       case 'zh': return '中文';
       default: return 'English';
     }
+  }
+
+  void _showRecordingsManager(BuildContext context, RadioEngine engine) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A2E),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[700],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Manage Recordings',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...engine.savedRecordings.take(5).map((path) {
+              final file = File(path);
+              final fileName = file.uri.pathSegments.isNotEmpty 
+                  ? file.uri.pathSegments.last 
+                  : 'Recording';
+              return Card(
+                color: Colors.white.withValues(alpha: 0.05),
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                child: ListTile(
+                  leading: const Icon(Icons.audio_file, color: Colors.red),
+                  title: Text(fileName, style: const TextStyle(color: Colors.white)),
+                  subtitle: Text(
+                    '${file.lengthSync()} bytes',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.play_arrow, color: Colors.red),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          engine.playRecording(path);
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () {
+                          engine.deleteRecording(path);
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            if (engine.savedRecordings.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No recordings yet', style: TextStyle(color: Colors.grey)),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showCacheDialog(BuildContext context) {

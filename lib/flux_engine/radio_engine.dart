@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:location/location.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:record/record.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../flux_hardware/radio_service.dart';
 import '../flux_storage/radio_storage.dart';
 
@@ -14,7 +12,6 @@ class RadioEngine extends ChangeNotifier {
   final AudioPlayer _player = AudioPlayer();
   final RadioService _service = RadioService();
   final Location _location = Location();
-  AudioRecorder? _recorder;
 
   RadioStation? _currentStation;
   String _currentTitle = '';
@@ -41,6 +38,11 @@ class RadioEngine extends ChangeNotifier {
   List<String> _savedRecordings = [];
   List<String> _recentSearches = [];
   late RadioStorage storage;
+  
+  HttpClient? _recordingClient;
+  HttpClientRequest? _recordingRequest;
+  HttpClientResponse? _recordingResponse;
+  IOSink? _recordingSink;
 
   bool get isSleepTimerActive => _sleepTimer != null;
   bool get isRecording => _isRecording;
@@ -48,12 +50,12 @@ class RadioEngine extends ChangeNotifier {
   Duration get recordingDuration => _recordingDuration;
   DateTime? get recordingStartTime => _recordingStartTime;
   Duration get sleepRemainingTime => _sleepRemainingTime;
-  List<double> get equalizerBands => _equalizerBands;
+  List<double> get equalizerBands => List.unmodifiable(_equalizerBands);
   List<RadioStation> get recentStations => List.unmodifiable(_recentStations);
   List<String> get savedRecordings => List.unmodifiable(_savedRecordings);
   List<String> get recentSearches => List.unmodifiable(_recentSearches);
 
-  RadioStation? get currentStation => _currentStation;
+RadioStation? get currentStation => _currentStation;
   bool get isPlaying => _isPlaying;
   bool get isLoading => _isLoading;
   String get currentTitle => _currentTitle;
@@ -61,6 +63,7 @@ class RadioEngine extends ChangeNotifier {
   List<String> get countries => _countries;
   List<String> get genres => _genres;
   List<String> get languages => _languages;
+  double get volume => _volume;
 
   List<Map<String, dynamic>> get categories => [
         {'title': 'Trending', 'icon': Icons.trending_up, 'color': Colors.red, 'action': loadTrendingStations},
@@ -74,7 +77,6 @@ class RadioEngine extends ChangeNotifier {
       ];
   String? get errorMessage => _errorMessage;
   Duration get sleepDuration => _sleepDuration;
-  double get volume => _volume;
 
   Future<void> initialize() async {
     storage = RadioStorage();
@@ -86,10 +88,11 @@ class RadioEngine extends ChangeNotifier {
     ]);
     await loadRecentStations();
     await _configureAudioSession();
+    await loadSavedRecordings();
   }
 
   Future<void> _configureAudioSession() async {
-    // Audio session configuration handled by just_audio
+    await _player.setVolume(_volume);
   }
 
   Future<void> _loadCountriesGenresAndLanguages() async {
@@ -562,35 +565,17 @@ Future<void> loadTopStations() async {
 
   Future<void> startRecording() async {
     try {
-      final status = await Permission.microphone.request();
-      if (!status.isGranted) {
-        _errorMessage = 'Microphone permission denied';
-        notifyListeners();
-        return;
-      }
-
       final dir = await getApplicationDocumentsDirectory();
-      final recordingsDir = Directory('${dir.path}/recordings');
+      final recordingsDir = Directory('${dir.path}/audio_recordings');
       if (!await recordingsDir.exists()) {
         await recordingsDir.create(recursive: true);
       }
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final filename = _currentStation?.name.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_') ?? 'recording';
-      final path = '${recordingsDir.path}/${filename}_$timestamp.m4a';
-
-      _recorder = AudioRecorder();
-      final config = RecordConfig(
-        encoder: AudioEncoder.aacLc,
-        sampleRate: 44100,
-        bitRate: 128000,
-      );
-      await _recorder!.start(
-        config,
-        path: path,
-      );
+      _recordingPath = '${recordingsDir.path}/${filename}_$timestamp.mp3';
+      
       _isRecording = true;
-      _recordingPath = path;
       _recordingStartTime = DateTime.now();
       _recordingDuration = Duration.zero;
 
@@ -603,8 +588,62 @@ Future<void> loadTopStations() async {
       });
 
       notifyListeners();
+      
+      await _startStreamRecording(_recordingPath!);
     } catch (e) {
       _errorMessage = 'Failed to start recording: ${e.toString()}';
+      notifyListeners();
+    }
+  }
+
+  Future<void> _startStreamRecording(String path) async {
+    try {
+      if (_currentStation == null) {
+        _errorMessage = 'No station playing';
+        _isRecording = false;
+        _recordingPath = null;
+        notifyListeners();
+        return;
+      }
+
+      _recordingClient = HttpClient();
+      _recordingRequest = await _recordingClient!.getUrl(Uri.parse(_currentStation!.url));
+      _recordingRequest!.headers.set('User-Agent', 'FluxRadio/1.0');
+      
+      _recordingResponse = await _recordingRequest!.close();
+      _recordingSink = File(path).openWrite();
+      
+      _recordingResponse!.listen(
+        (chunk) {
+          if (_isRecording && _recordingSink != null) {
+            _recordingSink!.add(chunk);
+          }
+        },
+        onError: (e) {
+          _errorMessage = 'Recording error: ${e.toString()}';
+          _isRecording = false;
+          notifyListeners();
+        },
+        onDone: () {
+          if (_isRecording) {
+            _errorMessage = 'Stream ended';
+            stopRecording();
+          }
+        },
+      );
+      
+      final metadataPath = '$path.metadata';
+      final metadata = {
+        'duration': _recordingDuration.inSeconds,
+        'station': _currentStation?.name,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+      await File(metadataPath).writeAsString(jsonEncode(metadata));
+      
+    } catch (e) {
+      _errorMessage = 'Recording error: ${e.toString()}';
+      _isRecording = false;
+      _recordingPath = null;
       notifyListeners();
     }
   }
@@ -613,29 +652,73 @@ Future<void> loadTopStations() async {
     try {
       _recordingTimer?.cancel();
       _recordingTimer = null;
-      final path = await _recorder?.stop();
-      await _recorder?.dispose();
-      _recorder = null;
+      
       _isRecording = false;
-      _recordingPath = path;
-      _recordingStartTime = null;
-
-      if (path != null) {
-        if (!_savedRecordings.contains(path)) {
-          _savedRecordings.add(path);
+      
+      await _recordingSink?.close();
+      _recordingClient?.close();
+      
+      _recordingSink = null;
+      _recordingResponse = null;
+      _recordingClient = null;
+      
+      if (_recordingPath != null) {
+        final file = File(_recordingPath!);
+        if (await file.exists()) {
+          if (!_savedRecordings.contains(_recordingPath!)) {
+            _savedRecordings.add(_recordingPath!);
+          }
         }
-        final metadataPath = '$path.metadata';
-        final metadata = {
-          'duration': _recordingDuration.inSeconds,
-          'station': _currentStation?.name,
-          'timestamp': DateTime.now().toIso8601String(),
-        };
-        await File(metadataPath).writeAsString(jsonEncode(metadata));
       }
+      
+      _recordingPath = null;
+      _recordingStartTime = null;
+      _recordingDuration = Duration.zero;
 
       notifyListeners();
     } catch (e) {
       _errorMessage = 'Failed to stop recording: ${e.toString()}';
+      notifyListeners();
+    }
+  }
+
+  Future<void> playRecording(String path) async {
+    if (_currentStation != null && _isPlaying) {
+      await stop();
+    }
+    
+    try {
+      final file = File(path);
+      if (!await file.exists()) {
+        _errorMessage = 'Recording file not found';
+        notifyListeners();
+        return;
+      }
+
+      _isLoading = true;
+      notifyListeners();
+
+      await _player.setFilePath(path);
+      await _player.setVolume(_volume);
+      await _player.play();
+      
+      _isPlaying = true;
+      _currentStation = RadioStation(
+        name: 'Recording',
+        url: path,
+        country: 'Local',
+        language: 'Audio',
+        genre: 'Recording',
+        bitrate: 128,
+        favicon: '',
+      );
+      _currentTitle = 'Recording';
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to play recording: ${e.toString()}';
+      _isLoading = false;
       notifyListeners();
     }
   }
@@ -675,7 +758,7 @@ Future<void> loadTopStations() async {
   Future<void> loadSavedRecordings() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final recordingsDir = Directory('${dir.path}/recordings');
+      final recordingsDir = Directory('${dir.path}/audio_recordings');
       if (await recordingsDir.exists()) {
         final files = recordingsDir.listSync();
         _savedRecordings = files
@@ -696,9 +779,60 @@ Future<void> loadTopStations() async {
     notifyListeners();
   }
 
+  void adjustVolume(double delta) {
+    setVolume(_volume + delta);
+  }
+
+  Future<void> setEqualizerPreset(String preset) async {
+    switch (preset) {
+      case 'flat':
+        resetEqualizer();
+        break;
+      case 'rock':
+        updateEqualizerBand(0, 2.0);
+        updateEqualizerBand(1, 1.0);
+        updateEqualizerBand(2, 0.0);
+        updateEqualizerBand(3, -1.0);
+        updateEqualizerBand(4, -2.0);
+        break;
+      case 'pop':
+        updateEqualizerBand(0, -2.0);
+        updateEqualizerBand(1, -1.0);
+        updateEqualizerBand(2, 0.0);
+        updateEqualizerBand(3, 1.0);
+        updateEqualizerBand(4, 2.0);
+        break;
+      case 'jazz':
+        updateEqualizerBand(0, 1.0);
+        updateEqualizerBand(1, 0.5);
+        updateEqualizerBand(2, 0.0);
+        updateEqualizerBand(3, 0.5);
+        updateEqualizerBand(4, 1.0);
+        break;
+      case 'classical':
+        updateEqualizerBand(0, -1.0);
+        updateEqualizerBand(1, -1.0);
+        updateEqualizerBand(2, 0.0);
+        updateEqualizerBand(3, 1.0);
+        updateEqualizerBand(4, 1.0);
+        break;
+      case 'bass_boost':
+        updateEqualizerBand(0, 5.0);
+        updateEqualizerBand(1, 3.0);
+        updateEqualizerBand(2, 0.0);
+        updateEqualizerBand(3, -1.0);
+        updateEqualizerBand(4, -2.0);
+        break;
+    }
+  }
+
   Duration get position => _player.position;
   Duration? get duration => _player.duration;
   Duration get bufferedPosition => _player.bufferedPosition;
+
+  void seek(Duration position) {
+    _player.seek(position);
+  }
 
   Future<void> addToFavorites(RadioStation station) async {
     final storage = RadioStorage();
@@ -715,6 +849,11 @@ Future<void> loadTopStations() async {
   Future<List<FavoriteStation>> getFavorites() async {
     final storage = RadioStorage();
     return await storage.getFavorites();
+  }
+
+  Future<List<RadioStation>> get favorites async {
+    final favs = await storage.getFavorites();
+    return favs.map((f) => f.toRadioStation()).toList();
   }
 
   Future<bool> isFavorite(String id) async {
@@ -736,7 +875,7 @@ Future<void> loadTopStations() async {
 
   void updateEqualizerBand(int index, double value) {
     if (index >= 0 && index < _equalizerBands.length) {
-      _equalizerBands[index] = value.clamp(-1.0, 1.0);
+      _equalizerBands[index] = value.clamp(-10.0, 10.0);
       notifyListeners();
     }
   }
@@ -781,8 +920,9 @@ Future<void> loadTopStations() async {
     _player.dispose();
     _sleepTimer?.cancel();
     _recordingTimer?.cancel();
+    _recordingSink?.close();
+    _recordingClient?.close();
     _cache.clear();
-    _recorder = null;
     super.dispose();
   }
 }
