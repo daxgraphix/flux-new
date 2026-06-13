@@ -69,6 +69,115 @@ class _HomeTabState extends State<_HomeTab> with AutomaticKeepAliveClientMixin {
     });
   }
 
+  void _showAdvancedSearchDialog(BuildContext context, RadioEngine engine) {
+    String selectedCountry = '';
+    String selectedGenre = '';
+    String selectedLanguage = '';
+    String selectedOrder = 'votes';
+    bool isDescending = true;
+    final searchName = TextEditingController(text: _searchController.text);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('Advanced Search', style: TextStyle(color: Colors.white)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: searchName,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Station Name',
+                    labelStyle: TextStyle(color: Colors.red),
+                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.red)),
+                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.red)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: null,
+                  hint: const Text('Select Country', style: TextStyle(color: Colors.white70)),
+                  dropdownColor: const Color(0xFF1A1A2E),
+                  style: const TextStyle(color: Colors.white),
+                  onChanged: (value) => selectedCountry = value ?? '',
+                  items: engine.countries.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: null,
+                  hint: const Text('Select Genre', style: TextStyle(color: Colors.white70)),
+                  dropdownColor: const Color(0xFF1A1A2E),
+                  style: const TextStyle(color: Colors.white),
+                  onChanged: (value) => selectedGenre = value ?? '',
+                  items: engine.genres.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: null,
+                  hint: const Text('Select Language', style: TextStyle(color: Colors.white70)),
+                  dropdownColor: const Color(0xFF1A1A2E),
+                  style: const TextStyle(color: Colors.white),
+                  onChanged: (value) => selectedLanguage = value ?? '',
+                  items: engine.languages.map((l) => DropdownMenuItem(value: l, child: Text(l))).toList(),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedOrder,
+                  dropdownColor: const Color(0xFF1A1A2E),
+                  style: const TextStyle(color: Colors.white),
+                  onChanged: (value) => selectedOrder = value ?? 'votes',
+                  items: const [
+                    DropdownMenuItem(value: 'votes', child: Text('Popularity')),
+                    DropdownMenuItem(value: 'clicktrend', child: Text('Trending')),
+                    DropdownMenuItem(value: 'date', child: Text('Newest')),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Text('Descending', style: TextStyle(color: Colors.white70)),
+                    Switch(
+                      value: isDescending,
+                      onChanged: (v) => isDescending = v,
+                      activeThumbColor: Colors.red,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              final name = searchName.text.isNotEmpty ? searchName.text : null;
+              engine.searchStations(
+                name: name,
+                country: selectedCountry.isNotEmpty ? selectedCountry : null,
+                tag: selectedGenre.isNotEmpty ? selectedGenre : null,
+                language: selectedLanguage.isNotEmpty ? selectedLanguage : null,
+                order: selectedOrder,
+                reverse: isDescending,
+                limit: 50,
+              );
+              Navigator.pop(context);
+            },
+            child: const Text('Search', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -107,6 +216,12 @@ class _HomeTabState extends State<_HomeTab> with AutomaticKeepAliveClientMixin {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   sliver: SliverToBoxAdapter(
                     child: _buildQuickActions(isDark, engine),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverToBoxAdapter(
+                    child: _buildCategoriesSection(isDark, engine),
                   ),
                 ),
                 SliverPadding(
@@ -290,16 +405,24 @@ class _HomeTabState extends State<_HomeTab> with AutomaticKeepAliveClientMixin {
                 borderSide: BorderSide(color: Colors.red, width: 2),
               ),
               prefixIcon: const Icon(Icons.search, color: Colors.red),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_searchController.text.isNotEmpty)
+                    IconButton(
                       icon: Icon(Icons.clear, color: isDark ? Colors.grey : Colors.black54),
                       onPressed: () {
                         _searchController.clear();
                         setState(() {});
-                        engine.loadTopStations();
+                        engine.loadTopStationsIfNeeded();
                       },
-                    )
-                  : null,
+                    ),
+                  IconButton(
+                    icon: Icon(Icons.filter_list, color: isDark ? Colors.grey : Colors.black54),
+                    onPressed: () => _showAdvancedSearchDialog(context, engine),
+                  ),
+                ],
+              ),
             ),
             onChanged: (value) {
               setState(() {});
@@ -333,6 +456,66 @@ class _HomeTabState extends State<_HomeTab> with AutomaticKeepAliveClientMixin {
             isDark: isDark,
           ),
         )),
+      ],
+    );
+  }
+
+  Widget _buildCategoriesSection(bool isDark, RadioEngine engine) {
+    final categories = [
+      {'title': 'Pop', 'color': Colors.pink, 'action': () => engine.searchStations(tag: 'pop', limit: 20)},
+      {'title': 'Rock', 'color': Colors.orange, 'action': () => engine.searchStations(tag: 'rock', limit: 20)},
+      {'title': 'Jazz', 'color': Colors.purple, 'action': () => engine.searchStations(tag: 'jazz', limit: 20)},
+      {'title': 'Classical', 'color': Colors.indigo, 'action': () => engine.searchStations(tag: 'classical', limit: 20)},
+      {'title': 'News', 'color': Colors.blue, 'action': () => engine.searchStations(tag: 'news', limit: 20)},
+      {'title': 'Talk', 'color': Colors.teal, 'action': () => engine.searchStations(tag: 'talk', limit: 20)},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Text(
+          'Browse by Genre',
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black87,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 50,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              final cat = categories[index];
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: GestureDetector(
+                  onTap: cat['action'] as VoidCallback,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: (cat['color'] as Color).withValues(alpha:0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: (cat['color'] as Color).withValues(alpha:0.5)),
+                    ),
+                    child: Center(
+                      child: Text(
+                        cat['title'] as String,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
       ],
     );
   }
@@ -487,9 +670,9 @@ class _QuickActionWidget extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+              color: isDark ? Colors.white.withValues(alpha:0.08) : Colors.black.withValues(alpha:0.05),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isDark ? Colors.red.withValues(alpha: 0.2) : Colors.blue.withValues(alpha: 0.2)),
+              border: Border.all(color: isDark ? Colors.red.withValues(alpha:0.2) : Colors.blue.withValues(alpha:0.2)),
             ),
             child: Icon(icon, color: isDark ? Colors.red : Colors.blue, size: 24),
           ),
@@ -525,16 +708,16 @@ class _ModernStationCard extends StatelessWidget {
         margin: const EdgeInsets.only(right: 12),
         width: 110,
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
+          color: isDark ? Colors.white.withValues(alpha:0.06) : Colors.black.withValues(alpha:0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDark ? Colors.red.withValues(alpha: 0.15) : Colors.blue.withValues(alpha: 0.15)),
+          border: Border.all(color: isDark ? Colors.red.withValues(alpha:0.15) : Colors.blue.withValues(alpha:0.15)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08),
+              backgroundColor: isDark ? Colors.white.withValues(alpha:0.1) : Colors.black.withValues(alpha:0.08),
               child: station.favicon.isNotEmpty
                   ? ClipOval(child: CachedNetworkImage(
                       imageUrl: station.favicon,
@@ -576,9 +759,9 @@ class _ModernCountryCard extends StatelessWidget {
         margin: const EdgeInsets.only(right: 10),
         width: 80,
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
+          color: isDark ? Colors.white.withValues(alpha:0.06) : Colors.black.withValues(alpha:0.05),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isDark ? Colors.red.withValues(alpha: 0.15) : Colors.blue.withValues(alpha: 0.15)),
+          border: Border.all(color: isDark ? Colors.red.withValues(alpha:0.15) : Colors.blue.withValues(alpha:0.15)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -614,9 +797,9 @@ class _ModernGenreCard extends StatelessWidget {
         margin: const EdgeInsets.only(right: 10),
         width: 80,
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05),
+          color: isDark ? Colors.white.withValues(alpha:0.06) : Colors.black.withValues(alpha:0.05),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isDark ? Colors.red.withValues(alpha: 0.15) : Colors.blue.withValues(alpha: 0.15)),
+          border: Border.all(color: isDark ? Colors.red.withValues(alpha:0.15) : Colors.blue.withValues(alpha:0.15)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -652,9 +835,9 @@ class _ModernStationListItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+        color: isDark ? Colors.white.withValues(alpha:0.06) : Colors.black.withValues(alpha:0.04),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: isPlaying ? Colors.red.withValues(alpha: 0.5) : Colors.transparent),
+        border: Border.all(color: isPlaying ? Colors.red.withValues(alpha:0.5) : Colors.transparent),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -663,7 +846,7 @@ class _ModernStationListItem extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08),
+              backgroundColor: isDark ? Colors.white.withValues(alpha:0.1) : Colors.black.withValues(alpha:0.08),
               child: station.favicon.isNotEmpty
                   ? ClipOval(child: CachedNetworkImage(
                       imageUrl: station.favicon,
@@ -679,14 +862,14 @@ class _ModernStationListItem extends StatelessWidget {
               Container(
                 width: 36,
                 height: 36,
-                decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.5), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: Colors.black.withValues(alpha:0.5), shape: BoxShape.circle),
                 child: const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.red))),
               ),
             if (isPlaying)
               Container(
                 width: 36,
                 height: 36,
-                decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.3), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: Colors.red.withValues(alpha:0.3), shape: BoxShape.circle),
                 child: const Icon(Icons.audiotrack, color: Colors.red, size: 16),
               ),
           ],

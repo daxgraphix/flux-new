@@ -527,6 +527,30 @@ Future<void> loadTopStations() async {
     notifyListeners();
   }
 
+  Future<void> loadPopularStations({int limit = 50}) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _stations = await _service.searchStations(limit: limit, order: 'votes', reverse: true);
+    } catch (e) {
+      _stations = [];
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> loadTrendingStationsWithOrder() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _stations = await _service.searchStations(limit: 100, order: 'clicktrend', reverse: true);
+    } catch (e) {
+      _stations = [];
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
+
   Future<void> loadMusicStations() async {
     _isLoading = true;
     _errorMessage = null;
