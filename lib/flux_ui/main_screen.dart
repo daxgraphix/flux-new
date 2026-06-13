@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../flux_engine/radio_engine.dart';
 import '../flux_hardware/radio_service.dart';
 import 'library_screen.dart';
@@ -55,7 +56,7 @@ class _HomeTabState extends State<_HomeTab> with AutomaticKeepAliveClientMixin {
     _debounce?.cancel();
     if (value.isEmpty) {
       final engine = context.read<RadioEngine>();
-      engine.loadTopStations();
+      engine.loadTopStationsIfNeeded();
       return;
     }
 
@@ -535,7 +536,14 @@ class _ModernStationCard extends StatelessWidget {
               radius: 24,
               backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08),
               child: station.favicon.isNotEmpty
-                  ? ClipOval(child: Image.network(station.favicon, fit: BoxFit.cover, width: 40, height: 40, errorBuilder: (context, error, stackTrace) => const Icon(Icons.radio, color: Colors.red, size: 20)))
+                  ? ClipOval(child: CachedNetworkImage(
+                      imageUrl: station.favicon,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => const Icon(Icons.radio, color: Colors.red, size: 20),
+                      errorWidget: (context, url, error) => const Icon(Icons.radio, color: Colors.red, size: 20),
+                    ))
                   : const Icon(Icons.radio, color: Colors.red, size: 24),
             ),
             const SizedBox(height: 8),
@@ -657,7 +665,14 @@ class _ModernStationListItem extends StatelessWidget {
               radius: 20,
               backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08),
               child: station.favicon.isNotEmpty
-                  ? ClipOval(child: Image.network(station.favicon, fit: BoxFit.cover, width: 36, height: 36, errorBuilder: (context, error, stackTrace) => const Icon(Icons.radio, color: Colors.red, size: 16)))
+                  ? ClipOval(child: CachedNetworkImage(
+                      imageUrl: station.favicon,
+                      width: 36,
+                      height: 36,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => const Icon(Icons.radio, color: Colors.red, size: 16),
+                      errorWidget: (context, url, error) => const Icon(Icons.radio, color: Colors.red, size: 16),
+                    ))
                   : const Icon(Icons.radio, color: Colors.red, size: 16),
             ),
             if (isLoading)

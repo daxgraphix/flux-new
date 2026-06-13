@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 import 'package:location/location.dart';
 import 'package:path_provider/path_provider.dart';
@@ -9,6 +10,7 @@ import '../flux_hardware/radio_service.dart';
 import '../flux_storage/radio_storage.dart';
 
 class RadioEngine extends ChangeNotifier {
+  final http.Client _httpClient = http.Client();
   final AudioPlayer _player = AudioPlayer();
   final RadioService _service = RadioService();
   final Location _location = Location();
@@ -17,6 +19,7 @@ class RadioEngine extends ChangeNotifier {
   String _currentTitle = '';
   bool _isPlaying = false;
   bool _isLoading = false;
+  String? _loadingKey;
   List<RadioStation> _stations = [];
   List<String> _countries = [];
   List<String> _genres = [];
@@ -44,6 +47,12 @@ class RadioEngine extends ChangeNotifier {
   HttpClientResponse? _recordingResponse;
   IOSink? _recordingSink;
 
+  bool _isNetworkAvailable = true;
+  Timer? _networkCheckTimer;
+
+  AudioPlayer get player => _player;
+  bool get isNetworkAvailable => _isNetworkAvailable;
+
   bool get isSleepTimerActive => _sleepTimer != null;
   bool get isRecording => _isRecording;
   String? get recordingPath => _recordingPath;
@@ -54,6 +63,8 @@ class RadioEngine extends ChangeNotifier {
   List<RadioStation> get recentStations => List.unmodifiable(_recentStations);
   List<String> get savedRecordings => List.unmodifiable(_savedRecordings);
   List<String> get recentSearches => List.unmodifiable(_recentSearches);
+  String? get errorMessage => _errorMessage;
+  String? get loadingKey => _loadingKey;
 
 RadioStation? get currentStation => _currentStation;
   bool get isPlaying => _isPlaying;
@@ -74,9 +85,8 @@ RadioStation? get currentStation => _currentStation;
         {'title': 'AM/FM', 'icon': Icons.radio, 'color': Color(0xFF00BCD4), 'action': loadGlobalAmFmStations},
         {'title': 'Talk', 'icon': Icons.mic, 'color': Color(0xFF795548), 'action': loadTalkStations},
         {'title': 'Live', 'icon': Icons.wifi, 'color': Color(0xFFE91E63), 'action': loadLiveStations},
-      ];
-  String? get errorMessage => _errorMessage;
-  Duration get sleepDuration => _sleepDuration;
+];
+   Duration get sleepDuration => _sleepDuration;
 
   Future<void> initialize() async {
     storage = RadioStorage();
@@ -89,6 +99,40 @@ RadioStation? get currentStation => _currentStation;
     await loadRecentStations();
     await _configureAudioSession();
     await loadSavedRecordings();
+    _startNetworkMonitoring();
+  }
+
+  void _startNetworkMonitoring() {
+    _networkCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      final wasAvailable = _isNetworkAvailable;
+      _isNetworkAvailable = await _checkNetwork();
+      
+      if (wasAvailable && !_isNetworkAvailable && _isPlaying) {
+        _errorMessage = 'Network lost. Pausing playback.';
+        await _player.pause();
+        _isPlaying = false;
+        notifyListeners();
+      } else if (!wasAvailable && _isNetworkAvailable && _currentStation != null && !_isPlaying) {
+        try {
+          await _player.play();
+          _isPlaying = true;
+          _errorMessage = null;
+          notifyListeners();
+        } catch (e) {
+          _errorMessage = 'Failed to resume playback';
+          notifyListeners();
+        }
+      }
+    });
+  }
+
+  Future<bool> _checkNetwork() async {
+    try {
+      final response = await http.Client().get(Uri.parse('https://www.google.com'));
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
   }
 
   Future<void> _configureAudioSession() async {
@@ -122,7 +166,6 @@ RadioStation? get currentStation => _currentStation;
   }) async {
     final cacheKey = 'search_${name ?? ''}_${country ?? ''}_${tag ?? ''}_${language ?? ''}_${bitrateMin ?? ''}_${bitrateMax ?? ''}_$offset';
 
-    // Check memory cache first
     if (_cache.containsKey(cacheKey) &&
         _lastCacheUpdate != null &&
         DateTime.now().difference(_lastCacheUpdate!).inMinutes < 15) {
@@ -131,8 +174,6 @@ RadioStation? get currentStation => _currentStation;
       return;
     }
 
-    // Check persistent cache
-    final storage = RadioStorage();
     final cached = await storage.getCachedStations(cacheKey, minutes: 30);
     if (cached != null) {
       _stations = cached;
@@ -147,21 +188,24 @@ RadioStation? get currentStation => _currentStation;
     notifyListeners();
 
     try {
-      _stations = await _service.searchStations(
-        name: name,
-        country: country,
-        tag: tag,
-        language: language,
-        bitrateMin: bitrateMin,
-        bitrateMax: bitrateMax,
-        hasGeoInfo: hasGeoInfo,
-        order: order,
-        reverse: reverse,
-        limit: limit,
-        offset: offset,
-      ).timeout(
-        const Duration(seconds: 8),
-        onTimeout: () => throw Exception('Search timeout'),
+      _stations = await _withRetry(
+        () => _service.searchStations(
+          name: name,
+          country: country,
+          tag: tag,
+          language: language,
+          bitrateMin: bitrateMin,
+          bitrateMax: bitrateMax,
+          hasGeoInfo: hasGeoInfo,
+          order: order,
+          reverse: reverse,
+          limit: limit,
+          offset: offset,
+        ).timeout(
+          const Duration(seconds: 8),
+          onTimeout: () => throw Exception('Search timeout'),
+        ),
+        maxAttempts: 3,
       );
 
       if (_stations.isNotEmpty) {
@@ -176,6 +220,24 @@ RadioStation? get currentStation => _currentStation;
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<T> _withRetry<T>(Future<T> Function() operation, {int maxAttempts = 3}) async {
+    int attempts = 0;
+    Exception? lastError;
+    
+    while (attempts < maxAttempts) {
+      try {
+        return await operation();
+      } catch (e) {
+        lastError = e as Exception?;
+        attempts++;
+        if (attempts < maxAttempts) {
+          await Future.delayed(Duration(milliseconds: 500 * attempts));
+        }
+      }
+    }
+    throw lastError ?? Exception('Unknown error');
   }
 
   Future<void> playStation(RadioStation station) async {
@@ -269,6 +331,19 @@ RadioStation? get currentStation => _currentStation;
     }
   }
 
+  Future<void> ensurePlaying() async {
+    if (_currentStation != null && !_isPlaying) {
+      try {
+        await _player.play();
+        _isPlaying = true;
+        notifyListeners();
+      } catch (e) {
+        _errorMessage = 'Failed to resume playback: ${e.toString()}';
+        notifyListeners();
+      }
+    }
+  }
+
   Future<void> stop() async {
     try {
       await _player.stop();
@@ -288,12 +363,19 @@ RadioStation? get currentStation => _currentStation;
 
 Future<void> loadTopStations() async {
     const cacheKey = 'top_stations';
+    _loadingKey = cacheKey;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    
     final storage = RadioStorage();
 
     if (_cache.containsKey(cacheKey) &&
         _lastCacheUpdate != null &&
         DateTime.now().difference(_lastCacheUpdate!).inMinutes < 30) {
       _stations = List.from(_cache[cacheKey]!);
+      _loadingKey = null;
+      _isLoading = false;
       notifyListeners();
       return;
     }
@@ -303,13 +385,11 @@ Future<void> loadTopStations() async {
       _stations = cached;
       _cache[cacheKey] = cached;
       _lastCacheUpdate = DateTime.now();
+      _loadingKey = null;
+      _isLoading = false;
       notifyListeners();
       return;
     }
-
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
 
     try {
       _stations = await _service.getTopStations(limit: 100).timeout(
@@ -336,20 +416,35 @@ Future<void> loadTopStations() async {
       }
     }
 
+    _loadingKey = null;
     _isLoading = false;
     notifyListeners();
   }
 
+  Future<void> loadTopStationsIfNeeded() async {
+    const cacheKey = 'top_stations';
+    if (_cache.containsKey(cacheKey) &&
+        _lastCacheUpdate != null &&
+        DateTime.now().difference(_lastCacheUpdate!).inMinutes < 30) {
+      return;
+    }
+    loadTopStations();
+  }
+
   Future<void> loadTrendingStations() async {
+    const cacheKey = 'trending_stations';
+    _loadingKey = cacheKey;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     try {
       _stations = await _service.getTrendingStations(limit: 100);
+      _cache[cacheKey] = List.from(_stations);
     } catch (e) {
       _stations = [];
       _errorMessage = 'Failed to load stations';
     }
+    _loadingKey = null;
     _isLoading = false;
     notifyListeners();
   }
@@ -915,14 +1010,20 @@ Future<void> loadTopStations() async {
     return uri.scheme == 'http' || uri.scheme == 'https';
   }
 
-  @override
-  void dispose() {
-    _player.dispose();
+  void disposeStation() {
     _sleepTimer?.cancel();
     _recordingTimer?.cancel();
+    _networkCheckTimer?.cancel();
     _recordingSink?.close();
     _recordingClient?.close();
+    _httpClient.close();
     _cache.clear();
+    _player.dispose();
+  }
+
+  @override
+  void dispose() {
+    disposeStation();
     super.dispose();
   }
 }

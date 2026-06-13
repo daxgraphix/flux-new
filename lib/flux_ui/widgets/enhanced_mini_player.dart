@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../flux_engine/radio_engine.dart';
 
 class EnhancedMiniPlayer extends StatefulWidget {
@@ -61,16 +62,23 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer> with SingleTick
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       child: Row(
                         children: [
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              CircleAvatar(
-                                radius: 22,
-                                backgroundColor: Colors.red.withValues(alpha: 0.2),
-                                child: station.favicon.isNotEmpty
-                                    ? ClipOval(child: Image.network(station.favicon, fit: BoxFit.cover, width: 40, height: 40, errorBuilder: (context, error, stackTrace) => const Icon(Icons.radio, color: Colors.red, size: 20)))
-                                    : const Icon(Icons.radio, color: Colors.red, size: 20),
-                              ),
+Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundColor: Colors.red.withValues(alpha: 0.2),
+                              child: station.favicon.isNotEmpty
+                                  ? ClipOval(child: CachedNetworkImage(
+                                      imageUrl: station.favicon,
+                                      width: 40,
+                                      height: 40,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => const Icon(Icons.radio, color: Colors.red, size: 20),
+                                      errorWidget: (context, url, error) => const Icon(Icons.radio, color: Colors.red, size: 20),
+                                    ))
+                                  : const Icon(Icons.radio, color: Colors.red, size: 20),
+                            ),
                               if (engine.isPlaying)
                                 Positioned(
                                   bottom: 0,

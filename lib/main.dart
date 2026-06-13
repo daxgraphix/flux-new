@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'flux_engine/radio_engine.dart';
 import 'flux_engine/theme_provider.dart';
+import 'flux_engine/audio_service_handler.dart';
 import 'flux_ui/main_screen.dart';
 import 'flux_ui/onboarding_widget.dart';
 
@@ -41,6 +42,8 @@ class _FluxAppState extends State<FluxApp> {
   }
 
   Future<void> _initializeApp() async {
+    WidgetsBinding.instance.addObserver(_AppLifecycleObserver(this));
+    
     await Hive.initFlutter();
     await _engine.storage.init();
 
@@ -51,6 +54,8 @@ class _FluxAppState extends State<FluxApp> {
     final preloadFuture = _onboardingCompleted ? _engine.loadTopStations() : Future.value();
 
     await Future.wait([initFuture, preloadFuture]);
+    
+    await _initAudioService();
 
     await Future.delayed(const Duration(seconds: 1));
     if (mounted) {
@@ -58,6 +63,17 @@ class _FluxAppState extends State<FluxApp> {
         _appState = _onboardingCompleted ? AppState.main : AppState.onboarding;
       });
     }
+  }
+  
+  Future<void> _initAudioService() async {
+    await BackgroundAudioService().configure();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(_AppLifecycleObserver(this));
+    _engine.disposeStation();
+    super.dispose();
   }
 
   @override
@@ -124,4 +140,27 @@ enum AppState {
   splash,
   onboarding,
   main,
+}
+
+class _AppLifecycleObserver extends WidgetsBindingObserver {
+  final _FluxAppState app;
+
+  _AppLifecycleObserver(this.app);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.paused:
+        BackgroundAudioService().ensurePlaying(app._engine);
+        break;
+      case AppLifecycleState.resumed:
+        break;
+      case AppLifecycleState.detached:
+        break;
+      case AppLifecycleState.hidden:
+        break;
+      case AppLifecycleState.inactive:
+        break;
+    }
+  }
 }

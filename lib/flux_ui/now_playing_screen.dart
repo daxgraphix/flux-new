@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../flux_engine/radio_engine.dart';
 import '../../flux_hardware/radio_service.dart';
 
@@ -25,7 +26,12 @@ class NowPlayingScreen extends StatelessWidget {
                   fit: StackFit.expand,
                   children: [
                     station.favicon.isNotEmpty
-                        ? Image.network(station.favicon, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => _buildGradientBackground())
+                        ? CachedNetworkImage(
+                            imageUrl: station.favicon,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => _buildGradientBackground(),
+                            errorWidget: (context, url, error) => _buildGradientBackground(),
+                          )
                         : _buildGradientBackground(),
                     Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.black.withValues(alpha: 0.7), Colors.transparent]))),
                   ],
