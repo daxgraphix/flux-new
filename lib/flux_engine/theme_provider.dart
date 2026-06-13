@@ -3,8 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider extends ChangeNotifier {
   bool _isDarkMode = true;
+  final Color _primaryColor = Colors.red;
+  final Color _secondaryColor = const Color(0xFFFF6B6B);
 
   bool get isDarkMode => _isDarkMode;
+  Color get primaryColor => _primaryColor;
+  Color get secondaryColor => _secondaryColor;
 
   ThemeData get theme => _isDarkMode ? _darkTheme : _lightTheme;
 
@@ -21,7 +25,7 @@ class ThemeProvider extends ChangeNotifier {
     await prefs.setBool('flux_dark_mode', _isDarkMode);
   }
 
-  static final _darkTheme = ThemeData(
+static final ThemeData _darkTheme = ThemeData(
     brightness: Brightness.dark,
     primaryColor: Colors.red,
     scaffoldBackgroundColor: const Color(0xFF0A0A0A),
@@ -55,21 +59,21 @@ class ThemeProvider extends ChangeNotifier {
     ),
   );
 
-  static final _lightTheme = ThemeData(
+  static final ThemeData _lightTheme = ThemeData(
     brightness: Brightness.light,
-    primaryColor: Colors.blue,
-    scaffoldBackgroundColor: const Color(0xFFE3F2FD),
+    primaryColor: Colors.red,
+    scaffoldBackgroundColor: const Color(0xFFE8EAF6),
     appBarTheme: const AppBarTheme(
-      backgroundColor: Color(0xFFE3F2FD),
+      backgroundColor: Color(0xFFE8EAF6),
       foregroundColor: Colors.black,
       elevation: 0,
     ),
     cardColor: Colors.white,
     buttonTheme: const ButtonThemeData(
-      buttonColor: Colors.blue,
+      buttonColor: Colors.red,
     ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: Colors.blue,
+      backgroundColor: Colors.red,
     ),
     textTheme: const TextTheme(
       bodyLarge: TextStyle(color: Colors.black),
@@ -80,12 +84,12 @@ class ThemeProvider extends ChangeNotifier {
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.blue),
+        borderSide: BorderSide(color: Colors.red),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.blue),
+        borderSide: BorderSide(color: Colors.red),
       ),
-      labelStyle: TextStyle(color: Colors.blue),
+      labelStyle: TextStyle(color: Colors.red),
     ),
   );
 }

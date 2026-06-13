@@ -1,7 +1,15 @@
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../flux_hardware/radio_service.dart';
+
+String _generateStationId(String url, String? uuid) {
+  if (uuid != null && uuid.isNotEmpty) {
+    return uuid;
+  }
+  return sha256.convert(utf8.encode(url)).toString().substring(0, 16);
+}
 
 class FavoriteStation {
   final String id;
@@ -64,44 +72,47 @@ class FavoriteStation {
 }
 
 class RadioStorage {
-  static Database? _database;
+  static Box<dynamic>? _cacheBox;
+  static Box<dynamic>? _favoritesBox;
+  static Box<dynamic>? _recentBox;
 
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
+  Future<void> init() async {
+    await Hive.initFlutter();
+    _cacheBox = await Hive.openBox('cache');
+    _favoritesBox = await Hive.openBox('favorites');
+    _recentBox = await Hive.openBox('recent');
   }
 
-  Future<Database> _initDatabase() async {
-    final path = join(await getDatabasesPath(), 'flux_radio.db');
-    return await openDatabase(
-      path,
-      version: 2,
-      onCreate: (db, version) {
-        db.execute(
-          'CREATE TABLE favorites(id TEXT PRIMARY KEY, name TEXT, url TEXT, country TEXT, genre TEXT, bitrate INTEGER, favicon TEXT, addedDate TEXT)',
-        );
-        db.execute(
-          'CREATE TABLE recent(id TEXT PRIMARY KEY, name TEXT, url TEXT, country TEXT, genre TEXT, bitrate INTEGER, favicon TEXT, playedDate TEXT)',
-        );
-      },
-      onUpgrade: (db, oldVersion, newVersion) {
-        if (oldVersion < 2) {
-          db.execute(
-            'CREATE TABLE favorites(id TEXT PRIMARY KEY, name TEXT, url TEXT, country TEXT, genre TEXT, bitrate INTEGER, favicon TEXT, addedDate TEXT)',
-          );
-          db.execute(
-            'CREATE TABLE recent(id TEXT PRIMARY KEY, name TEXT, url TEXT, country TEXT, genre TEXT, bitrate INTEGER, favicon TEXT, playedDate TEXT)',
-          );
-        }
-      },
-    );
+  Future<void> cacheStations(String key, List<RadioStation> stations) async {
+    final data = jsonEncode(stations.map((s) => s.toJson()).toList());
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    await _cacheBox?.put(key, {'data': data, 'timestamp': timestamp});
+  }
+
+  Future<List<RadioStation>?> getCachedStations(String key, {int minutes = 30}) async {
+    final result = _cacheBox?.get(key);
+    if (result == null) return null;
+
+    final timestamp = result['timestamp'] as int;
+    final data = result['data'] as String;
+    final age = DateTime.now().millisecondsSinceEpoch - timestamp;
+
+    if (age > minutes * 60 * 1000) {
+      await _cacheBox?.delete(key);
+      return null;
+    }
+
+    final List<dynamic> decoded = jsonDecode(data);
+    return decoded.map((e) => RadioStation.fromJson(Map<String, dynamic>.from(e))).toList();
+  }
+
+  Future<void> clearCache() async {
+    await _cacheBox?.clear();
   }
 
   Future<void> addFavorite(RadioStation station) async {
-    final db = await database;
     final favorite = FavoriteStation(
-      id: '${station.name}_${station.url}',
+      id: _generateStationId(station.url, station.uuid),
       name: station.name,
       url: station.url,
       country: station.country,
@@ -110,43 +121,30 @@ class RadioStorage {
       favicon: station.favicon,
       addedDate: DateTime.now(),
     );
-    await db.insert(
-      'favorites',
-      favorite.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await _favoritesBox?.put(favorite.id, favorite.toMap());
   }
 
   Future<void> removeFavorite(String id) async {
-    final db = await database;
-    await db.delete('favorites', where: 'id = ?', whereArgs: [id]);
+    await _favoritesBox?.delete(id);
   }
 
   Future<List<FavoriteStation>> getFavorites() async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'favorites',
-      orderBy: 'addedDate DESC',
-    );
-    return List.generate(maps.length, (i) {
-      return FavoriteStation.fromMap(maps[i]);
-    });
+    final List<Map<String, dynamic>> maps = _favoritesBox?.values
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList() ??
+        [];
+    maps.sort((a, b) => (a['addedDate'] as String).compareTo(b['addedDate'] as String));
+    return maps.reversed.map((e) => FavoriteStation.fromMap(e)).toList();
   }
 
   Future<bool> isFavorite(String id) async {
-    final db = await database;
-    final result = await db.query(
-      'favorites',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-    return result.isNotEmpty;
+    return _favoritesBox?.containsKey(id) ?? false;
   }
 
   Future<void> addRecent(RadioStation station) async {
-    final db = await database;
+    final id = _generateStationId(station.url, station.uuid);
     final recent = {
-      'id': '${station.name}_${station.url}',
+      'id': id,
       'name': station.name,
       'url': station.url,
       'country': station.country,
@@ -155,33 +153,43 @@ class RadioStorage {
       'favicon': station.favicon,
       'playedDate': DateTime.now().toIso8601String(),
     };
-    await db.insert(
-      'recent',
-      recent,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-    // Keep only last 20
-    await db.delete(
-      'recent',
-      where:
-          'id NOT IN (SELECT id FROM recent ORDER BY playedDate DESC LIMIT 20)',
-    );
+    await _recentBox?.put(id, recent);
+
+    final keys = _recentBox?.keys.toList() ?? [];
+    if (keys.length > 20) {
+      final sortedKeys = keys.sublist(0, keys.length - 20);
+      for (final key in sortedKeys) {
+        await _recentBox?.delete(key);
+      }
+    }
   }
 
   Future<List<RadioStation>> getRecent() async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('recent', orderBy: 'playedDate DESC', limit: 20);
-    return List.generate(maps.length, (i) {
-      final map = maps[i];
+    final List<Map<String, dynamic>> maps = _recentBox?.values
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList() ??
+        [];
+    maps.sort((a, b) => (a['playedDate'] as String).compareTo(b['playedDate'] as String));
+    return maps.reversed.take(20).map((e) {
       return RadioStation(
-        name: map['name'] as String,
-        url: map['url'] as String,
-        country: map['country'] as String,
-        language: map['language'] as String? ?? '',
-        genre: map['genre'] as String,
-        bitrate: map['bitrate'] as int,
-        favicon: map['favicon'] as String,
+        name: e['name'] as String,
+        url: e['url'] as String,
+        country: e['country'] as String,
+        language: e['language'] as String? ?? '',
+        genre: e['genre'] as String,
+        bitrate: e['bitrate'] as int,
+        favicon: e['favicon'] as String,
       );
-    });
+    }).toList();
+  }
+
+  Future<Map<String, dynamic>> exportDatabase() async {
+    final favorites = await getFavorites();
+    final recent = await getRecent();
+    return {
+      'favorites': favorites.map((f) => f.toMap()).toList(),
+      'recent': recent.map((r) => r.toJson()).toList(),
+      'exportedAt': DateTime.now().toIso8601String(),
+    };
   }
 }

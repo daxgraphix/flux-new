@@ -9,6 +9,7 @@ class RadioStation {
   final String genre;
   final int bitrate;
   final String favicon;
+  final String? uuid;
 
   RadioStation({
     required this.name,
@@ -18,6 +19,7 @@ class RadioStation {
     required this.genre,
     required this.bitrate,
     required this.favicon,
+    this.uuid,
   });
 
   factory RadioStation.fromJson(Map<String, dynamic> json) {
@@ -29,12 +31,105 @@ class RadioStation {
       genre: json['tags'] ?? '',
       bitrate: json['bitrate'] ?? 128,
       favicon: json['favicon'] ?? '',
+      uuid: json['stationuuid'] ?? json['uuid'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'url': url,
+      'country': country,
+      'language': language,
+      'genre': genre,
+      'bitrate': bitrate,
+      'favicon': favicon,
+      'uuid': uuid,
+    };
   }
 }
 
 class RadioService {
   static const String _baseUrl = 'https://de1.api.radio-browser.info';
+
+  static final List<RadioStation> _staticTanzaniaStations = [
+    RadioStation(
+      name: 'Radio Tanzania',
+      url: 'https://radio.tz:8000/radiotanzania',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'News',
+      bitrate: 128,
+      favicon: 'https://_radio.tz/favicon.ico',
+    ),
+    RadioStation(
+      name: 'BBC Swahili',
+      url: 'https://www.radiofeeds.co.uk/bbcswahili.asp',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'News',
+      bitrate: 128,
+      favicon: 'https://www.bbc.co.uk/favicon.ico',
+    ),
+    RadioStation(
+      name: 'East African Radio',
+      url: 'https://stream.radio.co/s123456789:east-african',
+      country: 'Tanzania',
+      language: 'en',
+      genre: 'Music',
+      bitrate: 128,
+      favicon: '',
+    ),
+    RadioStation(
+      name: 'Cube Radio',
+      url: 'https://stream.radio.co/s5f9a8b123:cube',
+      country: 'Tanzania',
+      language: 'en',
+      genre: 'Music',
+      bitrate: 128,
+      favicon: '',
+    ),
+    RadioStation(
+      name: 'Heaven FM',
+      url: 'https://stream.zamradio.net:8000/heaven',
+      country: 'Tanzania',
+      language: 'en',
+      genre: 'Music',
+      bitrate: 128,
+      favicon: '',
+    ),
+    RadioStation(
+      name: 'Ramogi FM',
+      url: 'https://stream.radio.co/s7g8h9i01:ramogi',
+      country: 'Tanzania',
+      language: 'od',
+      genre: 'Music',
+      bitrate: 128,
+      favicon: '',
+    ),
+    RadioStation(
+      name: 'Inooro FM',
+      url: 'https://stream.zamradio.net:8000/inooro',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'News',
+      bitrate: 128,
+      favicon: '',
+    ),
+    RadioStation(
+      name: 'Spice FM',
+      url: 'https://stream.radio.co/s2j3k4l56:spice',
+      country: 'Tanzania',
+      language: 'en',
+      genre: 'Music',
+      bitrate: 128,
+      favicon: '',
+    ),
+  ];
+
+  static List<RadioStation> getStaticTanzaniaStations() {
+    return List.unmodifiable(_staticTanzaniaStations);
+  }
 
   Future<List<RadioStation>> searchStations({
     String? name,
@@ -46,10 +141,11 @@ class RadioService {
     bool hasGeoInfo = false,
     String? order = 'votes',
     bool reverse = true,
-    int limit = 100,
+    int limit = 50,
     double? lat,
     double? lon,
     double? radius,
+    int offset = 0,
   }) async {
     final queryParams = <String, String>{};
     if (name != null) queryParams['name'] = name;
@@ -65,6 +161,7 @@ class RadioService {
     if (order != null) queryParams['order'] = order;
     queryParams['reverse'] = reverse.toString();
     queryParams['limit'] = limit.toString();
+    queryParams['offset'] = offset.toString();
     queryParams['hidebroken'] = 'true';
 
     final uri = Uri.parse(

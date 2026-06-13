@@ -2,14 +2,13 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 import '../flux_engine/radio_engine.dart';
 import '../flux_hardware/radio_service.dart';
 import 'library_screen.dart';
 import 'settings_screen.dart';
 import 'countries_screen.dart';
 import 'widgets/enhanced_mini_player.dart';
-import 'widgets/sleep_timer_widget.dart';
-import 'widgets/recordings_manager_widget.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -19,17 +18,9 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  Timer? _debounce;
-
   @override
   void initState() {
     super.initState();
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
   }
 
   @override
@@ -72,7 +63,8 @@ class _HomeTabState extends State<_HomeTab> with AutomaticKeepAliveClientMixin {
     _debounce = Timer(const Duration(milliseconds: 300), () {
       if (mounted) {
         final engine = context.read<RadioEngine>();
-        engine.searchStations(name: value, limit: 200);
+        engine.searchStations(name: value, limit: 50);
+        engine.saveRecentSearch(value);
       }
     });
   }
@@ -81,7 +73,7 @@ class _HomeTabState extends State<_HomeTab> with AutomaticKeepAliveClientMixin {
   Widget build(BuildContext context) {
     super.build(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-return SafeArea(
+    return SafeArea(
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -101,18 +93,23 @@ return SafeArea(
                   _buildMiniPlayer(engine, isDark),
                 // Main content
                 Expanded(
-                  child: ListView(
-                    key: const ValueKey('home_list'),
-                    padding: EdgeInsets.zero,
-                    children: [
-                      _buildSearchSection(isDark, engine),
-                      _buildQuickActions(isDark, engine),
-                      SleepTimerWidget(engine: engine, isDark: isDark),
-                      RecordingsManagerWidget(engine: engine, isDark: isDark),
-                      _buildCountryGenreSection(isDark, engine),
-                      _buildStationList(context, engine, isDark),
-                      if (engine.recentStations.isNotEmpty) _buildRecentSection(engine, isDark),
-                    ],
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      final engine = context.read<RadioEngine>();
+                      await engine.loadTopStations();
+                    },
+                    color: Colors.red,
+                    child: ListView(
+                      key: const ValueKey('home_list'),
+                      padding: EdgeInsets.zero,
+                      children: [
+                        _buildSearchSection(isDark, engine),
+                        _buildQuickActions(isDark, engine),
+                        _buildCountryGenreSection(isDark, engine),
+                        _buildStationList(context, engine, isDark),
+                        _buildRecentSection(engine, isDark),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -128,7 +125,11 @@ return SafeArea(
       engine: engine,
       isDark: isDark,
       onExpandTap: () {
-        // Can navigate to a full player screen if needed
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.transparent,
+          builder: (context) => NowPlayingSheet(engine: engine, isDark: isDark),
+        );
       },
     );
   }
@@ -169,7 +170,7 @@ return SafeArea(
             style: TextStyle(color: isDark ? Colors.white : Colors.black),
             decoration: InputDecoration(
               hintText: 'Search stations...',
-              hintStyle: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
+              hintStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[500]),
               filled: true,
               fillColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
               border: OutlineInputBorder(
@@ -350,11 +351,7 @@ return SafeArea(
 
   Widget _buildStationList(BuildContext context, RadioEngine engine, bool isDark) {
     if (engine.isLoading && engine.stations.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.only(top: 80),
-        alignment: Alignment.topCenter,
-        child: const CircularProgressIndicator(color: Colors.red),
-      );
+      return _buildShimmerList(isDark);
     }
     if (engine.stations.isEmpty && !engine.isLoading) {
       return Center(
@@ -596,36 +593,60 @@ class _StationCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            trailing: IconButton(
-              icon: SizedBox(
-                width: 28,
-                height: 28,
-                child: isLoading
-                    ? const CircularProgressIndicator(strokeWidth: 2, color: Colors.orange)
-                    : Icon(
-                        isPlaying ? Icons.pause_circle : Icons.play_circle,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Consumer<RadioEngine>(
+                  builder: (context, engine, _) {
+                    final isFavorite = engine.currentStation?.name == station.name;
+                    return IconButton(
+                      icon: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
                         color: Colors.red,
-                        size: 28,
+                        size: 20,
                       ),
-              ),
-              onPressed: isLoading ? null : () async {
-                try {
-                  await engine.playStation(station);
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to play: ${station.name}'),
-                        backgroundColor: Colors.red,
-                        action: SnackBarAction(
-                          label: 'Retry',
-                          onPressed: () => engine.playStation(station),
-                        ),
-                      ),
+                      onPressed: () async {
+                        if (isFavorite) {
+                          await engine.removeFromFavorites(station.name);
+                        } else {
+                          await engine.addToFavorites(station);
+                        }
+                      },
                     );
-                  }
-                }
-              },
+                  },
+                ),
+                IconButton(
+                  icon: SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: isLoading
+                        ? const CircularProgressIndicator(strokeWidth: 2, color: Colors.orange)
+                        : Icon(
+                            isPlaying ? Icons.pause_circle : Icons.play_circle,
+                            color: Colors.red,
+                            size: 28,
+                          ),
+                  ),
+                  onPressed: isLoading ? null : () async {
+                    try {
+                      await engine.playStation(station);
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to play: ${station.name}'),
+                            backgroundColor: Colors.red,
+                            action: SnackBarAction(
+                              label: 'Retry',
+                              onPressed: () => engine.playStation(station),
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
+              ],
             ),
             onTap: isLoading ? null : () async {
               try {
@@ -963,5 +984,165 @@ void _showFilterDialog(BuildContext context, RadioEngine engine, bool isDark) {
         ],
       ),
     ),
+  );
+}
+
+class NowPlayingSheet extends StatelessWidget {
+  final RadioEngine engine;
+  final bool isDark;
+
+  const NowPlayingSheet({super.key, required this.engine, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A2E) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[700] : Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 20),
+          CircleAvatar(
+            radius: 48,
+            backgroundColor: Colors.red.withValues(alpha: 0.2),
+            child: const Icon(Icons.radio, color: Colors.red, size: 48),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            engine.currentStation?.name ?? 'Unknown Station',
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${engine.currentStation?.country} • ${engine.currentStation?.genre}',
+            style: TextStyle(
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: Icon(
+                  engine.isRecording ? Icons.stop_circle : Icons.fiber_manual_record,
+                  color: engine.isRecording ? Colors.red : Colors.grey,
+                  size: 32,
+                ),
+                onPressed: () async {
+                  if (engine.isRecording) {
+                    await engine.stopRecording();
+                  } else {
+                    await engine.startRecording();
+                  }
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              const SizedBox(width: 16),
+              IconButton(
+                icon: Icon(
+                  engine.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                  color: Colors.red,
+                  size: 48,
+                ),
+                onPressed: () {
+                  if (engine.isPlaying) {
+                    engine.pause();
+                  } else {
+                    engine.resume();
+                  }
+                },
+              ),
+              const SizedBox(width: 16),
+              IconButton(
+                icon: const Icon(Icons.stop_circle, color: Colors.red, size: 32),
+                onPressed: () => engine.stop(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Slider(
+            value: engine.volume,
+            min: 0.0,
+            max: 1.0,
+            onChanged: engine.setVolume,
+            activeColor: Colors.red,
+          ),
+          Text('${(engine.volume * 100).round()}%', style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600])),
+        ],
+      ),
+    );
+  }
+}
+
+Widget _buildShimmerList(bool isDark) {
+  final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+  final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[200]!;
+
+  return ListView.builder(
+    padding: const EdgeInsets.all(16),
+    itemBuilder: (context, index) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        child: Row(
+          children: [
+            Shimmer.fromColors(
+              baseColor: baseColor,
+              highlightColor: highlightColor,
+              child: const CircleAvatar(
+                radius: 32,
+                backgroundColor: Colors.grey,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Shimmer.fromColors(
+                    baseColor: baseColor,
+                    highlightColor: highlightColor,
+                    child: Container(
+                      width: double.infinity,
+                      height: 16,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Shimmer.fromColors(
+                    baseColor: baseColor,
+                    highlightColor: highlightColor,
+                    child: Container(
+                      width: 100,
+                      height: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    },
   );
 }

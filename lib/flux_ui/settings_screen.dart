@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 import '../flux_engine/radio_engine.dart';
 import '../flux_engine/theme_provider.dart';
 import '../flux_storage/radio_storage.dart';
@@ -302,6 +304,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: 'Reset to Defaults',
                   subtitle: 'Reset all settings to default values',
                   onTap: () => _showResetDialog(context),
+                ),
+                _buildTile(
+                  isDark,
+                  icon: Icons.storage,
+                  title: 'Export Database',
+                  subtitle: 'Export favorites and history as JSON',
+                  onTap: () => _exportDatabase(context),
                 ),
               ],
             ),
@@ -990,5 +999,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  void _exportDatabase(BuildContext context) async {
+    try {
+      final storage = RadioStorage();
+      final data = await storage.exportDatabase();
+      final jsonString = jsonEncode(data);
+
+      if (!context.mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          title: const Text('Database Export', style: TextStyle(color: Colors.white)),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 400,
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      jsonString,
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Close', style: TextStyle(color: Colors.white)),
+            ),
+            TextButton(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: jsonString));
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Copied to clipboard')),
+                );
+              },
+              child: const Text('Copy', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Export failed: $e')),
+      );
+    }
   }
 }

@@ -1,23 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:location/location.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../flux_hardware/radio_service.dart';
 import '../flux_storage/radio_storage.dart';
-
-class AudioRecorder {
-  Future<bool> hasPermission() async => true;
-  Future<void> start({required String path}) async {}
-  Future<String?> stop() async => null;
-}
 
 class RadioEngine extends ChangeNotifier {
   final AudioPlayer _player = AudioPlayer();
   final RadioService _service = RadioService();
   final Location _location = Location();
-  final AudioRecorder _recorder = AudioRecorder();
+  AudioRecorder? _recorder;
 
   RadioStation? _currentStation;
   String _currentTitle = '';
@@ -42,6 +39,8 @@ class RadioEngine extends ChangeNotifier {
   DateTime? _lastCacheUpdate;
   List<RadioStation> _recentStations = [];
   List<String> _savedRecordings = [];
+  List<String> _recentSearches = [];
+  late RadioStorage storage;
 
   bool get isSleepTimerActive => _sleepTimer != null;
   bool get isRecording => _isRecording;
@@ -52,6 +51,7 @@ class RadioEngine extends ChangeNotifier {
   List<double> get equalizerBands => _equalizerBands;
   List<RadioStation> get recentStations => List.unmodifiable(_recentStations);
   List<String> get savedRecordings => List.unmodifiable(_savedRecordings);
+  List<String> get recentSearches => List.unmodifiable(_recentSearches);
 
   RadioStation? get currentStation => _currentStation;
   bool get isPlaying => _isPlaying;
@@ -77,9 +77,19 @@ class RadioEngine extends ChangeNotifier {
   double get volume => _volume;
 
   Future<void> initialize() async {
+    storage = RadioStorage();
     await _loadCountriesGenresAndLanguages();
-    await loadTrendingStations();
+    await Future.wait([
+      loadTrendingStations(),
+      loadTanzaniaStations(),
+      loadMusicStations(),
+    ]);
     await loadRecentStations();
+    await _configureAudioSession();
+  }
+
+  Future<void> _configureAudioSession() async {
+    // Audio session configuration handled by just_audio
   }
 
   Future<void> _loadCountriesGenresAndLanguages() async {
@@ -89,7 +99,8 @@ class RadioEngine extends ChangeNotifier {
       _languages = await _service.getLanguages();
       notifyListeners();
     } catch (e) {
-      // Handle error
+      _errorMessage = 'Failed to load countries/genres: ${e.toString()}';
+      notifyListeners();
     }
   }
 
@@ -103,16 +114,27 @@ class RadioEngine extends ChangeNotifier {
     bool hasGeoInfo = false,
     String? order = 'votes',
     bool reverse = true,
-    int limit = 200, // Reduced default limit for better performance
+    int limit = 50,
+    int offset = 0,
   }) async {
-    // Create cache key from search parameters
-    final cacheKey = 'search_${name ?? ''}_${country ?? ''}_${tag ?? ''}_${language ?? ''}_${bitrateMin ?? ''}_${bitrateMax ?? ''}';
+    final cacheKey = 'search_${name ?? ''}_${country ?? ''}_${tag ?? ''}_${language ?? ''}_${bitrateMin ?? ''}_${bitrateMax ?? ''}_$offset';
 
-    // Check cache first (valid for 15 minutes for search results)
+    // Check memory cache first
     if (_cache.containsKey(cacheKey) &&
         _lastCacheUpdate != null &&
         DateTime.now().difference(_lastCacheUpdate!).inMinutes < 15) {
       _stations = List.from(_cache[cacheKey]!);
+      notifyListeners();
+      return;
+    }
+
+    // Check persistent cache
+    final storage = RadioStorage();
+    final cached = await storage.getCachedStations(cacheKey, minutes: 30);
+    if (cached != null) {
+      _stations = cached;
+      _cache[cacheKey] = cached;
+      _lastCacheUpdate = DateTime.now();
       notifyListeners();
       return;
     }
@@ -133,15 +155,16 @@ class RadioEngine extends ChangeNotifier {
         order: order,
         reverse: reverse,
         limit: limit,
+        offset: offset,
       ).timeout(
         const Duration(seconds: 8),
         onTimeout: () => throw Exception('Search timeout'),
       );
 
-      // Cache successful search results
       if (_stations.isNotEmpty) {
         _cache[cacheKey] = List.from(_stations);
         _lastCacheUpdate = DateTime.now();
+        await storage.cacheStations(cacheKey, _stations);
       }
     } catch (e) {
       _stations = [];
@@ -160,19 +183,41 @@ class RadioEngine extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Stop current playback before switching
       if (_isPlaying) {
         await _player.pause();
         _isPlaying = false;
       }
 
-      // Set audio source with timeout
-      await _player.setUrl(station.url).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw Exception('Connection timeout'),
-      );
+      // Validate URL first
+      if (!_isValidStreamUrl(station.url)) {
+        throw Exception('Invalid stream URL');
+      }
 
-      // Set volume before playing
+      // Retry logic with backoff
+      int attempts = 0;
+      final maxAttempts = 3;
+      Exception? lastError;
+
+      while (attempts < maxAttempts) {
+        try {
+          await _player.setUrl(station.url).timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw Exception('Connection timeout'),
+          );
+          break;
+        } catch (e) {
+          lastError = e as Exception;
+          attempts++;
+          if (attempts < maxAttempts) {
+            await Future.delayed(Duration(milliseconds: 500 * attempts));
+          }
+        }
+      }
+
+      if (attempts == maxAttempts && lastError != null) {
+        throw lastError;
+      }
+
       await _player.setVolume(_volume);
 
       await _player.play();
@@ -180,7 +225,6 @@ class RadioEngine extends ChangeNotifier {
       _isPlaying = true;
       _currentTitle = station.name;
 
-      // Add to recent stations and refresh the list
       final storage = RadioStorage();
       await storage.addRecent(station);
       _recentStations = await storage.getRecent();
@@ -204,7 +248,6 @@ class RadioEngine extends ChangeNotifier {
       _isPlaying = false;
       notifyListeners();
     } catch (e) {
-      // Handle pause error gracefully
       _errorMessage = 'Failed to pause: ${e.toString()}';
       notifyListeners();
     }
@@ -235,20 +278,28 @@ class RadioEngine extends ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      // Handle stop error gracefully
       _errorMessage = 'Failed to stop: ${e.toString()}';
       notifyListeners();
     }
   }
 
-  Future<void> loadTopStations() async {
+Future<void> loadTopStations() async {
     const cacheKey = 'top_stations';
+    final storage = RadioStorage();
 
-    // Check cache first (valid for 30 minutes)
     if (_cache.containsKey(cacheKey) &&
         _lastCacheUpdate != null &&
         DateTime.now().difference(_lastCacheUpdate!).inMinutes < 30) {
       _stations = List.from(_cache[cacheKey]!);
+      notifyListeners();
+      return;
+    }
+
+    final cached = await storage.getCachedStations(cacheKey, minutes: 30);
+    if (cached != null) {
+      _stations = cached;
+      _cache[cacheKey] = cached;
+      _lastCacheUpdate = DateTime.now();
       notifyListeners();
       return;
     }
@@ -258,26 +309,24 @@ class RadioEngine extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _stations = await _service.getTopStations(limit: 1000).timeout(
-        const Duration(seconds: 10), // Reduced timeout
+      _stations = await _service.getTopStations(limit: 100).timeout(
+        const Duration(seconds: 10),
         onTimeout: () => throw Exception('Loading timeout'),
       );
 
-      // Cache the results
       _cache[cacheKey] = List.from(_stations);
       _lastCacheUpdate = DateTime.now();
+      await storage.cacheStations(cacheKey, _stations);
     } catch (e) {
       _errorMessage = 'Failed to load stations: ${e.toString()}';
 
-      // Try fallback with cached data first
       if (_cache.containsKey(cacheKey) && _cache[cacheKey]!.isNotEmpty) {
         _stations = List.from(_cache[cacheKey]!);
         _errorMessage = 'Using cached data - ${e.toString()}';
       } else {
-        // Try fallback with trending stations
         try {
-          _stations = await _service.getTrendingStations(limit: 500);
-          _errorMessage = null; // Clear error if fallback succeeds
+          _stations = await _service.getTrendingStations(limit: 50);
+          _errorMessage = null;
         } catch (fallbackError) {
           _stations = [];
         }
@@ -293,7 +342,7 @@ class RadioEngine extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      _stations = await _service.getTrendingStations(limit: 1000);
+      _stations = await _service.getTrendingStations(limit: 100);
     } catch (e) {
       _stations = [];
       _errorMessage = 'Failed to load stations';
@@ -307,7 +356,7 @@ class RadioEngine extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      _stations = await _service.getLiveStations(limit: 1000);
+      _stations = await _service.getLiveStations(limit: 100);
     } catch (e) {
       _stations = [];
       _errorMessage = 'Failed to load stations';
@@ -321,7 +370,7 @@ class RadioEngine extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      _stations = await _service.getGlobalAmFmStations(limit: 1000);
+      _stations = await _service.getGlobalAmFmStations(limit: 200);
     } catch (e) {
       _stations = [];
       _errorMessage = 'Failed to load stations';
@@ -334,7 +383,7 @@ class RadioEngine extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _stations = await _service.getStationsByLanguage(language, limit: 200);
+      _stations = await _service.getStationsByLanguage(language, limit: 50);
     } catch (e) {
       _stations = [];
     }
@@ -346,9 +395,9 @@ class RadioEngine extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final trending = await _service.getTrendingStations(limit: 150);
-      final tanzania = await _service.getTanzaniaStations(limit: 150);
-      _stations = [...trending, ...tanzania].take(300).toList();
+      final trending = await _service.getTrendingStations(limit: 50);
+      final tanzania = await _service.getTanzaniaStations(limit: 50);
+      _stations = [...trending, ...tanzania].take(100).toList();
     } catch (e) {
       _stations = [];
     }
@@ -360,7 +409,7 @@ class RadioEngine extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _stations = await _service.getStationsByCountry(country, limit: 200);
+      _stations = await _service.getStationsByCountry(country, limit: 50);
     } catch (e) {
       _stations = [];
     }
@@ -372,7 +421,7 @@ class RadioEngine extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _stations = await _service.getStationsByGenre(genre, limit: 200);
+      _stations = await _service.getStationsByGenre(genre, limit: 50);
     } catch (e) {
       _stations = [];
     }
@@ -385,7 +434,7 @@ class RadioEngine extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      _stations = await _service.getMusicStations(limit: 1500);
+      _stations = await _service.getMusicStations(limit: 200);
     } catch (e) {
       _stations = [];
       _errorMessage = 'Failed to load stations';
@@ -399,7 +448,7 @@ class RadioEngine extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      _stations = await _service.getNewsStations(limit: 1000);
+      _stations = await _service.getNewsStations(limit: 100);
     } catch (e) {
       _stations = [];
       _errorMessage = 'Failed to load stations';
@@ -413,7 +462,7 @@ class RadioEngine extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      _stations = await _service.getSportsStations(limit: 1000);
+      _stations = await _service.getSportsStations(limit: 100);
     } catch (e) {
       _stations = [];
       _errorMessage = 'Failed to load stations';
@@ -427,7 +476,7 @@ class RadioEngine extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      _stations = await _service.getTalkStations(limit: 1000);
+      _stations = await _service.getTalkStations(limit: 100);
     } catch (e) {
       _stations = [];
       _errorMessage = 'Failed to load stations';
@@ -441,7 +490,6 @@ class RadioEngine extends ChangeNotifier {
     _sleepDuration = duration;
     _sleepRemainingTime = duration;
     
-    // Update remaining time every second
     _sleepTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _sleepRemainingTime = _sleepRemainingTime - const Duration(seconds: 1);
       if (_sleepRemainingTime.inSeconds <= 0) {
@@ -476,7 +524,6 @@ class RadioEngine extends ChangeNotifier {
         limit: 500,
       );
     } catch (e) {
-      // Fallback to Tanzania stations
       await loadTanzaniaStations();
       return;
     }
@@ -490,47 +537,75 @@ class RadioEngine extends ChangeNotifier {
     notifyListeners();
     try {
       _stations = await _service.getTanzaniaStations(limit: 500);
+      if (_stations.isEmpty) {
+        _stations = RadioService.getStaticTanzaniaStations();
+      }
     } catch (e) {
-      _stations = [];
-      _errorMessage = 'Failed to load stations';
+      _stations = RadioService.getStaticTanzaniaStations();
+      _errorMessage = 'Using offline station list';
     }
     _isLoading = false;
     notifyListeners();
   }
 
+  List<Duration> get sleepPresets => [
+        const Duration(minutes: 15),
+        const Duration(minutes: 30),
+        const Duration(minutes: 45),
+        const Duration(hours: 1),
+        const Duration(hours: 2),
+        const Duration(hours: 3),
+        const Duration(hours: 4),
+        const Duration(hours: 6),
+        const Duration(hours: 8),
+      ];
+
   Future<void> startRecording() async {
-    if (await _recorder.hasPermission()) {
-      try {
-        final dir = await getApplicationDocumentsDirectory();
-        final recordingsDir = Directory('${dir.path}/recordings');
-        if (!await recordingsDir.exists()) {
-          await recordingsDir.create(recursive: true);
-        }
-        
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final filename = _currentStation?.name.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_') ?? 'recording';
-        final path = '${recordingsDir.path}/${filename}_$timestamp.m4a';
-        
-        await _recorder.start(path: path);
-        _isRecording = true;
-        _recordingPath = path;
-        _recordingStartTime = DateTime.now();
-        _recordingDuration = Duration.zero;
-        
-        // Update recording duration every second
-        _recordingTimer?.cancel();
-        _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-          if (_recordingStartTime != null) {
-            _recordingDuration = DateTime.now().difference(_recordingStartTime!);
-          }
-          notifyListeners();
-        });
-        
+    try {
+      final status = await Permission.microphone.request();
+      if (!status.isGranted) {
+        _errorMessage = 'Microphone permission denied';
         notifyListeners();
-      } catch (e) {
-        _errorMessage = 'Failed to start recording: ${e.toString()}';
-        notifyListeners();
+        return;
       }
+
+      final dir = await getApplicationDocumentsDirectory();
+      final recordingsDir = Directory('${dir.path}/recordings');
+      if (!await recordingsDir.exists()) {
+        await recordingsDir.create(recursive: true);
+      }
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filename = _currentStation?.name.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_') ?? 'recording';
+      final path = '${recordingsDir.path}/${filename}_$timestamp.m4a';
+
+      _recorder = AudioRecorder();
+      final config = RecordConfig(
+        encoder: AudioEncoder.aacLc,
+        sampleRate: 44100,
+        bitRate: 128000,
+      );
+      await _recorder!.start(
+        config,
+        path: path,
+      );
+      _isRecording = true;
+      _recordingPath = path;
+      _recordingStartTime = DateTime.now();
+      _recordingDuration = Duration.zero;
+
+      _recordingTimer?.cancel();
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (_recordingStartTime != null) {
+          _recordingDuration = DateTime.now().difference(_recordingStartTime!);
+        }
+        notifyListeners();
+      });
+
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to start recording: ${e.toString()}';
+      notifyListeners();
     }
   }
 
@@ -538,15 +613,26 @@ class RadioEngine extends ChangeNotifier {
     try {
       _recordingTimer?.cancel();
       _recordingTimer = null;
-      final path = await _recorder.stop();
+      final path = await _recorder?.stop();
+      await _recorder?.dispose();
+      _recorder = null;
       _isRecording = false;
       _recordingPath = path;
       _recordingStartTime = null;
-      
-      if (path != null && !_savedRecordings.contains(path)) {
-        _savedRecordings.add(path);
+
+      if (path != null) {
+        if (!_savedRecordings.contains(path)) {
+          _savedRecordings.add(path);
+        }
+        final metadataPath = '$path.metadata';
+        final metadata = {
+          'duration': _recordingDuration.inSeconds,
+          'station': _currentStation?.name,
+          'timestamp': DateTime.now().toIso8601String(),
+        };
+        await File(metadataPath).writeAsString(jsonEncode(metadata));
       }
-      
+
       notifyListeners();
     } catch (e) {
       _errorMessage = 'Failed to stop recording: ${e.toString()}';
@@ -599,14 +685,7 @@ class RadioEngine extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      // Handle error
-    }
-  }
-
-  void updateEqualizerBand(int index, double value) {
-    if (index >= 0 && index < _equalizerBands.length) {
-      _equalizerBands[index] = value;
-      // Apply to audio player if supported
+      _errorMessage = 'Failed to load saved recordings: ${e.toString()}';
       notifyListeners();
     }
   }
@@ -617,7 +696,6 @@ class RadioEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Getters for player properties
   Duration get position => _player.position;
   Duration? get duration => _player.duration;
   Duration get bufferedPosition => _player.bufferedPosition;
@@ -650,21 +728,61 @@ class RadioEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Cache management
   void clearCache() {
     _cache.clear();
     _lastCacheUpdate = null;
     notifyListeners();
   }
 
+  void updateEqualizerBand(int index, double value) {
+    if (index >= 0 && index < _equalizerBands.length) {
+      _equalizerBands[index] = value.clamp(-1.0, 1.0);
+      notifyListeners();
+    }
+  }
 
+  void resetEqualizer() {
+    for (var i = 0; i < _equalizerBands.length; i++) {
+      _equalizerBands[i] = 0.0;
+    }
+    notifyListeners();
+  }
+
+  Future<void> saveRecentSearch(String query) async {
+    if (query.isEmpty) return;
+    _recentSearches.removeWhere((q) => q.toLowerCase() == query.toLowerCase());
+    _recentSearches.insert(0, query);
+    if (_recentSearches.length > 10) {
+      _recentSearches = _recentSearches.sublist(0, 10);
+    }
+    await storage.cacheStations('recent_searches', _recentSearches.map((s) => RadioStation(
+      name: s, url: '', country: '', language: '', genre: '', bitrate: 0, favicon: '',
+    )).toList());
+    notifyListeners();
+  }
+
+  Future<List<String>> getRecentSearches() async {
+    final cached = await storage.getCachedStations('recent_searches', minutes: 1440);
+    if (cached != null) {
+      _recentSearches = cached.map((s) => s.name).toList();
+    }
+    return _recentSearches;
+  }
+
+  bool _isValidStreamUrl(String url) {
+    if (url.isEmpty) return false;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    return uri.scheme == 'http' || uri.scheme == 'https';
+  }
 
   @override
   void dispose() {
     _player.dispose();
     _sleepTimer?.cancel();
     _recordingTimer?.cancel();
-    _cache.clear(); // Clear cache on dispose
+    _cache.clear();
+    _recorder = null;
     super.dispose();
   }
 }

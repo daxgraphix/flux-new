@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'flux_engine/radio_engine.dart';
 import 'flux_engine/theme_provider.dart';
 import 'flux_ui/main_screen.dart';
@@ -34,18 +35,18 @@ class _FluxAppState extends State<FluxApp> {
   }
 
   Future<void> _initializeApp() async {
-    // Check if onboarding has been completed
+    await Hive.initFlutter();
+    await _engine.storage.init();
+
     final prefs = await SharedPreferences.getInstance();
     _onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
 
-    // Initialize engine and preload data in parallel
     final initFuture = _engine.initialize();
     final preloadFuture = _onboardingCompleted ? _engine.loadTopStations() : Future.value();
 
     await Future.wait([initFuture, preloadFuture]);
 
-    // Keep splash for minimum visual time
-    await Future.delayed(const Duration(seconds: 1)); // Reduced from 2 seconds
+    await Future.delayed(const Duration(seconds: 1));
     if (mounted) {
       setState(() {
         _appState = _onboardingCompleted ? AppState.main : AppState.onboarding;

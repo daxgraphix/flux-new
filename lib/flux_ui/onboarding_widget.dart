@@ -88,7 +88,7 @@ class _SplashScreenState extends State<SplashScreen>
     });
 
     // Auto proceed after animations
-    Timer(const Duration(seconds: 4), () {
+    Timer(const Duration(seconds: 3), () {
       if (mounted) {
         widget.onComplete();
       }
