@@ -78,14 +78,14 @@ RadioStation? get currentStation => _currentStation;
 
   List<Map<String, dynamic>> get categories => [
         {'title': 'Trending', 'icon': Icons.trending_up, 'color': Colors.red, 'action': loadTrendingStations},
-        {'title': 'Tanzania', 'icon': Icons.location_on, 'color': Color(0xFF4CAF50), 'action': loadTanzaniaStations},
-        {'title': 'Music', 'icon': Icons.music_note, 'color': Color(0xFF9C27B0), 'action': loadMusicStations},
-        {'title': 'Sports', 'icon': Icons.sports_soccer, 'color': Color(0xFF2196F3), 'action': loadSportsStations},
-        {'title': 'News', 'icon': Icons.article, 'color': Color(0xFFFF9800), 'action': loadNewsStations},
-        {'title': 'AM/FM', 'icon': Icons.radio, 'color': Color(0xFF00BCD4), 'action': loadGlobalAmFmStations},
-        {'title': 'Talk', 'icon': Icons.mic, 'color': Color(0xFF795548), 'action': loadTalkStations},
-        {'title': 'Live', 'icon': Icons.wifi, 'color': Color(0xFFE91E63), 'action': loadLiveStations},
-];
+        {'title': 'Tanzania', 'icon': Icons.location_on, 'color': Colors.red, 'action': loadTanzaniaStations},
+        {'title': 'Music', 'icon': Icons.music_note, 'color': Colors.red, 'action': loadMusicStations},
+        {'title': 'Sports', 'icon': Icons.sports_soccer, 'color': Colors.red, 'action': loadSportsStations},
+        {'title': 'News', 'icon': Icons.article, 'color': Colors.red, 'action': loadNewsStations},
+        {'title': 'AM/FM', 'icon': Icons.radio, 'color': Colors.red, 'action': loadGlobalAmFmStations},
+        {'title': 'Talk', 'icon': Icons.mic, 'color': Colors.red, 'action': loadTalkStations},
+        {'title': 'Live', 'icon': Icons.wifi, 'color': Colors.red, 'action': loadLiveStations},
+      ];
    Duration get sleepDuration => _sleepDuration;
 
   Future<void> initialize() async {

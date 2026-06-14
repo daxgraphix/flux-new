@@ -25,11 +25,11 @@ class SplashScreen extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                   boxShadow: [
-                     BoxShadow(
-                       color: Colors.red.withValues(alpha: 0.25),
-                       blurRadius: 20,
-                       spreadRadius: 4,
-                     ),
+                    BoxShadow(
+                      color: Colors.red.withValues(alpha: 0.25),
+                      blurRadius: 20,
+                      spreadRadius: 4,
+                    ),
                   ],
                 ),
                 child: Padding(
@@ -54,27 +54,6 @@ class SplashScreen extends StatelessWidget {
                   'Global AM/FM, podcasts, and Tanzania live radio in one tap.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white70, fontSize: 16),
-                ),
-              ),
-              const SizedBox(height: 40),
-              Container(
-                width: 130,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Align(
-                  alignment: Alignment.centerLeft,
-                  child: FractionallySizedBox(
-                    widthFactor: 0.65,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.all(Radius.circular(20)),
-                      ),
-                    ),
-                  ),
                 ),
               ),
             ],

@@ -40,19 +40,12 @@ class _CategoryScreenState extends State<CategoryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
-        backgroundColor: isDark ? Colors.black : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black,
+        backgroundColor: const Color(0xFF0A0A0A),
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [const Color(0xFF1A1A2E), const Color(0xFF0A0A0A)]
-                : [const Color(0xFFE3F2FD), const Color(0xFFBBDEFB)],
-          ),
-        ),
+        color: const Color(0xFF0A0A0A),
         child: Consumer<RadioEngine>(
           builder: (context, engine, child) {
             if (engine.isLoading) {
@@ -75,7 +68,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 final station = engine.stations[index];
                 return Card(
                   key: ValueKey('category_station_${station.name}_$index'),
-                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                  color: const Color(0xFF1C1C1C),
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -179,11 +172,14 @@ class _LibraryScreenState extends State<LibraryScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Library'),
-        backgroundColor: Colors.red,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
+        title: const Text('Library', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+        backgroundColor: const Color(0xFF0A0A0A),
+        foregroundColor: Colors.white,
+        elevation: 0,
+bottom: TabBar(
+        controller: _tabController,
+        labelColor: Colors.white,
+        unselectedLabelColor: Colors.grey,
           tabs: const [
             Tab(text: 'Stations'),
             Tab(text: 'Podcasts'),
@@ -193,13 +189,7 @@ class _LibraryScreenState extends State<LibraryScreen>
         ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF1A1A2E), Color(0xFF0A0A0A)],
-          ),
-        ),
+        color: const Color(0xFF0A0A0A),
         child: TabBarView(
           controller: _tabController,
           children: [
@@ -766,7 +756,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                 final favorite = favorites[index];
                 final station = favorite.toRadioStation();
                 return Card(
-                  color: Colors.white.withValues(alpha: 0.05),
+                  color: const Color(0xFF1C1C1C),
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: ListTile(
                     leading: station.favicon.isNotEmpty
@@ -833,22 +823,23 @@ class _CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Colors.white.withValues(alpha: 0.1),
+      color: const Color(0xFF1C1C1C),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 48, color: Colors.red),
-              const SizedBox(height: 8),
+              Icon(icon, size: 40, color: Colors.red),
+              const SizedBox(height: 12),
               Text(
                 title,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,

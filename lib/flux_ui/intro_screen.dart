@@ -77,24 +77,24 @@ class _IntroScreenState extends State<IntroScreen> {
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                         Container(
-                           width: 120,
-                           height: 120,
-                           decoration: BoxDecoration(
-                             shape: BoxShape.circle,
-                             gradient: const LinearGradient(
-                               colors: [Colors.red, Color(0xFFFF6B6B)],
-                             ),
-                             boxShadow: [
-                               BoxShadow(
-                                 color: Colors.red.withValues(alpha: 0.3),
-                                 blurRadius: 20,
-                                 spreadRadius: 5,
-                               ),
-                             ],
-                           ),
-                           child: Icon(item.icon, size: 52, color: Colors.white),
-                         ),
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [Colors.red, Color(0xFFFF6B6B)],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withValues(alpha: 0.3),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: Icon(item.icon, size: 52, color: Colors.white),
+                        ),
                         const SizedBox(height: 32),
                         Text(
                           item.title,
@@ -116,23 +116,6 @@ class _IntroScreenState extends State<IntroScreen> {
                   },
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  _pages.length,
-                  (index) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: _currentPage == index ? 18 : 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: _currentPage == index ? Colors.red : Colors.white24,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 28),
               ElevatedButton(
                 onPressed: _nextPage,
                 style: ElevatedButton.styleFrom(

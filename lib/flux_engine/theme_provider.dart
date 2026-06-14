@@ -10,22 +10,25 @@ class ThemeProvider extends ChangeNotifier {
   Color get primaryColor => _primaryColor;
   Color get secondaryColor => _secondaryColor;
 
-  ThemeData get theme => _isDarkMode ? _darkTheme : _lightTheme;
+  ThemeData get theme => _darkTheme;
+
+  ThemeProvider() {
+    _isDarkMode = true;
+  }
 
   Future<void> loadTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    _isDarkMode = prefs.getBool('flux_dark_mode') ?? true;
+    _isDarkMode = true;
     notifyListeners();
   }
 
   Future<void> toggleTheme() async {
-    _isDarkMode = !_isDarkMode;
+    _isDarkMode = true;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('flux_dark_mode', _isDarkMode);
   }
 
-static final ThemeData _darkTheme = ThemeData(
+  static final ThemeData _darkTheme = ThemeData(
     brightness: Brightness.dark,
     primaryColor: Colors.red,
     scaffoldBackgroundColor: const Color(0xFF0A0A0A),
@@ -34,7 +37,7 @@ static final ThemeData _darkTheme = ThemeData(
       foregroundColor: Colors.white,
       elevation: 0,
     ),
-    cardColor: const Color(0xFF1A1A2E),
+    cardColor: const Color(0xFF1C1C1C),
     buttonTheme: const ButtonThemeData(
       buttonColor: Colors.red,
     ),
@@ -48,7 +51,7 @@ static final ThemeData _darkTheme = ThemeData(
     ),
     inputDecorationTheme: const InputDecorationTheme(
       filled: true,
-      fillColor: Color(0xFF1A1A2E),
+      fillColor: Color(0xFF1C1C1C),
       border: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.red),
       ),
@@ -57,39 +60,11 @@ static final ThemeData _darkTheme = ThemeData(
       ),
       labelStyle: TextStyle(color: Colors.red),
     ),
-  );
-
-  static final ThemeData _lightTheme = ThemeData(
-    brightness: Brightness.light,
-    primaryColor: Colors.red,
-    scaffoldBackgroundColor: const Color(0xFFE8EAF6),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Color(0xFFE8EAF6),
-      foregroundColor: Colors.black,
-      elevation: 0,
+    tabBarTheme: const TabBarThemeData(
+      indicatorColor: Colors.transparent,
+      labelColor: Colors.white,
+      unselectedLabelColor: Colors.grey,
     ),
-    cardColor: Colors.white,
-    buttonTheme: const ButtonThemeData(
-      buttonColor: Colors.red,
-    ),
-    floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: Colors.red,
-    ),
-    textTheme: const TextTheme(
-      bodyLarge: TextStyle(color: Colors.black),
-      bodyMedium: TextStyle(color: Colors.black87),
-      titleLarge: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-    ),
-    inputDecorationTheme: const InputDecorationTheme(
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.red),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.red),
-      ),
-      labelStyle: TextStyle(color: Colors.red),
-    ),
+splashFactory: NoSplash.splashFactory,
   );
 }

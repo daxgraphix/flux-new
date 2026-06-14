@@ -2,11 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/services.dart';
 import '../flux_engine/radio_engine.dart';
-import '../flux_engine/theme_provider.dart';
 import '../flux_storage/radio_storage.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -272,25 +271,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            // App Settings Section
-            _buildSectionCard(
-              isDark,
-              icon: Icons.settings,
-              title: 'App Settings',
-              children: [
-                Consumer<ThemeProvider>(
-                  builder: (context, themeProvider, _) => _buildTile(
-                    isDark,
-                    icon: themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                    title: 'Theme',
-                    subtitle: themeProvider.isDarkMode ? 'Dark Mode' : 'Light Mode',
-                    onTap: themeProvider.toggleTheme,
-                  ),
-                ),
-                _buildTile(
-                  isDark,
-                  icon: Icons.language,
-                  title: 'Language',
+// App Settings Section
+             _buildSectionCard(
+               isDark,
+               icon: Icons.settings,
+title: 'App Settings',
+               children: [
+                 _buildTile(
+                   isDark,
+                   icon: Icons.language,
+                   title: 'Language',
                   subtitle: _getLanguageName(_language),
                   onTap: () => _showLanguageDialog(context),
                 ),
