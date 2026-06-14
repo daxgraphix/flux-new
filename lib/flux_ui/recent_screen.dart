@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../flux_engine/radio_engine.dart';
-import '../flux_hardware/radio_service.dart';
-import '../flux_storage/radio_storage.dart';
 
 class RecentScreen extends StatefulWidget {
   const RecentScreen({super.key});
@@ -12,20 +10,11 @@ class RecentScreen extends StatefulWidget {
 }
 
 class _RecentScreenState extends State<RecentScreen> {
-  late RadioStorage _storage;
-  List<RadioStation> _recent = [];
-
   @override
   void initState() {
     super.initState();
-    _storage = RadioStorage();
-    _loadRecent();
-  }
-
-  Future<void> _loadRecent() async {
-    final recent = await _storage.getRecent();
-    setState(() {
-      _recent = recent;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<RadioEngine>(context, listen: false).loadRecentStations();
     });
   }
 
@@ -33,6 +22,7 @@ class _RecentScreenState extends State<RecentScreen> {
   Widget build(BuildContext context) {
     return Consumer<RadioEngine>(
       builder: (context, engine, child) {
+        final recent = engine.recentStations;
         return Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -56,7 +46,7 @@ class _RecentScreenState extends State<RecentScreen> {
                   ),
                 ),
                 Expanded(
-                  child: _recent.isEmpty
+                  child: recent.isEmpty
                       ? const Center(
                           child: Text(
                             'No recent stations',
@@ -64,9 +54,9 @@ class _RecentScreenState extends State<RecentScreen> {
                           ),
                         )
                       : ListView.builder(
-itemCount: _recent.length,
+                          itemCount: recent.length,
                           itemBuilder: (context, index) {
-                            final item = _recent[index];
+                            final item = recent[index];
                             return Card(
                               color: Colors.white.withValues(alpha: 0.05),
                               margin: const EdgeInsets.symmetric(
@@ -85,7 +75,7 @@ itemCount: _recent.length,
                                           color: Colors.black,
                                         ),
                                       ),
-title: Text(
+                                title: Text(
                                   item.name.isNotEmpty ? item.name : 'Unknown Station',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,

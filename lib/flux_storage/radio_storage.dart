@@ -3,6 +3,10 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../flux_hardware/radio_service.dart';
+import '../flux_ui/models/podcast.dart';
+import 'package:flutter/foundation.dart';
+
+part 'radio_storage.g.dart';
 
 String _generateStationId(String url, String? uuid) {
   if (uuid != null && uuid.isNotEmpty) {
@@ -11,14 +15,23 @@ String _generateStationId(String url, String? uuid) {
   return sha256.convert(utf8.encode(url)).toString().substring(0, 16);
 }
 
-class FavoriteStation {
+@HiveType(typeId: 1)
+class FavoriteStation extends HiveObject {
+  @HiveField(0)
   final String id;
+  @HiveField(1)
   final String name;
+  @HiveField(2)
   final String url;
+  @HiveField(3)
   final String country;
+  @HiveField(4)
   final String genre;
+  @HiveField(5)
   final int bitrate;
+  @HiveField(6)
   final String favicon;
+  @HiveField(7)
   final DateTime addedDate;
 
   FavoriteStation({
@@ -71,39 +84,89 @@ class FavoriteStation {
   }
 }
 
+@HiveType(typeId: 2)
+class RecentStation extends HiveObject {
+  @HiveField(0)
+  final RadioStation station;
+  @HiveField(1)
+  final DateTime playedDate;
+
+  RecentStation({required this.station, required this.playedDate});
+}
+
 class RadioStorage {
-  static Box<dynamic>? _cacheBox;
-  static Box<dynamic>? _favoritesBox;
-  static Box<dynamic>? _recentBox;
+  // Singleton Pattern
+  static final RadioStorage _instance = RadioStorage._internal();
+  factory RadioStorage() => _instance;
+  RadioStorage._internal();
+
+  Box<dynamic>? _cacheBox;
+  Box<FavoriteStation>? _favoritesBox;
+  Box<RecentStation>? _recentBox;
+  Box<String>? _searchesBox;
+  bool _initialized = false;
 
   Future<void> init() async {
-    await Hive.initFlutter();
-    _cacheBox = await Hive.openBox('cache');
-    _favoritesBox = await Hive.openBox('favorites');
-    _recentBox = await Hive.openBox('recent');
+    if (_initialized) return;
+    try {
+      await Hive.initFlutter();
+      
+      // Register Adapters
+      if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(RadioStationAdapter());
+      if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(FavoriteStationAdapter());
+      if (!Hive.isAdapterRegistered(2)) Hive.registerAdapter(RecentStationAdapter());
+      if (!Hive.isAdapterRegistered(3)) Hive.registerAdapter(PodcastAdapter());
+      if (!Hive.isAdapterRegistered(4)) Hive.registerAdapter(EpisodeAdapter());
+      
+      _cacheBox = await _openSafeBox('cache');
+      _favoritesBox = await _openSafeBox<FavoriteStation>('favorites');
+      _recentBox = await _openSafeBox<RecentStation>('recent');
+      _searchesBox = await _openSafeBox<String>('recent_searches');
+      _initialized = true;
+    } catch (e) {
+      debugPrint('RadioStorage critical failure: $e');
+    }
+  }
+
+  Future<Box<T>> _openSafeBox<T>(String name) async {
+    try {
+      return await Hive.openBox<T>(name);
+    } catch (e) {
+      debugPrint('Box $name is corrupted, recreating...');
+      await Hive.deleteBoxFromDisk(name);
+      return await Hive.openBox<T>(name);
+    }
   }
 
   Future<void> cacheStations(String key, List<RadioStation> stations) async {
-    final data = jsonEncode(stations.map((s) => s.toJson()).toList());
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    await _cacheBox?.put(key, {'data': data, 'timestamp': timestamp});
+    if (!_initialized) await init();
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      await _cacheBox?.put(key, {'data': stations, 'timestamp': timestamp});
+    } catch (e) {
+      debugPrint('Failed to cache stations: $e');
+    }
   }
 
   Future<List<RadioStation>?> getCachedStations(String key, {int minutes = 30}) async {
-    final result = _cacheBox?.get(key);
-    if (result == null) return null;
+    if (!_initialized) await init();
+    try {
+      final result = _cacheBox?.get(key);
+      if (result == null) return null;
 
-    final timestamp = result['timestamp'] as int;
-    final data = result['data'] as String;
-    final age = DateTime.now().millisecondsSinceEpoch - timestamp;
+      final timestamp = result['timestamp'] as int;
+      final age = DateTime.now().millisecondsSinceEpoch - timestamp;
 
-    if (age > minutes * 60 * 1000) {
-      await _cacheBox?.delete(key);
+      if (age > minutes * 60 * 1000) {
+        await _cacheBox?.delete(key);
+        return null;
+      }
+
+      final List<dynamic> data = result['data'];
+      return data.cast<RadioStation>();
+    } catch (e) {
       return null;
     }
-
-    final List<dynamic> decoded = jsonDecode(data);
-    return decoded.map((e) => RadioStation.fromJson(Map<String, dynamic>.from(e))).toList();
   }
 
   Future<void> clearCache() async {
@@ -111,17 +174,22 @@ class RadioStorage {
   }
 
   Future<void> addFavorite(RadioStation station) async {
-    final favorite = FavoriteStation(
-      id: _generateStationId(station.url, station.uuid),
-      name: station.name,
-      url: station.url,
-      country: station.country,
-      genre: station.genre,
-      bitrate: station.bitrate,
-      favicon: station.favicon,
-      addedDate: DateTime.now(),
-    );
-    await _favoritesBox?.put(favorite.id, favorite.toMap());
+    if (!_initialized) await init();
+    try {
+      final favorite = FavoriteStation(
+        id: _generateStationId(station.url, station.uuid),
+        name: station.name,
+        url: station.url,
+        country: station.country,
+        genre: station.genre,
+        bitrate: station.bitrate,
+        favicon: station.favicon,
+        addedDate: DateTime.now(),
+      );
+      await _favoritesBox?.put(favorite.id, favorite);
+    } catch (e) {
+      debugPrint('Failed to add favorite: $e');
+    }
   }
 
   Future<void> removeFavorite(String id) async {
@@ -129,58 +197,61 @@ class RadioStorage {
   }
 
   Future<List<FavoriteStation>> getFavorites() async {
-    final List<Map<String, dynamic>> maps = _favoritesBox?.values
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList() ??
-        [];
-    maps.sort((a, b) => (a['addedDate'] as String).compareTo(b['addedDate'] as String));
-    return maps.reversed.map((e) => FavoriteStation.fromMap(e)).toList();
+    if (!_initialized) await init();
+    final list = _favoritesBox?.values.toList() ?? [];
+    list.sort((a, b) => b.addedDate.compareTo(a.addedDate));
+    return list;
   }
 
   Future<bool> isFavorite(String id) async {
+    if (!_initialized) await init();
     return _favoritesBox?.containsKey(id) ?? false;
   }
 
   Future<void> addRecent(RadioStation station) async {
-    final id = _generateStationId(station.url, station.uuid);
-    final recent = {
-      'id': id,
-      'name': station.name,
-      'url': station.url,
-      'country': station.country,
-      'genre': station.genre,
-      'bitrate': station.bitrate,
-      'favicon': station.favicon,
-      'playedDate': DateTime.now().toIso8601String(),
-    };
-    await _recentBox?.put(id, recent);
+    if (!_initialized) await init();
+    try {
+      final id = _generateStationId(station.url, station.uuid);
+      final recent = RecentStation(station: station, playedDate: DateTime.now());
+      
+      // Sug 4: Efficient cleanup. If key exists, it just updates timestamp.
+      await _recentBox?.put(id, recent);
 
-    final keys = _recentBox?.keys.toList() ?? [];
-    if (keys.length > 20) {
-      final sortedKeys = keys.sublist(0, keys.length - 20);
-      for (final key in sortedKeys) {
-        await _recentBox?.delete(key);
+      if ((_recentBox?.length ?? 0) > 20) {
+        final entries = _recentBox!.toMap().entries.toList();
+        entries.sort((a, b) => a.value.playedDate.compareTo(b.value.playedDate));
+        
+        final itemsToDelete = entries.length - 20;
+        for (var i = 0; i < itemsToDelete; i++) {
+          await _recentBox?.delete(entries[i].key);
+        }
       }
+    } catch (e) {
+      debugPrint('Failed to add recent: $e');
     }
   }
 
   Future<List<RadioStation>> getRecent() async {
-    final List<Map<String, dynamic>> maps = _recentBox?.values
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList() ??
-        [];
-    maps.sort((a, b) => (a['playedDate'] as String).compareTo(b['playedDate'] as String));
-    return maps.reversed.take(20).map((e) {
-      return RadioStation(
-        name: e['name'] as String,
-        url: e['url'] as String,
-        country: e['country'] as String,
-        language: e['language'] as String? ?? '',
-        genre: e['genre'] as String,
-        bitrate: e['bitrate'] as int,
-        favicon: e['favicon'] as String,
-      );
-    }).toList();
+    final list = _recentBox?.values.toList() ?? [];
+    list.sort((a, b) => b.playedDate.compareTo(a.playedDate));
+    return list.map((e) => e.station).toList();
+  }
+
+  Future<void> addRecentSearch(String query) async {
+    if (!_initialized) await init();
+    final searches = _searchesBox?.values.toList() ?? [];
+    if (searches.contains(query)) {
+      await _searchesBox?.delete(searches.indexOf(query));
+    }
+    await _searchesBox?.add(query);
+    if ((_searchesBox?.length ?? 0) > 10) {
+      await _searchesBox?.deleteAt(0);
+    }
+  }
+
+  Future<List<String>> getRecentSearches() async {
+    if (!_initialized) await init();
+    return _searchesBox?.values.toList().reversed.toList() ?? [];
   }
 
   Future<Map<String, dynamic>> exportDatabase() async {
@@ -192,4 +263,27 @@ class RadioStorage {
       'exportedAt': DateTime.now().toIso8601String(),
     };
   }
+
+  Future<void> importDatabase(Map<String, dynamic> data) async {
+    try {
+      if (data.containsKey('favorites')) {
+        final List<dynamic> favs = data['favorites'];
+        for (var f in favs) {
+          final station = FavoriteStation.fromMap(Map<String, dynamic>.from(f));
+          await _favoritesBox?.put(station.id, station);
+        }
+      }
+      if (data.containsKey('recent')) {
+        final List<dynamic> recent = data['recent'];
+        for (var r in recent) {
+          final station = RadioStation.fromJson(Map<String, dynamic>.from(r));
+          await addRecent(station);
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to import database: $e');
+      rethrow;
+    }
+  }
 }
+

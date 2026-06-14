@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../flux_engine/radio_engine.dart';
 import '../flux_hardware/radio_service.dart';
 import 'library_screen.dart';
@@ -11,6 +10,8 @@ import 'settings_screen.dart';
 import 'countries_screen.dart';
 import 'now_playing_screen.dart';
 import 'widgets/enhanced_mini_player.dart';
+
+import 'widgets/flux_image.dart';
 
 // ─── Color System ──────────────────────────────────────────────────────────
 const _kBlack = Color(0xFF0A0A0A);
@@ -114,7 +115,7 @@ class _HomeTabState extends State<_HomeTab>
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: SliverToBoxAdapter(
                   child: FutureBuilder<List<RadioStation>>(
-                    future: engine.favorites,
+                    future: Future.value(engine.favoriteStations),
                     builder: (context, snapshot) {
                       final favs = snapshot.data ?? [];
                       if (favs.isEmpty) return const SizedBox.shrink();
@@ -246,11 +247,7 @@ class _HomeTabState extends State<_HomeTab>
               ),
 
               // ─── Station List ─────────────────────────────────────────
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                sliver: SliverToBoxAdapter(
-                    child: _buildStationList(context, engine)),
-              ),
+              _buildStationList(context, engine),
             ],
           );
         },
@@ -333,45 +330,80 @@ class _HomeTabState extends State<_HomeTab>
                 border: Border.all(
                     color: Colors.white.withValues(alpha: 0.08), width: 1),
               ),
-              child: TextField(
-                controller: _searchController,
-                style: const TextStyle(color: _kWhite, fontSize: 15),
-                decoration: InputDecoration(
-                  hintText: 'Search 50,000+ stations...',
-                  hintStyle:
-                      TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
-                  prefixIcon: const Icon(Icons.search_rounded,
-                      color: _kRed, size: 22),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_searchController.text.isNotEmpty)
-                        GestureDetector(
-                          onTap: () {
-                            _searchController.clear();
-                            setState(() {});
-                            context
-                                .read<RadioEngine>()
-                                .loadTopStationsIfNeeded();
-},
-                       child: const Icon(Icons.close_rounded,
-                           color: _kGrey, size: 18),
-                     ),
-                     const SizedBox(width: 4),
-                    ],
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    style: const TextStyle(color: _kWhite, fontSize: 15),
+                    decoration: InputDecoration(
+                      hintText: 'Search 50,000+ stations...',
+                      hintStyle:
+                          TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      prefixIcon: const Icon(Icons.search_rounded,
+                          color: _kRed, size: 22),
+                      suffixIcon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_searchController.text.isNotEmpty)
+                            GestureDetector(
+                              onTap: () {
+                                _searchController.clear();
+                                setState(() {});
+                                context
+                                    .read<RadioEngine>()
+                                    .loadTopStationsIfNeeded();
+                              },
+                              child: const Icon(Icons.close_rounded,
+                                  color: _kGrey, size: 18),
+                            ),
+                          const SizedBox(width: 4),
+                        ],
+                      ),
+                    ),
+                    onChanged: (v) {
+                      setState(() {});
+                      _debouncedSearch(v);
+                    },
                   ),
-                ),
-                onChanged: (v) {
-                  setState(() {});
-                  _debouncedSearch(v);
-                },
+                  if (_searchController.text.isEmpty && engine.recentSearches.isNotEmpty)
+                    _buildRecentSearches(engine),
+                ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRecentSearches(RadioEngine engine) {
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.only(bottom: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: engine.recentSearches.length,
+        itemBuilder: (context, index) {
+          final query = engine.recentSearches[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ActionChip(
+              label: Text(query, style: const TextStyle(color: _kWhite, fontSize: 11)),
+              backgroundColor: _kBlack,
+              side: BorderSide(color: _kRed.withValues(alpha: 0.3)),
+              padding: EdgeInsets.zero,
+              onPressed: () {
+                _searchController.text = query;
+                setState(() {});
+                engine.searchStations(name: query);
+              },
+            ),
+          );
+        },
       ),
     );
   }
@@ -475,86 +507,89 @@ class _HomeTabState extends State<_HomeTab>
   // ─── Station List ─────────────────────────────────────────────────────────
   Widget _buildStationList(BuildContext context, RadioEngine engine) {
     if (engine.isLoading && engine.stations.isEmpty) {
-      return _buildShimmer();
+      return SliverToBoxAdapter(child: _buildShimmer());
     }
     if (engine.stations.isEmpty && !engine.isLoading) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 48),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.radio_rounded,
-                size: 72, color: Colors.white.withValues(alpha: 0.1)),
-            const SizedBox(height: 16),
-            Text(
-              engine.errorMessage ?? 'No stations found',
-              style: const TextStyle(color: _kGrey, fontSize: 15),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () => engine.loadTopStations(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kRed,
-                foregroundColor: _kWhite,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24)),
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 48),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.radio_rounded,
+                  size: 72, color: Colors.white.withValues(alpha: 0.1)),
+              const SizedBox(height: 16),
+              Text(
+                engine.errorMessage ?? 'No stations found',
+                style: const TextStyle(color: _kGrey, fontSize: 15),
+                textAlign: TextAlign.center,
               ),
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try Again'),
-            ),
-          ],
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: () => engine.loadTopStations(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kRed,
+                  foregroundColor: _kWhite,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24)),
+                ),
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Try Again'),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     final stations = engine.stations.take(50).toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 4, bottom: 12),
-          child: Row(
-            children: [
-              Text(
-                'Top Stations',
-                style: const TextStyle(
-                    color: _kWhite,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _kRed.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _kRed.withValues(alpha: 0.4)),
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            if (index == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 12),
+                child: Row(
+                  children: [
+                    const Text(
+                      'Top Stations',
+                      style: TextStyle(
+                          color: _kWhite,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _kRed.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _kRed.withValues(alpha: 0.4)),
+                      ),
+                      child: Text(
+                        '${engine.stations.length}',
+                        style: const TextStyle(
+                            color: _kRed, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
                 ),
-                child: Text(
-                  '${engine.stations.length}',
-                  style: const TextStyle(
-                      color: _kRed, fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
+              );
+            }
+            return _StationListItem(
+              station: stations[index - 1],
+              engine: engine,
+            );
+          },
+          childCount: stations.length + 1,
         ),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: stations.length,
-          itemExtent: 76,
-          padding: EdgeInsets.zero,
-          itemBuilder: (ctx, i) => _StationListItem(
-            station: stations[i],
-            engine: engine,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -782,24 +817,14 @@ class _StationCard extends StatelessWidget {
                   color: _kBlack,
                   border: Border.all(
                       color: _kRed.withValues(alpha: 0.4), width: 1.5)),
-              child: ClipOval(
-                child: station.favicon.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: station.favicon,
-                        width: 52,
-                        height: 52,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => const Icon(
-                            Icons.radio_rounded,
-                            color: _kRed,
-                            size: 22),
-                        errorWidget: (context, url, error) => const Icon(
-                            Icons.radio_rounded,
-                            color: _kRed,
-                            size: 22),
-                      )
-                    : const Icon(Icons.radio_rounded,
-                        color: _kRed, size: 22),
+              child: FluxImage(
+                imageUrl: station.favicon,
+                width: 52,
+                height: 52,
+                placeholder: const Icon(Icons.radio_rounded,
+                    color: _kRed, size: 22),
+                errorWidget: const Icon(Icons.radio_rounded,
+                    color: _kRed, size: 22),
               ),
             ),
             const SizedBox(height: 8),
@@ -924,24 +949,14 @@ class _StationListItem extends StatelessWidget {
                               : Colors.white.withValues(alpha: 0.1),
                           width: 1.5),
                     ),
-                    child: ClipOval(
-                      child: station.favicon.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: station.favicon,
-                              width: 46,
-                              height: 46,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => const Icon(
-                                  Icons.radio_rounded,
-                                  color: _kRed,
-                                  size: 18),
-                              errorWidget: (context, url, error) => const Icon(
-                                  Icons.radio_rounded,
-                                  color: _kRed,
-                                  size: 18),
-                            )
-                          : const Icon(Icons.radio_rounded,
-                              color: _kRed, size: 18),
+                    child: FluxImage(
+                      imageUrl: station.favicon,
+                      width: 46,
+                      height: 46,
+                      placeholder: const Icon(Icons.radio_rounded,
+                          color: _kRed, size: 18),
+                      errorWidget: const Icon(Icons.radio_rounded,
+                          color: _kRed, size: 18),
                     ),
                   ),
                   if (isLoading)

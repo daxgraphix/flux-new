@@ -1,8 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../flux_engine/radio_engine.dart';
+
+import 'flux_image.dart';
 
 const _kBlack = Color(0xFF0A0A0A);
 const _kCard = Color(0xFF1C1C1C);
@@ -100,23 +101,15 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                               Border.all(color: _kRed.withValues(alpha: 0.5), width: 1.5),
                         ),
                         child: ClipOval(
-                          child: station.favicon.isNotEmpty
-                              ? CachedNetworkImage(
-                                  imageUrl: station.favicon,
-                                  width: 44,
-                                  height: 44,
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => const Icon(
-                                      Icons.radio_rounded,
-                                      color: _kRed,
-                                      size: 22),
-                                  errorWidget: (context, url, error) => const Icon(
-                                      Icons.radio_rounded,
-                                      color: _kRed,
-                                      size: 22),
-                                )
-                              : const Icon(Icons.radio_rounded,
-                                  color: _kRed, size: 22),
+                          child: FluxImage(
+                            imageUrl: station.favicon,
+                            width: 44,
+                            height: 44,
+                            placeholder: const Icon(Icons.radio_rounded,
+                                color: _kRed, size: 22),
+                            errorWidget: const Icon(Icons.radio_rounded,
+                                color: _kRed, size: 22),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),

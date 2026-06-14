@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../flux_engine/radio_engine.dart';
-import '../flux_storage/radio_storage.dart';
 import 'recent_screen.dart';
 
 class CategoryScreen extends StatefulWidget {
@@ -473,249 +472,37 @@ bottom: TabBar(
   Widget _buildPodcastsTab() {
     return Consumer<RadioEngine>(
       builder: (context, engine, child) {
+        if (engine.isLoading) {
+          return const Center(child: CircularProgressIndicator(color: Colors.red));
+        }
+        
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Podcasts',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Podcasts',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white70),
+                    onPressed: () => engine.searchPodcasts(''),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  children: [
-                    _CategoryCard(
-                      title: 'News',
-                      icon: Icons.article,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'News Stations',
-                            tag: 'news',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Tech',
-                      icon: Icons.computer,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Tech Stations',
-                            tag: 'tech',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Business',
-                      icon: Icons.business,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Business Stations',
-                            tag: 'business',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Comedy',
-                      icon: Icons.theater_comedy,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Comedy Stations',
-                            tag: 'comedy',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Science',
-                      icon: Icons.science,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Science Stations',
-                            tag: 'science',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Health',
-                      icon: Icons.health_and_safety,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Health Stations',
-                            tag: 'health',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Sports',
-                      icon: Icons.sports_soccer,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Sports Stations',
-                            tag: 'sports',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Music',
-                      icon: Icons.music_note,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Music Stations',
-                            tag: 'music',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Talk',
-                      icon: Icons.mic,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Talk Stations',
-                            tag: 'talk',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Education',
-                      icon: Icons.school,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Education Stations',
-                            tag: 'education',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Entertainment',
-                      icon: Icons.movie,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Entertainment Stations',
-                            tag: 'entertainment',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Politics',
-                      icon: Icons.gavel,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Politics Stations',
-                            tag: 'politics',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Comedy',
-                      icon: Icons.theater_comedy,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Comedy Stations',
-                            tag: 'comedy',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Technology',
-                      icon: Icons.computer,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Technology Stations',
-                            tag: 'technology',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'History',
-                      icon: Icons.history_edu,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'History Stations',
-                            tag: 'history',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Science',
-                      icon: Icons.science,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Science Stations',
-                            tag: 'science',
-                          ),
-                        ),
-                      ),
-                    ),
-                    _CategoryCard(
-                      title: 'Religion',
-                      icon: Icons.church,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryScreen(
-                            title: 'Religion Stations',
-                            tag: 'religion',
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                child: engine.podcasts.isEmpty 
+                  ? _buildPodcastCategories(engine)
+                  : _buildPodcastList(engine),
               ),
             ],
           ),
@@ -724,22 +511,80 @@ bottom: TabBar(
     );
   }
 
-  Widget _buildFavoritesTab() {
-    return FutureBuilder<List<FavoriteStation>>(
-      future: RadioStorage().getFavorites(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Colors.red));
-        }
-        if (snapshot.hasError) {
-          return const Center(
-            child: Text(
-              'Error loading favorites',
-              style: TextStyle(color: Colors.white),
+  Widget _buildPodcastCategories(RadioEngine engine) {
+    return GridView.count(
+      crossAxisCount: 2,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      children: [
+        _CategoryCard(
+          title: 'News',
+          icon: Icons.article,
+          onTap: () => engine.searchPodcasts('news'),
+        ),
+        _CategoryCard(
+          title: 'Tech',
+          icon: Icons.computer,
+          onTap: () => engine.searchPodcasts('tech'),
+        ),
+        _CategoryCard(
+          title: 'Business',
+          icon: Icons.business,
+          onTap: () => engine.searchPodcasts('business'),
+        ),
+        _CategoryCard(
+          title: 'Comedy',
+          icon: Icons.theater_comedy,
+          onTap: () => engine.searchPodcasts('comedy'),
+        ),
+        _CategoryCard(
+          title: 'Science',
+          icon: Icons.science,
+          onTap: () => engine.searchPodcasts('science'),
+        ),
+        _CategoryCard(
+          title: 'Health',
+          icon: Icons.health_and_safety,
+          onTap: () => engine.searchPodcasts('health'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPodcastList(RadioEngine engine) {
+    return ListView.builder(
+      itemCount: engine.podcasts.length,
+      itemBuilder: (context, index) {
+        final podcast = engine.podcasts[index];
+        return Card(
+          color: const Color(0xFF1C1C1C),
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: Image.network(
+                podcast.image,
+                width: 50,
+                height: 50,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const Icon(Icons.podcasts, color: Colors.red),
+              ),
             ),
-          );
-        }
-        final favorites = snapshot.data ?? [];
+            title: Text(podcast.title, style: const TextStyle(color: Colors.white)),
+            subtitle: Text(podcast.publisher, style: const TextStyle(color: Colors.grey)),
+            onTap: () {
+              // TODO: Navigate to Podcast Details
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFavoritesTab() {
+    return Consumer<RadioEngine>(
+      builder: (context, engine, child) {
+        final favorites = engine.favorites;
         if (favorites.isEmpty) {
           return const Center(
             child: Text(
@@ -748,59 +593,49 @@ bottom: TabBar(
             ),
           );
         }
-        return Consumer<RadioEngine>(
-          builder: (context, engine, child) {
-            return ListView.builder(
-              itemCount: favorites.length,
-              itemBuilder: (context, index) {
-                final favorite = favorites[index];
-                final station = favorite.toRadioStation();
-                return Card(
-                  color: const Color(0xFF1C1C1C),
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: ListTile(
-                    leading: station.favicon.isNotEmpty
-                        ? CircleAvatar(
-                            backgroundImage: NetworkImage(station.favicon),
-                          )
-                        : const CircleAvatar(
-                            backgroundColor: Colors.red,
-                            child: Icon(Icons.radio, color: Colors.white),
-                          ),
-                    title: Text(
-                      station.name,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    subtitle: Text(
-                      '${station.country} • ${station.genre} • ${station.bitrate}kbps',
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () {
-                        final messenger = ScaffoldMessenger.of(context);
-                        RadioStorage().removeFavorite(favorite.id).then((_) {
-                          setState(() {}); // Refresh
-                          messenger.showSnackBar(
-                            const SnackBar(content: Text('Removed from favourites')),
-                          );
-                        });
-                      },
-                    ),
-                    onTap: () {
-                      final messenger = ScaffoldMessenger.of(context);
-                      engine.playStation(station).catchError((e) {
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text('Failed to play: ${station.name}'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      });
-                    },
-                  ),
-                );
-              },
+        return ListView.builder(
+          itemCount: favorites.length,
+          itemBuilder: (context, index) {
+            final favorite = favorites[index];
+            final station = favorite.toRadioStation();
+            return Card(
+              color: const Color(0xFF1C1C1C),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: ListTile(
+                leading: station.favicon.isNotEmpty
+                    ? CircleAvatar(
+                        backgroundImage: NetworkImage(station.favicon),
+                      )
+                    : const CircleAvatar(
+                        backgroundColor: Colors.red,
+                        child: Icon(Icons.radio, color: Colors.white),
+                      ),
+                title: Text(
+                  station.name,
+                  style: const TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  '${station.country} • ${station.genre} • ${station.bitrate}kbps',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    engine.removeFromFavorites(favorite.id);
+                  },
+                ),
+                onTap: () {
+                  final messenger = ScaffoldMessenger.of(context);
+                  engine.playStation(station).catchError((e) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to play: ${station.name}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  });
+                },
+              ),
             );
           },
         );

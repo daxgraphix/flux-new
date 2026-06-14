@@ -2,21 +2,34 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:audio_service/audio_service.dart';
 import 'flux_engine/radio_engine.dart';
 import 'flux_engine/theme_provider.dart';
 import 'flux_engine/audio_service_handler.dart';
 import 'flux_ui/main_screen.dart';
 import 'flux_ui/onboarding_widget.dart';
 
-void main() {
+late AudioHandler _audioHandler;
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  _audioHandler = await _createAudioHandler();
+  
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     systemNavigationBarColor: Colors.transparent,
   ));
   runApp(const FluxApp());
+}
+
+Future<AudioHandler> _createAudioHandler() async {
+  try {
+    return await initAudioService().timeout(const Duration(seconds: 8));
+  } catch (e) {
+    debugPrint('Audio service initialization failed or timed out: $e');
+    return RadioAudioHandler();
+  }
 }
 
 class FluxApp extends StatefulWidget {
@@ -30,49 +43,27 @@ class _FluxAppState extends State<FluxApp> {
   late RadioEngine _engine;
   late ThemeProvider _themeProvider;
   AppState _appState = AppState.splash;
-  bool _onboardingCompleted = false;
 
   @override
   void initState() {
     super.initState();
-    _engine = RadioEngine();
+    _engine = RadioEngine(_audioHandler);
     _themeProvider = ThemeProvider();
     _themeProvider.loadTheme();
     _initializeApp();
   }
 
   Future<void> _initializeApp() async {
-    WidgetsBinding.instance.addObserver(_AppLifecycleObserver(this));
-    
-    await Hive.initFlutter();
-    await _engine.storage.init();
-
-    final prefs = await SharedPreferences.getInstance();
-    _onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
-
-    final initFuture = _engine.initialize();
-    final preloadFuture = _onboardingCompleted ? _engine.loadTopStations() : Future.value();
-
-    await Future.wait([initFuture, preloadFuture]);
-    
-    await _initAudioService();
-
-    await Future.delayed(const Duration(seconds: 1));
-    if (mounted) {
-      setState(() {
-        _appState = _onboardingCompleted ? AppState.main : AppState.onboarding;
-      });
+    try {
+      await _engine.initialize().timeout(const Duration(seconds: 12));
+    } catch (e) {
+      debugPrint('Engine initialization failed or timed out: $e');
     }
-  }
-  
-  Future<void> _initAudioService() async {
-    await BackgroundAudioService().configure();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(_AppLifecycleObserver(this));
-    _engine.disposeStation();
+    _engine.dispose();
     super.dispose();
   }
 
@@ -88,6 +79,12 @@ class _FluxAppState extends State<FluxApp> {
           return MaterialApp(
             title: 'Flux Radio',
             theme: themeProvider.theme,
+            builder: (context, child) {
+              return DefaultTextStyle.merge(
+                style: const TextStyle(decoration: TextDecoration.none),
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
             home: _buildHome(),
           );
         },
@@ -113,54 +110,15 @@ class _FluxAppState extends State<FluxApp> {
       case AppState.splash:
         return SplashScreen(
           key: const ValueKey('splash'),
-          onComplete: () => setState(() => _appState = AppState.onboarding),
-        );
-      case AppState.onboarding:
-        return OnboardingScreen(
-          key: const ValueKey('onboarding'),
-          onComplete: _onOnboardingComplete,
+          onComplete: () => setState(() => _appState = AppState.main),
         );
       case AppState.main:
         return const MainScreen(key: ValueKey('main'));
     }
   }
-
-  Future<void> _onOnboardingComplete() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboarding_completed', true);
-
-    setState(() {
-      _onboardingCompleted = true;
-      _appState = AppState.main;
-    });
-  }
 }
 
 enum AppState {
   splash,
-  onboarding,
   main,
-}
-
-class _AppLifecycleObserver extends WidgetsBindingObserver {
-  final _FluxAppState app;
-
-  _AppLifecycleObserver(this.app);
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    switch (state) {
-      case AppLifecycleState.paused:
-        BackgroundAudioService().ensurePlaying(app._engine);
-        break;
-      case AppLifecycleState.resumed:
-        break;
-      case AppLifecycleState.detached:
-        break;
-      case AppLifecycleState.hidden:
-        break;
-      case AppLifecycleState.inactive:
-        break;
-    }
-  }
 }

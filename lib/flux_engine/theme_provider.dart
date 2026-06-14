@@ -44,11 +44,8 @@ class ThemeProvider extends ChangeNotifier {
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
       backgroundColor: Colors.red,
     ),
-    textTheme: const TextTheme(
-      bodyLarge: TextStyle(color: Colors.white),
-      bodyMedium: TextStyle(color: Colors.white70),
-      titleLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-    ),
+    textTheme: _textTheme,
+    primaryTextTheme: _textTheme,
     inputDecorationTheme: const InputDecorationTheme(
       filled: true,
       fillColor: Color(0xFF1C1C1C),
@@ -58,13 +55,51 @@ class ThemeProvider extends ChangeNotifier {
       focusedBorder: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.red),
       ),
-      labelStyle: TextStyle(color: Colors.red),
+      labelStyle: TextStyle(color: Colors.red, decoration: TextDecoration.none),
+      hintStyle: TextStyle(decoration: TextDecoration.none),
     ),
     tabBarTheme: const TabBarThemeData(
       indicatorColor: Colors.transparent,
       labelColor: Colors.white,
       unselectedLabelColor: Colors.grey,
     ),
-splashFactory: NoSplash.splashFactory,
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        textStyle: const TextStyle(decoration: TextDecoration.none),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        textStyle: const TextStyle(decoration: TextDecoration.none),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        textStyle: const TextStyle(decoration: TextDecoration.none),
+      ),
+    ),
+    splashFactory: NoSplash.splashFactory,
+  );
+
+  static const TextTheme _textTheme = TextTheme(
+    displayLarge: TextStyle(decoration: TextDecoration.none),
+    displayMedium: TextStyle(decoration: TextDecoration.none),
+    displaySmall: TextStyle(decoration: TextDecoration.none),
+    headlineLarge: TextStyle(decoration: TextDecoration.none),
+    headlineMedium: TextStyle(decoration: TextDecoration.none),
+    headlineSmall: TextStyle(decoration: TextDecoration.none),
+    titleLarge: TextStyle(
+      color: Colors.white,
+      fontWeight: FontWeight.bold,
+      decoration: TextDecoration.none,
+    ),
+    titleMedium: TextStyle(decoration: TextDecoration.none),
+    titleSmall: TextStyle(decoration: TextDecoration.none),
+    bodyLarge: TextStyle(color: Colors.white, decoration: TextDecoration.none),
+    bodyMedium: TextStyle(color: Colors.white70, decoration: TextDecoration.none),
+    bodySmall: TextStyle(decoration: TextDecoration.none),
+    labelLarge: TextStyle(decoration: TextDecoration.none),
+    labelMedium: TextStyle(decoration: TextDecoration.none),
+    labelSmall: TextStyle(decoration: TextDecoration.none),
   );
 }

@@ -1,14 +1,26 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:hive/hive.dart';
 
+part 'radio_service.g.dart';
+
+@HiveType(typeId: 0)
 class RadioStation {
+  @HiveField(0)
   final String name;
+  @HiveField(1)
   final String url;
+  @HiveField(2)
   final String country;
+  @HiveField(3)
   final String language;
+  @HiveField(4)
   final String genre;
+  @HiveField(5)
   final int bitrate;
+  @HiveField(6)
   final String favicon;
+  @HiveField(7)
   final String? uuid;
 
   RadioStation({
@@ -51,6 +63,7 @@ class RadioStation {
 
 class RadioService {
   static const String _baseUrl = 'https://de1.api.radio-browser.info';
+  static const Duration _requestTimeout = Duration(seconds: 10);
 
   static final List<RadioStation> _staticTanzaniaStations = [
     RadioStation(
@@ -167,7 +180,7 @@ class RadioService {
     final uri = Uri.parse(
       '$_baseUrl/json/stations/search',
     ).replace(queryParameters: queryParams);
-    final response = await http.get(uri);
+    final response = await http.get(uri).timeout(_requestTimeout);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -179,7 +192,7 @@ class RadioService {
 
   Future<List<String>> getCountries() async {
     final uri = Uri.parse('$_baseUrl/json/countries');
-    final response = await http.get(uri);
+    final response = await http.get(uri).timeout(_requestTimeout);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -191,7 +204,7 @@ class RadioService {
 
   Future<List<String>> getTags() async {
     final uri = Uri.parse('$_baseUrl/json/tags');
-    final response = await http.get(uri);
+    final response = await http.get(uri).timeout(_requestTimeout);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -203,7 +216,7 @@ class RadioService {
 
   Future<List<String>> getLanguages() async {
     final uri = Uri.parse('$_baseUrl/json/languages');
-    final response = await http.get(uri);
+    final response = await http.get(uri).timeout(_requestTimeout);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -213,24 +226,24 @@ class RadioService {
     }
   }
 
-  Future<List<RadioStation>> getTopStations({int limit = 100}) async {
-    return searchStations(limit: limit, order: 'votes', reverse: true);
+  Future<List<RadioStation>> getTopStations({int limit = 100, int? bitrateMin}) async {
+    return searchStations(limit: limit, order: 'votes', reverse: true, bitrateMin: bitrateMin);
   }
 
-  Future<List<RadioStation>> getTrendingStations({int limit = 100}) async {
-    return searchStations(limit: limit, order: 'clicktrend', reverse: true);
+  Future<List<RadioStation>> getTrendingStations({int limit = 100, int? bitrateMin}) async {
+    return searchStations(limit: limit, order: 'clicktrend', reverse: true, bitrateMin: bitrateMin);
   }
 
-  Future<List<RadioStation>> getStationsByCountry(String country, {int limit = 100}) async {
-    return searchStations(country: country, limit: limit, order: 'votes', reverse: true);
+  Future<List<RadioStation>> getStationsByCountry(String country, {int limit = 100, int? bitrateMin}) async {
+    return searchStations(country: country, limit: limit, order: 'votes', reverse: true, bitrateMin: bitrateMin);
   }
 
-  Future<List<RadioStation>> getStationsByGenre(String genre, {int limit = 100}) async {
-    return searchStations(tag: genre, limit: limit, order: 'votes', reverse: true);
+  Future<List<RadioStation>> getStationsByGenre(String genre, {int limit = 100, int? bitrateMin}) async {
+    return searchStations(tag: genre, limit: limit, order: 'votes', reverse: true, bitrateMin: bitrateMin);
   }
 
-  Future<List<RadioStation>> getStationsByLanguage(String language, {int limit = 100}) async {
-    return searchStations(language: language, limit: limit, order: 'votes', reverse: true);
+  Future<List<RadioStation>> getStationsByLanguage(String language, {int limit = 100, int? bitrateMin}) async {
+    return searchStations(language: language, limit: limit, order: 'votes', reverse: true, bitrateMin: bitrateMin);
   }
 
   Future<List<RadioStation>> getMusicStations({int limit = 100}) async {
@@ -332,8 +345,8 @@ class RadioService {
     return searchStations(lat: lat, lon: lon, radius: radius, limit: limit, order: 'distance', reverse: false);
   }
 
-  Future<List<RadioStation>> getTanzaniaStations({int limit = 100}) async {
-    return searchStations(country: 'Tanzania', limit: limit, order: 'votes', reverse: true);
+  Future<List<RadioStation>> getTanzaniaStations({int limit = 100, int? bitrateMin}) async {
+    return searchStations(country: 'Tanzania', limit: limit, order: 'votes', reverse: true, bitrateMin: bitrateMin);
   }
 
   Future<List<RadioStation>> getNearbyStations({required double lat, required double lon, int limit = 50}) async {

@@ -66,348 +66,298 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final engine = Provider.of<RadioEngine>(context);
+
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: isDark
-                ? [const Color(0xFF1A1A2E), const Color(0xFF0A0A0A)]
-                : [const Color(0xFFE3F2FD), const Color(0xFFBBDEFB)],
+                ? [const Color(0xFF0A0A0A), const Color(0xFF1A1A2E)]
+                : [const Color(0xFFF5F7FA), const Color(0xFFB8C6DB)],
           ),
         ),
         child: SafeArea(
           child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Audio Section
-            _buildSectionCard(
-              isDark,
-              icon: Icons.audiotrack,
-              title: 'Audio',
-              children: [
-                _buildSwitchTile(
-                  isDark,
-                  icon: Icons.high_quality,
-                  title: 'High Quality Audio',
-                  subtitle: 'Use higher bitrate streams (uses more data)',
-                  value: _highQuality,
-                  onChanged: (value) => setState(() => _highQuality = value),
-                ),
-                Consumer<RadioEngine>(
-                  builder: (context, engine, _) => _buildTile(
-                    isDark,
-                    icon: Icons.volume_up,
-                    title: 'Volume',
-                    subtitle: 'Current: ${(engine.volume * 100).round()}%',
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            physics: const BouncingScrollPhysics(),
+            children: [
+              _buildModernSection(
+                context,
+                'AUDIO ENGINE',
+                [
+                  _buildModernSwitchTile(
+                    icon: Icons.high_quality_rounded,
+                    title: 'High Quality Audio',
+                    subtitle: 'Prioritize high bitrate streams',
+                    value: engine.highQuality,
+                    onChanged: (v) => engine.setHighQuality(v),
+                    activeColor: Colors.redAccent,
+                  ),
+                  _buildModernTile(
+                    icon: Icons.volume_up_rounded,
+                    title: 'Playback Volume',
+                    subtitle: '${(engine.volume * 100).round()}%',
                     onTap: () => _showVolumeDialog(context, engine),
                   ),
-                ),
-                Consumer<RadioEngine>(
-                  builder: (context, engine, _) => _buildTile(
-                    isDark,
-                    icon: Icons.equalizer,
-                    title: 'Equalizer',
-                    subtitle: 'Tone controls and presets',
+                  _buildModernTile(
+                    icon: Icons.equalizer_rounded,
+                    title: 'Equalizer & Effects',
+                    subtitle: 'Customize your sound',
                     onTap: () => _showEqualizerDialog(context, engine),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Playback Section
-            _buildSectionCard(
-              isDark,
-              icon: Icons.play_arrow,
-              title: 'Playback',
-              children: [
-                _buildSwitchTile(
-                  isDark,
-                  icon: Icons.play_circle,
-                  title: 'Auto-play',
-                  subtitle: 'Automatically play last station on app start',
-                  value: _autoPlay,
-                  onChanged: (value) => setState(() => _autoPlay = value),
-                ),
-                _buildTile(
-                  isDark,
-                  icon: Icons.stop,
-                  title: 'Stop Playback',
-                  subtitle: 'Stop current station immediately',
-                  onTap: () {
-                    final engine = Provider.of<RadioEngine>(context, listen: false);
-                    engine.stop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Playback stopped')),
-                    );
-                  },
-                ),
-                Consumer<RadioEngine>(
-                  builder: (context, engine, _) => _buildTile(
-                    isDark,
-                    icon: Icons.mic,
-                    title: 'Recording',
-                    subtitle: engine.isRecording
-                        ? 'Recording in progress...'
-                        : 'Record live radio',
+                ],
+              ),
+              _buildModernSection(
+                context,
+                'PLAYBACK & RECORDING',
+                [
+                  _buildModernSwitchTile(
+                    icon: Icons.play_circle_filled_rounded,
+                    title: 'Auto-play on Start',
+                    subtitle: 'Resume last station automatically',
+                    value: engine.autoPlay,
+                    onChanged: (v) => engine.setAutoPlay(v),
+                  ),
+                  _buildModernTile(
+                    icon: Icons.mic_rounded,
+                    title: 'Live Recording',
+                    subtitle: engine.isRecording ? 'Recording active...' : 'Manage your recordings',
                     onTap: () => _showRecordingDialog(context, engine),
+                    trailing: engine.isRecording ? _buildLiveIndicator() : null,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Timer & Alarm Section
-            _buildSectionCard(
-              isDark,
-              icon: Icons.timer,
-              title: 'Timers & Alarms',
-              children: [
-                Consumer<RadioEngine>(
-                  builder: (context, engine, _) => _buildTile(
-                    isDark,
-                    icon: Icons.bedtime,
-                    title: 'Sleep Timer',
-                    subtitle: engine.isSleepTimerActive
-                        ? 'Active: ${engine.sleepDuration.inMinutes} minutes'
-                        : 'Set auto-off timer',
-                    onTap: () => _showSleepTimerDialog(context, engine),
-                  ),
-                ),
-                _buildTile(
-                  isDark,
-                  icon: Icons.alarm,
-                  title: 'Set Alarm',
-                  subtitle: _alarmActive && _alarmTime != null
-                      ? 'Alarm set for ${_alarmTime!.format(context)}'
-                      : 'Wake up with your favorite station',
-                  onTap: () => _showAlarmDialog(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Library Section
-            _buildSectionCard(
-              isDark,
-              icon: Icons.library_music,
-              title: 'Library',
-              children: [
-                _buildTile(
-                  isDark,
-                  icon: Icons.favorite,
-                  title: 'Manage Favourites',
-                  subtitle: 'View and remove saved stations',
-                  onTap: () => _showFavouritesDialog(context),
-                ),
-                _buildTile(
-                  isDark,
-                  icon: Icons.location_on,
-                  title: 'Nearby Discovery',
-                  subtitle: 'Find live stations near you',
-                  onTap: () {
-                    final engine = Provider.of<RadioEngine>(context, listen: false);
-                    engine.loadNearbyStations();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Searching nearby stations...')),
-                    );
-                  },
-                ),
-                Consumer<RadioEngine>(
-                  builder: (context, engine, child) => _buildTile(
-                    isDark,
-                    icon: Icons.cleaning_services,
-                    title: 'Clear Cache',
-                    subtitle: 'Reset station results and cached data',
+                  _buildModernTile(
+                    icon: Icons.history_rounded,
+                    title: 'Recently Played',
+                    subtitle: 'View listening history',
                     onTap: () {
-                      engine.clearCache();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Cache cleared')),
-                      );
+                      // Handle navigation to library or history
                     },
                   ),
-                ),
-                Consumer<RadioEngine>(
-                  builder: (context, engine, child) => _buildTile(
-                    isDark,
-                    icon: Icons.library_music,
-                    title: 'Manage Recordings',
-                    subtitle: '${engine.savedRecordings.length} recordings saved',
-                    onTap: () => _showRecordingsManager(context, engine),
+                ],
+              ),
+              _buildModernSection(
+                context,
+                'TIMERS',
+                [
+                  _buildModernTile(
+                    icon: Icons.bedtime_rounded,
+                    title: 'Sleep Timer',
+                    subtitle: engine.isSleepTimerActive
+                        ? 'Stopping in ${engine.sleepRemainingTime.inMinutes}m ${engine.sleepRemainingTime.inSeconds % 60}s'
+                        : 'Set auto-off timer',
+                    onTap: () => _showSleepTimerDialog(context, engine),
+                    trailing: engine.isSleepTimerActive ? const Icon(Icons.timer_rounded, color: Colors.redAccent, size: 20) : null,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Notifications & Data Section
-            _buildSectionCard(
-              isDark,
-              icon: Icons.notifications,
-              title: 'Notifications & Data',
-              children: [
-                _buildSwitchTile(
-                  isDark,
-                  icon: Icons.notifications,
-                  title: 'Push Notifications',
-                  subtitle: 'Receive notifications for new features',
-                  value: _notificationsEnabled,
-                  onChanged: (value) => setState(() => _notificationsEnabled = value),
-                ),
-                _buildSwitchTile(
-                  isDark,
-                  icon: Icons.data_usage,
-                  title: 'Data Saver',
-                  subtitle: 'Reduce data usage by limiting image quality',
-                  value: _dataSaver,
-                  onChanged: (value) => setState(() => _dataSaver = value),
-                ),
-                _buildTile(
-                  isDark,
-                  icon: Icons.storage,
-                  title: 'Cache Size',
-                  subtitle: 'Current: ${_cacheSize}MB',
-                  onTap: () => _showCacheDialog(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-// App Settings Section
-             _buildSectionCard(
-               isDark,
-               icon: Icons.settings,
-title: 'App Settings',
-               children: [
-                 _buildTile(
-                   isDark,
-                   icon: Icons.language,
-                   title: 'Language',
-                  subtitle: _getLanguageName(_language),
-                  onTap: () => _showLanguageDialog(context),
-                ),
-                _buildTile(
-                  isDark,
-                  icon: Icons.info,
-                  title: 'About',
-                  subtitle: 'Flux Radio v1.0.0',
-                  onTap: () {
-                    showAboutDialog(
+                  _buildModernTile(
+                    icon: Icons.alarm_rounded,
+                    title: 'Radio Alarm',
+                    subtitle: _alarmActive && _alarmTime != null
+                        ? 'Set for ${_alarmTime!.format(context)}'
+                        : 'Wake up with music',
+                    onTap: () => _showAlarmDialog(context),
+                  ),
+                ],
+              ),
+              _buildModernSection(
+                context,
+                'DATA & STORAGE',
+                [
+                  _buildModernSwitchTile(
+                    icon: Icons.data_usage_rounded,
+                    title: 'Data Saver Mode',
+                    subtitle: 'Reduce bandwidth usage',
+                    value: engine.dataSaver,
+                    onChanged: (v) => engine.setDataSaver(v),
+                  ),
+                  _buildModernTile(
+                    icon: Icons.storage_rounded,
+                    title: 'Cache Management',
+                    subtitle: 'Current limit: ${_cacheSize}MB',
+                    onTap: () => _showCacheDialog(context),
+                  ),
+                  _buildModernTile(
+                    icon: Icons.delete_sweep_rounded,
+                    title: 'Clear All Cache',
+                    subtitle: 'Reset temporary data',
+                    onTap: () {
+                      engine.clearCache();
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cache cleared')));
+                    },
+                  ),
+                ],
+              ),
+              _buildModernSection(
+                context,
+                'APPLICATION',
+                [
+                  _buildModernTile(
+                    icon: Icons.language_rounded,
+                    title: 'Display Language',
+                    subtitle: _getLanguageName(_language),
+                    onTap: () => _showLanguageDialog(context),
+                  ),
+                  _buildModernTile(
+                    icon: Icons.info_outline_rounded,
+                    title: 'About Flux',
+                    subtitle: 'Version 1.1.0',
+                    onTap: () => showAboutDialog(
                       context: context,
                       applicationName: 'Flux Radio',
-                      applicationVersion: '1.0.0',
-                      applicationLegalese: 'Global AM/FM radio streaming app',
-                    );
-                  },
-                ),
-                _buildTile(
-                  isDark,
-                  icon: Icons.restore,
-                  title: 'Reset to Defaults',
-                  subtitle: 'Reset all settings to default values',
-                  onTap: () => _showResetDialog(context),
-                ),
-                _buildTile(
-                  isDark,
-                  icon: Icons.storage,
-                  title: 'Export Database',
-                  subtitle: 'Export favorites and history as JSON',
-                  onTap: () => _exportDatabase(context),
-                ),
-              ],
-            ),
-          ],
-        ),
+                      applicationVersion: '1.1.0',
+                      applicationIcon: const Icon(Icons.radio, color: Colors.red, size: 40),
+                      applicationLegalese: '© 2024 Flux Audio Labs',
+                    ),
+                  ),
+                  _buildModernTile(
+                    icon: Icons.backup_rounded,
+                    title: 'Export Data',
+                    subtitle: 'Backup favorites & history',
+                    onTap: () => _exportDatabase(context),
+                  ),
+                  _buildModernTile(
+                    icon: Icons.restore_rounded,
+                    title: 'Reset to Factory Settings',
+                    subtitle: 'Warning: This cannot be undone',
+                    onTap: () => _showResetDialog(context),
+                    textColor: Colors.redAccent,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionCard(bool isDark, {
-    required IconData icon,
-    required String title,
-    required List<Widget> children,
-  }) {
-    return Card(
-      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Icon(icon, color: isDark ? Colors.red : Colors.blue, size: 24),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+  Widget _buildModernSection(BuildContext context, String title, List<Widget> children) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+          child: Text(
+            title,
+            style: TextStyle(
+              color: isDark ? Colors.white54 : Colors.black54,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.5,
             ),
           ),
-          ...children,
-        ],
-      ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(children: children),
+        ),
+      ],
     );
   }
 
-  Widget _buildSwitchTile(bool isDark, {
+  Widget _buildModernTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    Widget? trailing,
+    Color? textColor,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: Colors.redAccent, size: 22),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: textColor ?? (isDark ? Colors.white : Colors.black87),
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          color: isDark ? Colors.white38 : Colors.black38,
+          fontSize: 13,
+        ),
+      ),
+      trailing: trailing ?? Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white24 : Colors.grey.withValues(alpha: 0.5)),
+      onTap: onTap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    );
+  }
+
+  Widget _buildModernSwitchTile({
     required IconData icon,
     required String title,
     required String subtitle,
     required bool value,
     required ValueChanged<bool> onChanged,
+    Color activeColor = Colors.redAccent,
   }) {
-    return Card(
-      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: SwitchListTile(
-        secondary: Icon(icon, color: isDark ? Colors.red : Colors.blue),
-        title: Text(
-          title,
-          style: TextStyle(color: isDark ? Colors.white : Colors.black),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return SwitchListTile(
+      secondary: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: activeColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
         ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(color: isDark ? Colors.grey : Colors.black.withValues(alpha: 0.6)),
-        ),
-        value: value,
-        onChanged: onChanged,
-        activeThumbColor: Colors.red,
+        child: Icon(icon, color: activeColor, size: 22),
       ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isDark ? Colors.white : Colors.black87,
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          color: isDark ? Colors.white38 : Colors.black38,
+          fontSize: 13,
+        ),
+      ),
+      value: value,
+      onChanged: onChanged,
+      activeThumbColor: activeColor,
+      activeTrackColor: activeColor.withValues(alpha: 0.5),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     );
   }
 
-  Widget _buildTile(bool isDark, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: Icon(icon, color: isDark ? Colors.red : Colors.blue),
-        title: Text(
-          title,
-          style: TextStyle(color: isDark ? Colors.white : Colors.black),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(color: isDark ? Colors.grey : Colors.black.withValues(alpha: 0.6)),
-        ),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: isDark ? Colors.grey : Colors.black.withValues(alpha: 0.4),
-        ),
-        onTap: onTap,
+  Widget _buildLiveIndicator() {
+    return Container(
+      width: 12,
+      height: 12,
+      decoration: const BoxDecoration(
+        color: Colors.red,
+        shape: BoxShape.circle,
+        boxShadow: [BoxShadow(color: Colors.red, blurRadius: 4, spreadRadius: 1)],
       ),
     );
   }
@@ -756,77 +706,6 @@ title: 'App Settings',
     );
   }
 
-  void _showFavouritesDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text(
-          'Manage Favourites',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: FutureBuilder<List<FavoriteStation>>(
-            future: RadioStorage().getFavorites(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: Colors.red));
-              }
-              if (snapshot.hasError || snapshot.data == null) {
-                return const Text('Error loading favourites', style: TextStyle(color: Colors.white));
-              }
-              final favourites = snapshot.data!;
-              if (favourites.isEmpty) {
-                return const Text('No favourites', style: TextStyle(color: Colors.white));
-              }
-              return ListView.builder(
-                shrinkWrap: true,
-                itemCount: favourites.length,
-                itemBuilder: (context, index) {
-                  final fav = favourites[index];
-                  return Card(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    child: ListTile(
-                      leading: fav.favicon.isNotEmpty
-                          ? CircleAvatar(backgroundImage: NetworkImage(fav.favicon))
-                          : const CircleAvatar(
-                              backgroundColor: Colors.red,
-                              child: Icon(Icons.radio, color: Colors.white),
-                            ),
-                      title: Text(fav.name, style: const TextStyle(color: Colors.white)),
-                      subtitle: Text('${fav.country} • ${fav.genre}', style: const TextStyle(color: Colors.grey)),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          final messenger = ScaffoldMessenger.of(context);
-                          RadioStorage().removeFavorite(fav.id).then((_) {
-                            setState(() {});
-                            messenger.showSnackBar(
-                              const SnackBar(content: Text('Removed from favourites')),
-                            );
-                          });
-                        },
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showRecordingDialog(BuildContext context, RadioEngine engine) {
     showDialog(
       context: context,
@@ -941,85 +820,6 @@ title: 'App Settings',
     }
   }
 
-  void _showRecordingsManager(BuildContext context, RadioEngine engine) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1A2E),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[700],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Manage Recordings',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...engine.savedRecordings.take(5).map((path) {
-              final file = File(path);
-              final fileName = file.uri.pathSegments.isNotEmpty 
-                  ? file.uri.pathSegments.last 
-                  : 'Recording';
-              return Card(
-                color: Colors.white.withValues(alpha: 0.05),
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                child: ListTile(
-                  leading: const Icon(Icons.audio_file, color: Colors.red),
-                  title: Text(fileName, style: const TextStyle(color: Colors.white)),
-                  subtitle: Text(
-                    '${file.lengthSync()} bytes',
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.play_arrow, color: Colors.red),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          engine.playRecording(path);
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          engine.deleteRecording(path);
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-            if (engine.savedRecordings.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('No recordings yet', style: TextStyle(color: Colors.grey)),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showCacheDialog(BuildContext context) {
     int tempCacheSize = _cacheSize;
     showDialog(
@@ -1095,22 +895,18 @@ title: 'App Settings',
           title: const Text('Select Language', style: TextStyle(color: Colors.white)),
           content: SizedBox(
             width: double.maxFinite,
-            child: ListView(
-              shrinkWrap: true,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: languages.entries.map((entry) {
-                return RadioListTile<String>(
-                  title: Text(entry.value, style: const TextStyle(color: Colors.white)),
+                return RadioMenuButton<String>(
                   value: entry.key,
-                  // ignore: deprecated_member_use
                   groupValue: selectedLanguage,
-                  // ignore: deprecated_member_use
                   onChanged: (value) {
                     if (value != null) {
                       setState(() => selectedLanguage = value);
                     }
                   },
-                  // ignore: deprecated_member_use
-                  activeColor: Colors.red,
+                  child: Text(entry.value, style: const TextStyle(color: Colors.white)),
                 );
               }).toList(),
             ),
