@@ -4,11 +4,11 @@ import 'package:just_audio/just_audio.dart';
 Future<AudioHandler> initAudioService() async {
   return await AudioService.init(
     builder: () => RadioAudioHandler(),
-    config: const AudioServiceConfig(
+    config: AudioServiceConfig(
       androidNotificationChannelId: 'com.flux.radio.channel.audio',
       androidNotificationChannelName: 'Flux Radio Playback',
       androidNotificationOngoing: true,
-      androidStopForegroundOnPause: true,
+      androidStopForegroundOnPause: false,
     ),
   );
 }

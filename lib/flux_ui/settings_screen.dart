@@ -16,8 +16,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  TimeOfDay? _alarmTime;
-  bool _alarmActive = false;
   Timer? _alarmTimer;
 
   // Additional settings
@@ -161,10 +159,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildModernTile(
                     icon: Icons.alarm_rounded,
                     title: 'Radio Alarm',
-                    subtitle: _alarmActive && _alarmTime != null
-                        ? 'Set for ${_alarmTime!.format(context)}'
+                    subtitle: engine.alarms.any((a) => a.isEnabled)
+                        ? '${engine.alarms.where((a) => a.isEnabled).length} active alarms'
                         : 'Wake up with music',
-                    onTap: () => _showAlarmDialog(context),
+                    onTap: () => _showAlarmListDialog(context, engine),
                   ),
                 ],
               ),
@@ -485,81 +483,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showAlarmDialog(BuildContext context) {
-    TimeOfDay? selectedTime;
+  void _showAlarmListDialog(BuildContext context, RadioEngine engine) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text(
-          'Set Alarm',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Select time to wake up with radio:',
-              style: TextStyle(color: Colors.grey),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return AlertDialog(
+            backgroundColor: isDark ? const Color(0xFF1A1A2E) : Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: Row(
+              children: [
+                const Icon(Icons.alarm, color: Colors.redAccent),
+                const SizedBox(width: 12),
+                const Text('Radio Alarms', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.add_alarm, color: Colors.redAccent),
+                  onPressed: () async {
+                    final time = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (time != null && engine.currentStation != null) {
+                      final alarm = RadioAlarm(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        stationName: engine.currentStation!.name,
+                        stationUrl: engine.currentStation!.url,
+                        hour: time.hour,
+                        minute: time.minute,
+                      );
+                      await engine.addAlarm(alarm);
+                      if (mounted) setDialogState(() {});
+                    } else if (engine.currentStation == null) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please select a station first')),
+                        );
+                      }
+                    }
+                  },
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () async {
-                final time = await showTimePicker(
-                  context: context,
-                  initialTime: TimeOfDay.now(),
-                );
-                if (time != null) {
-                  selectedTime = time;
-                }
-              },
-              child: const Text('Pick Time'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () {
-              if (selectedTime != null) {
-                final messenger = ScaffoldMessenger.of(context);
-                final navigator = Navigator.of(context);
-                _alarmTimer?.cancel();
-                final now = DateTime.now();
-                final alarmDateTime = DateTime(
-                  now.year,
-                  now.month,
-                  now.day,
-                  selectedTime!.hour,
-                  selectedTime!.minute,
-                );
-                final duration = alarmDateTime.isAfter(now)
-                    ? alarmDateTime.difference(now)
-                    : alarmDateTime.add(const Duration(days: 1)).difference(now);
-                _alarmTimer = Timer(duration, () {
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Alarm! Playing radio'),
-                      backgroundColor: Colors.red,
+            content: SizedBox(
+              width: double.maxFinite,
+              child: engine.alarms.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Text('No alarms set. Current station will be used for new alarms.',
+                          textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: engine.alarms.length,
+                      itemBuilder: (context, index) {
+                        final alarm = engine.alarms[index];
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            '${alarm.hour.toString().padLeft(2, '0')}:${alarm.minute.toString().padLeft(2, '0')}',
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          subtitle: Text(alarm.stationName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey)),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Switch(
+                                value: alarm.isEnabled,
+                                activeThumbColor: Colors.redAccent,
+                                onChanged: (value) async {
+                                  await engine.toggleAlarm(alarm.id);
+                                  if (mounted) setDialogState(() {});
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.grey),
+                                onPressed: () async {
+                                  await engine.deleteAlarm(alarm.id);
+                                  setDialogState(() {});
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                  );
-                });
-                setState(() {
-                  _alarmActive = true;
-                  _alarmTime = selectedTime;
-                });
-                messenger.showSnackBar(
-                  SnackBar(content: Text('Alarm set for ${selectedTime!.format(context)}')),
-                );
-                navigator.pop();
-              }
-            },
-            child: const Text('Set', style: TextStyle(color: Colors.red)),
-          ),
-        ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('CLOSE', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

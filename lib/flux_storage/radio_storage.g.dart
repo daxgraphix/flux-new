@@ -97,3 +97,55 @@ class RecentStationAdapter extends TypeAdapter<RecentStation> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class RadioAlarmAdapter extends TypeAdapter<RadioAlarm> {
+  @override
+  final int typeId = 5;
+
+  @override
+  RadioAlarm read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return RadioAlarm(
+      id: fields[0] as String,
+      stationName: fields[1] as String,
+      stationUrl: fields[2] as String,
+      hour: fields[3] as int,
+      minute: fields[4] as int,
+      isEnabled: fields[5] as bool,
+      daysOfWeek: (fields[6] as List).cast<int>(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, RadioAlarm obj) {
+    writer
+      ..writeByte(7)
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.stationName)
+      ..writeByte(2)
+      ..write(obj.stationUrl)
+      ..writeByte(3)
+      ..write(obj.hour)
+      ..writeByte(4)
+      ..write(obj.minute)
+      ..writeByte(5)
+      ..write(obj.isEnabled)
+      ..writeByte(6)
+      ..write(obj.daysOfWeek);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RadioAlarmAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

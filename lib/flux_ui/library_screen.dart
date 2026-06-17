@@ -621,7 +621,7 @@ bottom: TabBar(
                 trailing: IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red),
                   onPressed: () {
-                    engine.removeFromFavorites(favorite.id);
+                    engine.removeFromFavorites(station);
                   },
                 ),
                 onTap: () {

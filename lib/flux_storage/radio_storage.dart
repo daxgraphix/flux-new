@@ -94,6 +94,34 @@ class RecentStation extends HiveObject {
   RecentStation({required this.station, required this.playedDate});
 }
 
+@HiveType(typeId: 5)
+class RadioAlarm extends HiveObject {
+  @HiveField(0)
+  final String id;
+  @HiveField(1)
+  final String stationName;
+  @HiveField(2)
+  final String stationUrl;
+  @HiveField(3)
+  final int hour;
+  @HiveField(4)
+  final int minute;
+  @HiveField(5)
+  final bool isEnabled;
+  @HiveField(6)
+  final List<int> daysOfWeek; // 1 = Monday, 7 = Sunday
+
+  RadioAlarm({
+    required this.id,
+    required this.stationName,
+    required this.stationUrl,
+    required this.hour,
+    required this.minute,
+    this.isEnabled = true,
+    this.daysOfWeek = const [1, 2, 3, 4, 5, 6, 7],
+  });
+}
+
 class RadioStorage {
   // Singleton Pattern
   static final RadioStorage _instance = RadioStorage._internal();
@@ -104,6 +132,7 @@ class RadioStorage {
   Box<FavoriteStation>? _favoritesBox;
   Box<RecentStation>? _recentBox;
   Box<String>? _searchesBox;
+  Box<RadioAlarm>? _alarmsBox;
   bool _initialized = false;
 
   Future<void> init() async {
@@ -117,11 +146,13 @@ class RadioStorage {
       if (!Hive.isAdapterRegistered(2)) Hive.registerAdapter(RecentStationAdapter());
       if (!Hive.isAdapterRegistered(3)) Hive.registerAdapter(PodcastAdapter());
       if (!Hive.isAdapterRegistered(4)) Hive.registerAdapter(EpisodeAdapter());
+      if (!Hive.isAdapterRegistered(5)) Hive.registerAdapter(RadioAlarmAdapter());
       
       _cacheBox = await _openSafeBox('cache');
       _favoritesBox = await _openSafeBox<FavoriteStation>('favorites');
       _recentBox = await _openSafeBox<RecentStation>('recent');
       _searchesBox = await _openSafeBox<String>('recent_searches');
+      _alarmsBox = await _openSafeBox<RadioAlarm>('alarms');
       _initialized = true;
     } catch (e) {
       debugPrint('RadioStorage critical failure: $e');
@@ -257,9 +288,19 @@ class RadioStorage {
   Future<Map<String, dynamic>> exportDatabase() async {
     final favorites = await getFavorites();
     final recent = await getRecent();
+    final alarms = await getAlarms();
     return {
       'favorites': favorites.map((f) => f.toMap()).toList(),
       'recent': recent.map((r) => r.toJson()).toList(),
+      'alarms': alarms.map((a) => {
+        'id': a.id,
+        'stationName': a.stationName,
+        'stationUrl': a.stationUrl,
+        'hour': a.hour,
+        'minute': a.minute,
+        'isEnabled': a.isEnabled,
+        'daysOfWeek': a.daysOfWeek,
+      }).toList(),
       'exportedAt': DateTime.now().toIso8601String(),
     };
   }
@@ -280,10 +321,42 @@ class RadioStorage {
           await addRecent(station);
         }
       }
+      if (data.containsKey('alarms')) {
+        final List<dynamic> alarms = data['alarms'];
+        for (var a in alarms) {
+          final m = Map<String, dynamic>.from(a);
+          final alarm = RadioAlarm(
+            id: m['id'],
+            stationName: m['stationName'],
+            stationUrl: m['stationUrl'],
+            hour: m['hour'],
+            minute: m['minute'],
+            isEnabled: m['isEnabled'],
+            daysOfWeek: List<int>.from(m['daysOfWeek']),
+          );
+          await saveAlarm(alarm);
+        }
+      }
     } catch (e) {
       debugPrint('Failed to import database: $e');
       rethrow;
     }
+  }
+
+  // --- Alarms ---
+  Future<void> saveAlarm(RadioAlarm alarm) async {
+    if (!_initialized) await init();
+    await _alarmsBox?.put(alarm.id, alarm);
+  }
+
+  Future<void> deleteAlarm(String id) async {
+    if (!_initialized) await init();
+    await _alarmsBox?.delete(id);
+  }
+
+  Future<List<RadioAlarm>> getAlarms() async {
+    if (!_initialized) await init();
+    return _alarmsBox?.values.toList() ?? [];
   }
 }
 
