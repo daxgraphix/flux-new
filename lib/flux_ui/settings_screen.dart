@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../flux_engine/radio_engine.dart';
-import '../flux_engine/theme_provider.dart';
 import '../flux_storage/radio_storage.dart';
 import '../helpers/navigation_helper.dart';
 import 'recent_screen.dart';
@@ -28,7 +27,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
       ),
       body: Container(
         color: theme.scaffoldBackgroundColor,
@@ -91,24 +90,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: 'Recently Played',
                     subtitle: 'View listening history',
                     onTap: () {
-                      Navigator.of(context).push(NavigationHelper.slideUpRoute(const RecentScreen()));
+                      Navigator.of(context).push(NavigationHelper.slideRightRoute(const RecentScreen()));
                     },
-                  ),
-                ],
-              ),
-              _buildModernSection(
-                context,
-                'TIMERS',
-                [
-                  _buildModernTile(
-                    context,
-                    icon: Icons.bedtime_rounded,
-                    title: 'Sleep Timer',
-                    subtitle: engine.isSleepTimerActive
-                        ? 'Stopping in ${engine.sleepRemainingTime.inMinutes}m ${engine.sleepRemainingTime.inSeconds % 60}s'
-                        : 'Set auto-off timer',
-                    onTap: () => _showSleepTimerDialog(context, engine),
-                    trailing: engine.isSleepTimerActive ? Icon(Icons.timer_rounded, color: theme.primaryColor, size: 20) : null,
                   ),
                   _buildModernTile(
                     context,
@@ -175,16 +158,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 context,
                 'APPLICATION',
                 [
-                  Consumer<ThemeProvider>(
-                    builder: (context, themeProvider, _) => _buildModernSwitchTile(
-                      context,
-                      icon: themeProvider.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                      title: 'Dark Mode',
-                      subtitle: 'Switch between dark and light themes',
-                      value: themeProvider.isDarkMode,
-                      onChanged: (v) => themeProvider.toggleTheme(v),
-                    ),
-                  ),
                   _buildModernTile(
                     context,
                     icon: Icons.restore_rounded,
@@ -212,9 +185,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
           child: Text(
             title,
-            style: TextStyle(
-              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
-              fontSize: 12,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               fontWeight: FontWeight.w800,
               letterSpacing: 1.5,
             ),
@@ -222,9 +194,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         Container(
           decoration: BoxDecoration(
-            color: theme.cardColor.withValues(alpha: 0.5),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: theme.dividerColor.withValues(alpha: 0.05)),
+            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
           ),
           child: Column(children: children),
         ),
@@ -246,10 +218,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: theme.primaryColor.withValues(alpha: 0.1),
+          color: theme.colorScheme.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: theme.primaryColor, size: 22),
+        child: Icon(icon, color: theme.colorScheme.primary, size: 22),
       ),
       title: Text(
         title,
@@ -262,11 +234,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       subtitle: Text(
         subtitle,
         style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
           fontSize: 13,
         ),
       ),
-      trailing: trailing ?? Icon(Icons.chevron_right_rounded, color: theme.iconTheme.color?.withValues(alpha: 0.3)),
+      trailing: trailing ?? Icon(Icons.chevron_right_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
       onTap: onTap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     );
@@ -282,7 +254,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Color? activeColor,
   }) {
     final theme = Theme.of(context);
-    final effectiveActiveColor = activeColor ?? theme.primaryColor;
+    final effectiveActiveColor = activeColor ?? theme.colorScheme.primary;
     return SwitchListTile(
       secondary: Container(
         padding: const EdgeInsets.all(8),
@@ -302,7 +274,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       subtitle: Text(
         subtitle,
         style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
           fontSize: 13,
         ),
       ),
@@ -368,94 +340,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text('Close', style: TextStyle(color: theme.primaryColor)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showSleepTimerDialog(BuildContext context, RadioEngine engine) {
-    int minutes = 30;
-    showDialog(
-      context: context,
-      builder: (context) {
-        final theme = Theme.of(context);
-        final textColor = theme.textTheme.bodyMedium?.color;
-
-        return AlertDialog(
-          backgroundColor: theme.cardColor,
-          title: Text(
-            'Sleep Timer',
-            style: TextStyle(color: theme.textTheme.titleLarge?.color),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Set timer to stop playback:',
-                style: TextStyle(color: textColor?.withValues(alpha: 0.6)),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [15, 30, 60, 120].map((preset) {
-                  return ElevatedButton(
-                    onPressed: () {
-                      minutes = preset;
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
-                      foregroundColor: theme.primaryColor,
-                      elevation: 0,
-                    ),
-                    child: Text('${preset}m'),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                keyboardType: TextInputType.number,
-                style: TextStyle(color: theme.textTheme.bodyLarge?.color),
-                decoration: InputDecoration(
-                  labelText: 'Custom minutes',
-                  labelStyle: TextStyle(color: theme.primaryColor),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: theme.primaryColor.withValues(alpha: 0.5)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: theme.primaryColor),
-                  ),
-                ),
-                onChanged: (value) => minutes = int.tryParse(value) ?? 30,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: textColor?.withValues(alpha: 0.6))),
-            ),
-            if (engine.isSleepTimerActive)
-              TextButton(
-                onPressed: () {
-                  engine.cancelSleepTimer();
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Sleep timer cancelled')),
-                  );
-                },
-                child: Text('Cancel Timer', style: TextStyle(color: theme.colorScheme.error)),
-              ),
-            TextButton(
-              onPressed: () {
-                engine.startSleepTimer(Duration(minutes: minutes));
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Sleep timer set for $minutes minutes')),
-                );
-              },
-              child: Text('Start', style: TextStyle(color: theme.primaryColor)),
             ),
           ],
         );

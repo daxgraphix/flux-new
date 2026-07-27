@@ -4,6 +4,8 @@ import '../flux_engine/radio_engine.dart';
 import '../helpers/navigation_helper.dart';
 import 'models/podcast.dart';
 import 'widgets/flux_image.dart';
+import 'widgets/empty_state_widget.dart';
+import 'widgets/shimmer_list_widget.dart';
 import 'now_playing_screen.dart';
 import 'package:intl/intl.dart';
 
@@ -36,6 +38,10 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> {
             expandedHeight: 300,
             pinned: true,
             backgroundColor: theme.scaffoldBackgroundColor,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -109,15 +115,20 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> {
           Consumer<RadioEngine>(
             builder: (context, engine, child) {
               if (engine.isLoading) {
-                return const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator(color: Colors.red)),
+                return const SliverToBoxAdapter(
+                  child: ShimmerListWidget(itemCount: 5),
                 );
               }
               
               if (engine.episodes.isEmpty) {
                 return SliverFillRemaining(
-                  child: Center(
-                    child: Text('No episodes found', style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6))),
+                  hasScrollBody: false,
+                  child: EmptyStateWidget(
+                    icon: Icons.mic_off,
+                    title: 'No episodes found',
+                    message: 'We couldn\'t find any episodes for this podcast.',
+                    buttonLabel: 'Go Back',
+                    onButtonPressed: () => Navigator.pop(context),
                   ),
                 );
               }
@@ -204,13 +215,22 @@ class _EpisodeListItem extends StatelessWidget {
           ],
         ),
         trailing: isDownloading
-            ? SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  value: downloadProgress > 0 ? downloadProgress : null,
-                  strokeWidth: 2,
-                  color: Colors.red,
+            ? InkWell(
+                onTap: () => engine.cancelDownload(episode.id),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        value: downloadProgress > 0 ? downloadProgress : null,
+                        strokeWidth: 2,
+                        color: Colors.red,
+                      ),
+                      const Icon(Icons.close, size: 12, color: Colors.red),
+                    ],
+                  ),
                 ),
               )
             : IconButton(

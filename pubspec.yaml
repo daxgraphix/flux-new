@@ -44,9 +44,9 @@ dependencies:
   flutter_shaders: ^0.1.2
   provider: ^6.1.5
   http: ^1.2.1
-  just_audio: ^0.9.37
-  audio_service: ^0.18.12
-  audio_session: ^0.1.2
+  just_audio: ^0.10.6
+  audio_service: ^0.18.19
+  audio_session: ^0.2.4
   location: ^6.0.1
   record: ^6.2.0
   flutter_audio_waveforms: ^1.0.4

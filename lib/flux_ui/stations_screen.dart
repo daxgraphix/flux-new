@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../flux_engine/radio_engine.dart';
+import 'widgets/empty_state_widget.dart';
+import 'widgets/shimmer_list_widget.dart';
 
 class StationsScreen extends StatelessWidget {
   const StationsScreen({super.key});
@@ -28,8 +30,16 @@ class StationsScreen extends StatelessWidget {
                 ),
                 Expanded(
                   child: engine.isLoading
-                      ? Center(child: CircularProgressIndicator(color: theme.primaryColor))
-                      : ListView.builder(
+                      ? const ShimmerListWidget()
+                      : engine.stations.isEmpty
+                          ? EmptyStateWidget(
+                              icon: Icons.radio,
+                              title: 'No stations',
+                              message: 'We couldn\'t find any radio stations right now.',
+                              buttonLabel: 'Refresh',
+                              onButtonPressed: () => engine.loadTopStations(),
+                            )
+                          : ListView.builder(
                           itemCount: engine.stations.length,
                           itemBuilder: (context, index) {
                             final station = engine.stations[index];

@@ -41,16 +41,22 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final cardColor = theme.cardColor;
+    final cardColor = theme.colorScheme.surface;
     final primaryColor = theme.primaryColor;
-    final textColor = theme.textTheme.bodyLarge?.color ?? (isDark ? Colors.white : Colors.black);
-    final secondaryTextColor = theme.textTheme.bodyMedium?.color ?? Colors.grey;
+    final textColor = theme.colorScheme.onSurface;
+    final secondaryTextColor = theme.colorScheme.onSurfaceVariant;
 
     return Consumer<RadioEngine>(
       builder: (context, engine, _) {
         final station = engine.currentStation;
-        if (station == null) return const SizedBox.shrink();
+        final episode = engine.currentEpisode;
+        
+        if (station == null && episode == null) return const SizedBox.shrink();
+
+        final imageUrl = station?.favicon ?? episode?.image ?? '';
+        final title = engine.currentTitle;
+        final subtitle = engine.currentSubtitle;
+
         return GestureDetector(
           onTap: widget.onExpandTap,
           child: Container(
@@ -96,19 +102,23 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                         height: 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isDark ? Colors.black : Colors.grey[200],
+                          color: theme.colorScheme.surfaceContainerHighest,
                           border:
                               Border.all(color: primaryColor.withValues(alpha: 0.5), width: 1.5),
                         ),
                         child: ClipOval(
                           child: FluxImage(
-                            imageUrl: station.favicon,
+                            imageUrl: imageUrl,
                             width: 44,
                             height: 44,
-                            placeholder: Icon(Icons.radio_rounded,
-                                color: primaryColor, size: 22),
-                            errorWidget: Icon(Icons.radio_rounded,
-                                color: primaryColor, size: 22),
+                            placeholder: Icon(
+                                station != null ? Icons.radio_rounded : Icons.podcasts_rounded,
+                                color: primaryColor,
+                                size: 22),
+                            errorWidget: Icon(
+                                station != null ? Icons.radio_rounded : Icons.podcasts_rounded,
+                                color: primaryColor,
+                                size: 22),
                           ),
                         ),
                       ),
@@ -120,9 +130,7 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              engine.currentTitle.isNotEmpty 
-                                  ? engine.currentTitle 
-                                  : station.name,
+                              title,
                               style: TextStyle(
                                 color: textColor,
                                 fontWeight: FontWeight.bold,
@@ -133,16 +141,15 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              engine.currentTitle.isNotEmpty && engine.currentTitle != station.name
-                                  ? station.name
-                                  : [
-                                      station.country,
-                                      station.genre,
-                                    ]
-                                      .where((s) => s.isNotEmpty)
-                                      .join(' • '),
+                              engine.errorMessage ?? subtitle,
                               style: TextStyle(
-                                  color: secondaryTextColor, fontSize: 11),
+                                  color: engine.errorMessage != null
+                                      ? theme.colorScheme.error
+                                      : secondaryTextColor,
+                                  fontSize: 11,
+                                  fontWeight: engine.errorMessage != null
+                                      ? FontWeight.bold
+                                      : FontWeight.normal),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -150,6 +157,24 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                         ),
                       ),
                       const SizedBox(width: 8),
+                      if (engine.errorMessage != null) ...[
+                        GestureDetector(
+                          onTap: () => engine.clearError(),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.error.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.close_rounded,
+                              color: theme.colorScheme.error,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       // Animated waveform (when playing) OR static icon
                       if (engine.isPlaying)
                         RepaintBoundary(

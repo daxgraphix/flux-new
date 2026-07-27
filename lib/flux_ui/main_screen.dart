@@ -10,11 +10,11 @@ import 'now_playing_screen.dart';
 import 'library_screen.dart';
 import 'countries_screen.dart';
 import 'streema_browser_screen.dart';
+import 'podcast_details_screen.dart';
+import 'models/podcast.dart';
 
 import 'widgets/flux_image.dart';
-
-// ─── Colors ──────────────────────────────────────────────────────────
-const _kGrey = Color(0xFF9E9E9E);
+import 'widgets/empty_state_widget.dart';
 
 // ─── Main Screen ──────────────────────────────────────────────────────────
 class MainScreen extends StatefulWidget {
@@ -56,13 +56,16 @@ class _HomeTabState extends State<_HomeTab>
   void _debouncedSearch(String value) {
     _debounce?.cancel();
     if (value.isEmpty) {
-      context.read<RadioEngine>().loadTopStationsIfNeeded();
+      final engine = context.read<RadioEngine>();
+      if (engine.searchType == SearchType.station) {
+        engine.loadTopStationsIfNeeded();
+      }
       return;
     }
     _debounce = Timer(const Duration(milliseconds: 500), () {
       if (mounted) {
         final engine = context.read<RadioEngine>();
-        engine.searchStations(name: value, limit: 50);
+        engine.search(value);
         engine.saveRecentSearch(value);
       }
     });
@@ -123,11 +126,10 @@ class _HomeTabState extends State<_HomeTab>
                                 padding: const EdgeInsets.only(right: 10),
                                 child: _StationCard(
                                   station: favs[i],
-                                  onTap: () => engine.playStation(favs[i]).then((_) {
-                                        if (context.mounted) {
-                                          Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
-                                        }
-                                      }),
+                                  onTap: () {
+                                    engine.playStation(favs[i]);
+                                    Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+                                  },
                                   isPlaying:
                                       engine.currentStation?.name ==
                                               favs[i].name &&
@@ -169,11 +171,10 @@ class _HomeTabState extends State<_HomeTab>
                                 padding: const EdgeInsets.only(right: 10),
                                 child: _StationCard(
                                   station: recent[i],
-                                  onTap: () => engine.playStation(recent[i]).then((_) {
-                                        if (context.mounted) {
-                                          Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
-                                        }
-                                      }),
+                                  onTap: () {
+                                    engine.playStation(recent[i]);
+                                    Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+                                  },
                                   isPlaying:
                                       engine.currentStation?.name ==
                                               recent[i].name &&
@@ -200,7 +201,7 @@ class _HomeTabState extends State<_HomeTab>
                           title: 'Browse by Country',
                           onViewAll: () => Navigator.push(
                               context,
-                              NavigationHelper.slideUpRoute(const CountriesScreen()))),
+                              NavigationHelper.slideRightRoute(const CountriesScreen()))),
                       SizedBox(
                         height: 112,
                         child: ListView.builder(
@@ -218,7 +219,7 @@ class _HomeTabState extends State<_HomeTab>
                                   engine.loadStationsByCountry(c);
                                   Navigator.push(
                                       context,
-                                      NavigationHelper.slideUpRoute(const LibraryScreen()));
+                                      NavigationHelper.slideRightRoute(const LibraryScreen()));
                                 },
                               ),
                             );
@@ -242,8 +243,7 @@ class _HomeTabState extends State<_HomeTab>
   // ─── Header ───────────────────────────────────────────────────────────────
   Widget _buildHeader(BuildContext context, RadioEngine engine) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black;
+    final textColor = theme.colorScheme.onSurface;
 
     return SafeArea(
       bottom: false,
@@ -263,10 +263,10 @@ class _HomeTabState extends State<_HomeTab>
                     color: theme.primaryColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
+                  child: Text(
                     'FLUX',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                       fontWeight: FontWeight.w900,
                       fontSize: 20,
                       letterSpacing: 2,
@@ -297,9 +297,9 @@ class _HomeTabState extends State<_HomeTab>
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                     color: textColor.withValues(alpha: 0.08), width: 1),
-                boxShadow: isDark ? null : [
+                boxShadow: [
                    BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: theme.shadowColor.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   )
@@ -307,18 +307,53 @@ class _HomeTabState extends State<_HomeTab>
               ),
               child: Column(
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
+                    child: Row(
+                      children: [
+                        _SearchTypeTab(
+                          label: 'Stations',
+                          isSelected: engine.searchType == SearchType.station,
+                          onTap: () {
+                            engine.setSearchType(SearchType.station);
+                            if (_searchController.text.isNotEmpty) {
+                              _debouncedSearch(_searchController.text);
+                            } else {
+                              engine.loadTopStationsIfNeeded();
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _SearchTypeTab(
+                          label: 'Podcasts',
+                          isSelected: engine.searchType == SearchType.podcast,
+                          onTap: () {
+                            engine.setSearchType(SearchType.podcast);
+                            if (_searchController.text.isNotEmpty) {
+                              _debouncedSearch(_searchController.text);
+                            } else {
+                              engine.loadTrendingPodcasts();
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 12, thickness: 0.5, indent: 12, endIndent: 12),
                   TextField(
                     controller: _searchController,
                     style: TextStyle(color: textColor, fontSize: 15),
                     decoration: InputDecoration(
-                      hintText: 'Search 50,000+ stations...',
+                      hintText: engine.searchType == SearchType.station 
+                          ? 'Search 50,000+ stations...' 
+                          : 'Search millions of podcasts...',
                       hintStyle:
                           TextStyle(color: textColor.withValues(alpha: 0.3), fontSize: 14),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
+                          horizontal: 16, vertical: 12),
                       prefixIcon: Icon(Icons.search_rounded,
                           color: theme.primaryColor, size: 22),
                       suffixIcon: Row(
@@ -329,9 +364,9 @@ class _HomeTabState extends State<_HomeTab>
                               onTap: () {
                                 _searchController.clear();
                                 setState(() {});
-                                context
-                                    .read<RadioEngine>()
-                                    .loadTopStationsIfNeeded();
+                                if (engine.searchType == SearchType.station) {
+                                  engine.loadTopStationsIfNeeded();
+                                }
                               },
                               child: Icon(Icons.close_rounded,
                                   color: textColor.withValues(alpha: 0.4), size: 18),
@@ -350,6 +385,23 @@ class _HomeTabState extends State<_HomeTab>
                 ],
               ),
             ),
+            if (_searchController.text.isEmpty && engine.recentSearches.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 12, right: 4),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => engine.clearRecentSearches(),
+                    icon: Icon(Icons.delete_sweep_outlined, size: 16, color: theme.primaryColor),
+                    label: Text('Clear History', style: TextStyle(color: theme.primaryColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -358,11 +410,10 @@ class _HomeTabState extends State<_HomeTab>
 
   Widget _buildRecentSearches(BuildContext context, RadioEngine engine) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black;
+    final textColor = theme.colorScheme.onSurface;
 
     return Container(
-      height: 40,
+      height: 48,
       padding: const EdgeInsets.only(bottom: 8),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -372,16 +423,17 @@ class _HomeTabState extends State<_HomeTab>
           final query = engine.recentSearches[index];
           return Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: ActionChip(
+            child: Chip(
               label: Text(query, style: TextStyle(color: textColor, fontSize: 11)),
-              backgroundColor: isDark ? Colors.black : Colors.grey[200],
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
               side: BorderSide(color: theme.primaryColor.withValues(alpha: 0.3)),
               padding: EdgeInsets.zero,
-              onPressed: () {
-                _searchController.text = query;
-                setState(() {});
-                engine.searchStations(name: query);
-              },
+              onDeleted: () => engine.removeRecentSearch(query),
+              deleteIcon: const Icon(Icons.close, size: 14),
+              deleteIconColor: theme.primaryColor.withValues(alpha: 0.6),
+              deleteButtonTooltipMessage: 'Remove',
+              clipBehavior: Clip.antiAlias,
+              labelPadding: const EdgeInsets.only(left: 8, right: 0),
             ),
           );
         },
@@ -394,7 +446,7 @@ class _HomeTabState extends State<_HomeTab>
     final actions = [
       _QA(icon: Icons.public_rounded, label: 'Countries',
           onTap: () => Navigator.push(context,
-              NavigationHelper.slideUpRoute(const CountriesScreen()))),
+              NavigationHelper.slideRightRoute(const CountriesScreen()))),
       _QA(icon: Icons.trending_up_rounded, label: 'Trending',
           onTap: () => engine.loadTrendingStations()),
       _QA(icon: Icons.flag_rounded, label: 'Tanzania',
@@ -427,8 +479,7 @@ class _HomeTabState extends State<_HomeTab>
   // ─── Genre Chips ──────────────────────────────────────────────────────────
   Widget _buildGenreChips(BuildContext context, RadioEngine engine) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black;
+    final textColor = theme.colorScheme.onSurface;
     
     final displayGenres = engine.genres.isNotEmpty
         ? engine.genres.take(24).toList()
@@ -458,7 +509,7 @@ class _HomeTabState extends State<_HomeTab>
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: GestureDetector(
-                  onTap: () => engine.searchStations(tag: tag, limit: 50),
+                  onTap: () => engine.searchStations(null, tag: tag, limit: 50),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 18, vertical: 8),
@@ -489,51 +540,42 @@ class _HomeTabState extends State<_HomeTab>
   // ─── Station List ─────────────────────────────────────────────────────────
   Widget _buildStationList(BuildContext context, RadioEngine engine) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black;
-    final greyColor = isDark ? _kGrey : Colors.grey[600]!;
+    final textColor = theme.colorScheme.onSurface;
 
-    if (engine.isLoading && engine.stations.isEmpty) {
+    if (engine.isLoading && engine.stations.isEmpty && engine.podcasts.isEmpty) {
       return SliverToBoxAdapter(child: _buildShimmer(context));
     }
-    if (engine.stations.isEmpty && !engine.isLoading) {
+
+    final isPodcast = engine.searchType == SearchType.podcast;
+    final resultsCount = isPodcast ? engine.podcasts.length : engine.stations.length;
+
+    if (resultsCount == 0 && !engine.isLoading) {
       return SliverFillRemaining(
         hasScrollBody: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 48),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.radio_rounded,
-                  size: 72, color: textColor.withValues(alpha: 0.1)),
-              const SizedBox(height: 16),
-              Text(
-                engine.errorMessage ?? 'No stations found',
-                style: TextStyle(color: greyColor, fontSize: 15),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: () => engine.loadTopStations(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24)),
-                ),
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Try Again'),
-              ),
-            ],
+          child: EmptyStateWidget(
+            icon: isPodcast ? Icons.podcasts_rounded : Icons.radio_rounded,
+            title: isPodcast ? 'No podcasts found' : 'No stations found',
+            message: engine.errorMessage ?? 'Try adjusting your search or explore other categories.',
+            buttonLabel: 'Reset Search',
+            onButtonPressed: () {
+              _searchController.clear();
+              setState(() {});
+              if (isPodcast) {
+                // podcasts don't have a "top" list currently in this view
+              } else {
+                engine.loadTopStations();
+              }
+            },
           ),
         ),
       );
     }
 
-    final stations = engine.stations.take(50).toList();
     final isSearching = _searchController.text.isNotEmpty;
+    final stations = engine.stations.take(50).toList();
+    final podcasts = engine.podcasts.take(50).toList();
 
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -546,7 +588,9 @@ class _HomeTabState extends State<_HomeTab>
                 child: Row(
                   children: [
                     Text(
-                      isSearching ? 'Search Results' : 'Top Stations',
+                      isSearching 
+                          ? (isPodcast ? 'Podcast Results' : 'Search Results') 
+                          : (isPodcast ? 'Recent Podcasts' : 'Top Stations'),
                       style: TextStyle(
                           color: textColor,
                           fontSize: 17,
@@ -562,7 +606,7 @@ class _HomeTabState extends State<_HomeTab>
                         border: Border.all(color: theme.primaryColor.withValues(alpha: 0.4)),
                       ),
                       child: Text(
-                        '${engine.stations.length}',
+                        '$resultsCount',
                         style: TextStyle(
                             color: theme.primaryColor, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
@@ -572,20 +616,36 @@ class _HomeTabState extends State<_HomeTab>
               );
             }
             
-            if (index <= stations.length) {
-              return _StationListItem(
-                station: stations[index - 1],
-                engine: engine,
-              );
+            if (isPodcast) {
+              if (index <= podcasts.length) {
+                return _PodcastListItem(
+                  podcast: podcasts[index - 1],
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      NavigationHelper.slideRightRoute(
+                        PodcastDetailsScreen(podcast: podcasts[index - 1]),
+                      ),
+                    );
+                  },
+                );
+              }
+            } else {
+              if (index <= stations.length) {
+                return _StationListItem(
+                  station: stations[index - 1],
+                  engine: engine,
+                );
+              }
             }
 
-            // Streema Footer for search
-            if (isSearching) {
+            // Streema Footer for radio search
+            if (isSearching && !isPodcast) {
               return _buildStreemaFooter(context, _searchController.text);
             }
             return const SizedBox(height: 80);
           },
-          childCount: stations.length + (isSearching ? 2 : 1),
+          childCount: (isPodcast ? podcasts.length : stations.length) + (isSearching && !isPodcast ? 2 : 1),
         ),
       ),
     );
@@ -593,8 +653,7 @@ class _HomeTabState extends State<_HomeTab>
 
   Widget _buildStreemaFooter(BuildContext context, String query) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final greyColor = isDark ? _kGrey : Colors.grey[600]!;
+    final greyColor = theme.colorScheme.onSurfaceVariant;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
@@ -642,7 +701,8 @@ class _HomeTabState extends State<_HomeTab>
 
   Widget _buildShimmer(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final baseColor = theme.colorScheme.surfaceContainerHighest;
+    final highlightColor = theme.colorScheme.surface;
     
     return Column(
       children: List.generate(
@@ -650,15 +710,15 @@ class _HomeTabState extends State<_HomeTab>
         (i) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Shimmer.fromColors(
-            baseColor: isDark ? theme.cardColor : Colors.grey[300]!,
-            highlightColor: isDark ? theme.cardColor.withValues(alpha: 0.5) : Colors.grey[100]!,
+            baseColor: baseColor,
+            highlightColor: highlightColor,
             child: Row(
               children: [
                 Container(
                     width: 48,
                     height: 48,
-                    decoration: const BoxDecoration(
-                        color: Colors.white, shape: BoxShape.circle)),
+                    decoration: BoxDecoration(
+                        color: highlightColor, shape: BoxShape.circle)),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -667,9 +727,9 @@ class _HomeTabState extends State<_HomeTab>
                       Container(
                           width: double.infinity,
                           height: 14,
-                          color: Colors.white),
+                          color: highlightColor),
                       const SizedBox(height: 8),
-                      Container(width: 120, height: 10, color: Colors.white),
+                      Container(width: 120, height: 10, color: highlightColor),
                     ],
                   ),
                 ),
@@ -677,8 +737,8 @@ class _HomeTabState extends State<_HomeTab>
                 Container(
                     width: 36,
                     height: 36,
-                    decoration: const BoxDecoration(
-                        color: Colors.white, shape: BoxShape.circle)),
+                    decoration: BoxDecoration(
+                        color: highlightColor, shape: BoxShape.circle)),
               ],
             ),
           ),
@@ -698,8 +758,7 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black;
+    final textColor = theme.colorScheme.onSurface;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
@@ -803,8 +862,7 @@ class _QuickActionBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final greyColor = isDark ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6) ?? Colors.grey : Colors.grey[600]!;
+    final greyColor = theme.colorScheme.onSurfaceVariant;
 
     return GestureDetector(
       onTap: onTap,
@@ -818,14 +876,9 @@ class _QuickActionBtn extends StatelessWidget {
               color: theme.cardColor,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: theme.primaryColor.withValues(alpha: 0.3)),
-              boxShadow: isDark ? [
+              boxShadow: [
                 BoxShadow(
-                    color: theme.primaryColor.withValues(alpha: 0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2))
-              ] : [
-                BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: theme.shadowColor.withValues(alpha: 0.1),
                     blurRadius: 5,
                     offset: const Offset(0, 2))
               ],
@@ -857,8 +910,7 @@ class _StationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black;
+    final textColor = theme.colorScheme.onSurface;
 
     return GestureDetector(
       onTap: onTap,
@@ -868,11 +920,11 @@ class _StationCard extends StatelessWidget {
           color: theme.cardColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: isPlaying ? theme.primaryColor : textColor.withValues(alpha: 0.06),
+              color: isPlaying ? theme.primaryColor : textColor.withValues(alpha: 0.1),
               width: isPlaying ? 1.5 : 1),
           boxShadow: isPlaying
               ? [BoxShadow(color: theme.primaryColor.withValues(alpha: 0.2), blurRadius: 12)]
-              : (isDark ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
+              : [BoxShadow(color: theme.shadowColor.withValues(alpha: 0.1), blurRadius: 4)],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -882,7 +934,7 @@ class _StationCard extends StatelessWidget {
               height: 52,
               decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isDark ? Colors.black : Colors.white,
+                  color: theme.colorScheme.surface,
                   border: Border.all(
                       color: theme.primaryColor.withValues(alpha: 0.4), width: 1.5)),
               child: FluxImage(
@@ -926,8 +978,7 @@ class _CountryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black;
+    final textColor = theme.colorScheme.onSurface;
 
     return GestureDetector(
       onTap: onTap,
@@ -937,7 +988,7 @@ class _CountryCard extends StatelessWidget {
           color: theme.cardColor,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: theme.primaryColor.withValues(alpha: 0.25)),
-          boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)],
+          boxShadow: [BoxShadow(color: theme.shadowColor.withValues(alpha: 0.1), blurRadius: 4)],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -972,9 +1023,8 @@ class _StationListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final textColor = theme.textTheme.bodyLarge?.color ?? (isDark ? Colors.white : Colors.black);
-    final greyColor = isDark ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6) ?? Colors.grey : Colors.grey[600]!;
+    final textColor = theme.colorScheme.onSurface;
+    final greyColor = theme.colorScheme.onSurfaceVariant;
     
     final isPlaying = engine.currentStation?.name == station.name && engine.isPlaying;
     final isLoading = engine.isLoading && engine.currentStation?.name == station.name;
@@ -985,48 +1035,16 @@ class _StationListItem extends StatelessWidget {
         color: isPlaying ? theme.primaryColor.withValues(alpha: 0.06) : theme.cardColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isPlaying ? theme.primaryColor.withValues(alpha: 0.5) : textColor.withValues(alpha: 0.05),
+          color: isPlaying ? theme.primaryColor.withValues(alpha: 0.5) : textColor.withValues(alpha: 0.1),
           width: isPlaying ? 1.5 : 1,
         ),
-        boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)],
+        boxShadow: [BoxShadow(color: theme.shadowColor.withValues(alpha: 0.1), blurRadius: 4)],
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: isLoading ? null : () async {
-          final messenger = ScaffoldMessenger.of(context);
-          try {
-            await engine.playStation(station);
-            if (context.mounted) {
-              Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
-            }
-            if (engine.errorMessage != null && context.mounted) {
-              messenger.showSnackBar(SnackBar(
-                content: Text(engine.errorMessage!),
-                backgroundColor: theme.primaryColor,
-                action: (engine.errorMessage!.contains('broken') || engine.errorMessage!.contains('unavailable'))
-                    ? SnackBarAction(
-                        label: 'Report',
-                        textColor: Colors.white,
-                        onPressed: () => engine.reportBrokenStation(station.uuid ?? ''),
-                      )
-                    : SnackBarAction(
-                        label: 'Retry',
-                        textColor: Colors.white,
-                        onPressed: () => engine.playStation(station)),
-              ));
-            }
-          } catch (e) {
-            if (context.mounted) {
-              messenger.showSnackBar(SnackBar(
-                content: const Text('We couldn\'t play this station right now.'),
-                backgroundColor: theme.primaryColor,
-                action: SnackBarAction(
-                    label: 'Retry',
-                    textColor: Colors.white,
-                    onPressed: () => engine.playStation(station)),
-              ));
-            }
-          }
+        onTap: isLoading ? null : () {
+          engine.playStation(station);
+          Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1041,7 +1059,7 @@ class _StationListItem extends StatelessWidget {
                     height: 46,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isDark ? Colors.black : Colors.white,
+                      color: theme.colorScheme.surface,
                       border: Border.all(
                           color: isPlaying
                               ? theme.primaryColor
@@ -1063,7 +1081,7 @@ class _StationListItem extends StatelessWidget {
                       width: 46,
                       height: 46,
                       decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.55),
+                          color: theme.colorScheme.surface.withValues(alpha: 0.7),
                           shape: BoxShape.circle),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
@@ -1120,7 +1138,7 @@ class _StationListItem extends StatelessWidget {
                 ),
                 child: Icon(
                   isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                  color: isPlaying ? Colors.white : theme.primaryColor,
+                  color: isPlaying ? theme.colorScheme.onPrimary : theme.primaryColor,
                   size: 20,
                 ),
               ),
@@ -1133,3 +1151,105 @@ class _StationListItem extends StatelessWidget {
 }
 
 // ─── Page transition helper ───────────────────────────────────────────────
+
+class _SearchTypeTab extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SearchTypeTab({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? theme.primaryColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PodcastListItem extends StatelessWidget {
+  final Podcast podcast;
+  final VoidCallback onTap;
+
+  const _PodcastListItem({required this.podcast, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textColor = theme.colorScheme.onSurface;
+    final greyColor = theme.colorScheme.onSurfaceVariant;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: textColor.withValues(alpha: 0.1)),
+        boxShadow: [BoxShadow(color: theme.shadowColor.withValues(alpha: 0.1), blurRadius: 4)],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: FluxImage(
+                  imageUrl: podcast.image,
+                  width: 52,
+                  height: 52,
+                  placeholder: Icon(Icons.podcasts_rounded, color: theme.primaryColor, size: 24),
+                  errorWidget: Icon(Icons.podcasts_rounded, color: theme.primaryColor, size: 24),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      podcast.title,
+                      style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 14),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      podcast.publisher,
+                      style: TextStyle(color: greyColor, fontSize: 12),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: greyColor.withValues(alpha: 0.5)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

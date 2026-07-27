@@ -3,7 +3,11 @@ import 'package:provider/provider.dart';
 import 'streema_browser_screen.dart';
 import '../flux_engine/radio_engine.dart';
 import '../flux_hardware/radio_service.dart';
+import '../helpers/navigation_helper.dart';
+import 'now_playing_screen.dart';
 import 'widgets/flux_image.dart';
+import 'widgets/empty_state_widget.dart';
+import 'widgets/shimmer_list_widget.dart';
 
 class StationsListScreen extends StatefulWidget {
   final String title;
@@ -38,19 +42,12 @@ class _StationsListScreenState extends State<StationsListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [const Color(0xFF1A1A2E), const Color(0xFF0A0A0A)]
-                : [const Color(0xFFE8EAF6), const Color(0xFFD1C4E9)],
-          ),
-        ),
+        color: theme.scaffoldBackgroundColor,
         child: SafeArea(
           child: Consumer<RadioEngine>(
             builder: (context, engine, child) {
@@ -62,7 +59,7 @@ class _StationsListScreenState extends State<StationsListScreen> {
                     child: Row(
                       children: [
                         IconButton(
-                          icon: Icon(Icons.arrow_back, color: Theme.of(context).primaryColor),
+                          icon: Icon(Icons.arrow_back, color: theme.primaryColor),
                           onPressed: () => Navigator.pop(context),
                         ),
                         if (widget.flag != null) ...[
@@ -76,7 +73,7 @@ class _StationsListScreenState extends State<StationsListScreen> {
                           child: Text(
                             widget.title,
                             style: TextStyle(
-                              color: Theme.of(context).primaryColor,
+                              color: theme.colorScheme.onSurface,
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),
@@ -92,7 +89,7 @@ class _StationsListScreenState extends State<StationsListScreen> {
                     child: Text(
                       '${engine.stations.length} stations found',
                       style: TextStyle(
-                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        color: theme.colorScheme.onSurfaceVariant,
                         fontSize: 14,
                       ),
                     ),
@@ -101,34 +98,26 @@ class _StationsListScreenState extends State<StationsListScreen> {
                   // Stations list
                   Expanded(
                     child: engine.isLoading
-                        ? Center(
-                            child: CircularProgressIndicator(color: Theme.of(context).primaryColor),
+                        ? LayoutBuilder(
+                            builder: (context, constraints) {
+                              return ShimmerListWidget(isGrid: constraints.maxWidth >= 600);
+                            },
                           )
                         : engine.stations.isEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.radio,
-                                      size: 48,
-                                      color: isDark
-                                          ? Colors.grey[600]
-                                          : Colors.grey[400],
+                            ? EmptyStateWidget(
+                                icon: Icons.radio,
+                                title: 'No stations found',
+                                message: 'We couldn\'t find any stations matching your search.',
+                                buttonLabel: 'Search Directory',
+                                onButtonPressed: () {
+                                  final url = RadioService().getStreemaSearchUrl(widget.title);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => StreemaBrowserScreen(url: url),
                                     ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'No stations found',
-                                      style: TextStyle(
-                                        color: isDark
-                                            ? Colors.grey[400]
-                                            : Colors.grey[600],
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                  );
+                                },
                               )
                             : LayoutBuilder(
                                 builder: (context, constraints) {
@@ -148,7 +137,7 @@ class _StationsListScreenState extends State<StationsListScreen> {
                                           return _buildStreemaFooter(widget.title);
                                         }
                                         final station = engine.stations[index];
-                                        return _buildStationItem(station, isDark, engine);
+                                        return _buildStationItem(station, engine);
                                       },
                                     );
                                   }
@@ -159,7 +148,7 @@ class _StationsListScreenState extends State<StationsListScreen> {
                                         return _buildStreemaFooter(widget.title);
                                       }
                                       final station = engine.stations[index];
-                                      return _buildStationItem(station, isDark, engine);
+                                      return _buildStationItem(station, engine);
                                     },
                                   );
                                 },
@@ -174,33 +163,34 @@ class _StationsListScreenState extends State<StationsListScreen> {
     );
   }
 
-  Widget _buildStationItem(RadioStation station, bool isDark, RadioEngine engine) {
+  Widget _buildStationItem(RadioStation station, RadioEngine engine) {
+    final theme = Theme.of(context);
     return Card(
-      color: isDark
-          ? Colors.white.withValues(alpha: 0.05)
-          : Colors.black.withValues(alpha: 0.05),
+      elevation: 0,
+      color: theme.cardColor,
       margin: const EdgeInsets.symmetric(
-        horizontal: 0, // Handled by Grid/List padding
+        horizontal: 16,
         vertical: 4,
       ),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: FluxImage(
           imageUrl: station.favicon,
           width: 40,
           height: 40,
           placeholder: CircleAvatar(
-            backgroundColor: Theme.of(context).primaryColor,
+            backgroundColor: theme.primaryColor,
             child: Icon(
               Icons.radio,
-              color: Theme.of(context).colorScheme.onPrimary,
+              color: theme.colorScheme.onPrimary,
               size: 20,
             ),
           ),
           errorWidget: CircleAvatar(
-            backgroundColor: Theme.of(context).primaryColor,
+            backgroundColor: theme.primaryColor,
             child: Icon(
               Icons.radio,
-              color: Theme.of(context).colorScheme.onPrimary,
+              color: theme.colorScheme.onPrimary,
               size: 20,
             ),
           ),
@@ -208,8 +198,9 @@ class _StationsListScreenState extends State<StationsListScreen> {
         title: Text(
           station.name,
           style: TextStyle(
-            color: isDark ? Colors.white : Colors.black87,
-            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -217,32 +208,34 @@ class _StationsListScreenState extends State<StationsListScreen> {
         subtitle: Text(
           '${station.country} • ${station.genre}',
           style: TextStyle(
-            color: isDark ? Colors.grey[400] : Colors.grey[600],
+            color: theme.colorScheme.onSurfaceVariant,
             fontSize: 12,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: IconButton(
-          icon: Icon(
-            Icons.play_arrow,
-            color: Theme.of(context).primaryColor,
-            size: 24,
-          ),
-          onPressed: () => engine.playStation(station),
+        trailing: Icon(
+          Icons.play_circle_fill,
+          color: theme.primaryColor,
+          size: 32,
         ),
+        onTap: () {
+          engine.playStation(station);
+          Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+        },
       ),
     );
   }
 
   Widget _buildStreemaFooter(String query) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
       child: Column(
         children: [
           Text(
             "Can't find what you're looking for?",
-            style: TextStyle(color: Colors.grey[500], fontSize: 13),
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7), fontSize: 13),
           ),
           const SizedBox(height: 12),
           InkWell(
@@ -259,17 +252,17 @@ class _StationsListScreenState extends State<StationsListScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
-                border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.3)),
+                border: Border.all(color: theme.primaryColor.withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.travel_explore_rounded, size: 20, color: Theme.of(context).primaryColor),
+                  Icon(Icons.travel_explore_rounded, size: 20, color: theme.primaryColor),
                   const SizedBox(width: 10),
                   Text(
                     'Search Streema Directory',
-                    style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: theme.primaryColor, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),

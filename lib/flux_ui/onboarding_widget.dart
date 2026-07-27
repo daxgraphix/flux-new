@@ -282,7 +282,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       title: 'Smart Features',
       subtitle: 'Advanced Audio Controls',
       description:
-          'Sleep timer, recording, equalizer, and instant one-tap playback.',
+          'Recording, equalizer, and instant one-tap playback.',
       icon: Icons.tune_rounded,
     ),
     _OBPage(

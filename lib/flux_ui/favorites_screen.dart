@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../flux_engine/radio_engine.dart';
 import '../flux_storage/radio_storage.dart';
+import 'widgets/empty_state_widget.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -31,33 +32,34 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Consumer<RadioEngine>(
-      builder: (context, engine, child) {
-        return Container(
-          color: theme.scaffoldBackgroundColor,
-          child: SafeArea(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Favorites'),
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
+        elevation: 0,
+      ),
+      body: Consumer<RadioEngine>(
+        builder: (context, engine, child) {
+          return Container(
+            color: theme.scaffoldBackgroundColor,
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'Favorites',
-                    style: TextStyle(
-                      color: theme.primaryColor,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
                 Expanded(
                   child: _favorites.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No favorites yet',
-                            style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6)),
-                          ),
+                      ? EmptyStateWidget(
+                          icon: Icons.favorite_outline,
+                          title: 'No favorites yet',
+                          message: 'Keep track of the stations you love by adding them to favorites.',
+                          buttonLabel: 'Explore Stations',
+                          onButtonPressed: () {
+                            if (Navigator.canPop(context)) {
+                              Navigator.pop(context);
+                            }
+                          },
                         )
                       : ListView.builder(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           itemCount: _favorites.length,
                           itemBuilder: (context, index) {
                             final favorite = _favorites[index];
@@ -83,11 +85,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                       ),
                                 title: Text(
                                   favorite.name,
-                                  style: TextStyle(color: theme.textTheme.bodyLarge?.color),
+                                  style: theme.textTheme.titleMedium,
                                 ),
                                 subtitle: Text(
                                   '${favorite.country} • ${favorite.genre}',
-                                  style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6)),
+                                  style: theme.textTheme.bodySmall,
                                 ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -122,9 +124,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ),
               ],
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

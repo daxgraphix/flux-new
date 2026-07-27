@@ -6,6 +6,7 @@ import 'main_screen.dart';
 import 'library_screen.dart';
 import 'settings_screen.dart';
 import 'countries_screen.dart';
+import 'streema_browser_screen.dart';
 import 'widgets/enhanced_mini_player.dart';
 import 'now_playing_screen.dart';
 
@@ -23,6 +24,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
     const MainScreen(),
     const LibraryScreen(),
     const CountriesScreen(),
+    const StreemaBrowserScreen(url: 'https://streema.com/radios/'),
     const SettingsScreen(),
   ];
 
@@ -39,9 +41,9 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
     final isTablet = size.shortestSide >= 600;
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           Row(
@@ -51,7 +53,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
                   selectedIndex: _selectedIndex,
                   onDestinationSelected: _onItemTapped,
                   labelType: NavigationRailLabelType.all,
-                  backgroundColor: theme.scaffoldBackgroundColor,
+                  backgroundColor: Colors.white,
                   selectedIconTheme: IconThemeData(color: theme.primaryColor),
                   unselectedIconTheme: const IconThemeData(color: Colors.grey),
                   selectedLabelTextStyle: TextStyle(color: theme.primaryColor, fontWeight: FontWeight.bold),
@@ -73,6 +75,11 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
                       label: Text('Explore'),
                     ),
                     NavigationRailDestination(
+                      icon: Icon(Icons.language_outlined),
+                      selectedIcon: Icon(Icons.language_rounded),
+                      label: Text('Streema'),
+                    ),
+                    NavigationRailDestination(
                       icon: Icon(Icons.settings_outlined),
                       selectedIcon: Icon(Icons.settings_rounded),
                       label: Text('Settings'),
@@ -87,7 +94,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
               ),
             ],
           ),
-          if (engine.currentStation != null)
+          if (engine.currentStation != null || engine.currentEpisode != null)
             Positioned(
               left: 0,
               right: 0,
@@ -109,7 +116,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
               decoration: BoxDecoration(
                 border: Border(
                   top: BorderSide(
-                    color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     width: 0.5,
                   ),
                 ),
@@ -118,7 +125,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
                 currentIndex: _selectedIndex,
                 onTap: _onItemTapped,
                 type: BottomNavigationBarType.fixed,
-                backgroundColor: theme.scaffoldBackgroundColor,
+                backgroundColor: Colors.white,
                 selectedItemColor: theme.primaryColor,
                 unselectedItemColor: Colors.grey,
                 showUnselectedLabels: true,
@@ -139,6 +146,11 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
                     icon: Icon(Icons.public_outlined),
                     activeIcon: Icon(Icons.public_rounded),
                     label: 'Explore',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.language_outlined),
+                    activeIcon: Icon(Icons.language_rounded),
+                    label: 'Streema',
                   ),
                   BottomNavigationBarItem(
                     icon: Icon(Icons.settings_outlined),

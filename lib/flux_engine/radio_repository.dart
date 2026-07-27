@@ -82,9 +82,15 @@ class RadioRepository {
     }
 
     try {
-      final countries = await _service.getCountries();
-      final tags = await _service.getTags();
-      final languages = await _service.getLanguages();
+      final results = await Future.wait([
+        _service.getCountries(),
+        _service.getTags(),
+        _service.getLanguages(),
+      ]);
+
+      final countries = results[0];
+      final tags = results[1];
+      final languages = results[2];
 
       await _storage.cacheData(countriesKey, countries);
       await _storage.cacheData(tagsKey, tags);

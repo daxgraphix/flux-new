@@ -4,6 +4,7 @@ import '../flux_engine/radio_engine.dart';
 import '../flux_hardware/radio_service.dart';
 import '../helpers/navigation_helper.dart';
 import 'widgets/flux_image.dart';
+import 'widgets/empty_state_widget.dart';
 import 'now_playing_screen.dart';
 
 class RecentScreen extends StatefulWidget {
@@ -25,33 +26,35 @@ class _RecentScreenState extends State<RecentScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Consumer<RadioEngine>(
-      builder: (context, engine, child) {
-        final recent = engine.recentStations;
-        return Container(
-          color: theme.scaffoldBackgroundColor,
-          child: SafeArea(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Recently Played'),
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
+        elevation: 0,
+      ),
+      body: Consumer<RadioEngine>(
+        builder: (context, engine, child) {
+          final recent = engine.recentStations;
+          return Container(
+            color: theme.scaffoldBackgroundColor,
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'Recently Played',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: theme.primaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
                 Expanded(
                   child: recent.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No recent stations',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
-                            ),
-                          ),
+                      ? EmptyStateWidget(
+                          icon: Icons.history,
+                          title: 'No history',
+                          message: 'Your recently played stations will appear here.',
+                          buttonLabel: 'Listen Now',
+                          onButtonPressed: () {
+                            // If this is within LibraryScreen, we might want to switch tabs.
+                            // However, RecentScreen is also a standalone screen in some contexts.
+                            // For now, let's pop if possible or just navigate to main if we can.
+                            if (Navigator.canPop(context)) {
+                              Navigator.pop(context);
+                            }
+                          },
                         )
                       : LayoutBuilder(
                           builder: (context, constraints) {
@@ -83,9 +86,9 @@ class _RecentScreenState extends State<RecentScreen> {
                 ),
               ],
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 

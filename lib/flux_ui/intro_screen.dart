@@ -27,7 +27,7 @@ class _IntroScreenState extends State<IntroScreen> {
     _IntroPage(
       icon: Icons.equalizer,
       title: 'Pro Audio Controls',
-      subtitle: 'Use sleep timer, alarm, record and equalizer for the perfect listening experience.',
+      subtitle: 'Use alarm, record and equalizer for the perfect listening experience.',
     ),
     _IntroPage(
       icon: Icons.play_circle,

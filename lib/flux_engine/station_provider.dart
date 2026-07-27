@@ -262,6 +262,23 @@ class StationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> loadTrendingPodcasts() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final podcasts = await _podcastService.fetchTrendingPodcasts();
+      _podcasts = podcasts;
+      
+      // Since RSS URLs are missing in trending API response for some entries,
+      // we might need to look them up when selected, but for now we just show them.
+    } catch (e) {
+      _errorMessage = 'Failed to load trending podcasts: $e';
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
+
   Future<void> searchPodcasts(String query) async {
     _isLoading = true;
     _errorMessage = null;
@@ -306,5 +323,10 @@ class StationProvider extends ChangeNotifier {
       _episodes[index] = episode;
       notifyListeners();
     }
+  }
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
   }
 }

@@ -68,7 +68,6 @@ class _FluxAppState extends State<FluxApp> {
     _downloadService = DownloadService();
     _engine = RadioEngine(_audioHandler, _recordingService, _alarmService, _stationProvider, _downloadService);
     _themeProvider = ThemeProvider();
-    _themeProvider.loadTheme();
     _initializeApp();
   }
 
@@ -103,6 +102,7 @@ class _FluxAppState extends State<FluxApp> {
           return MaterialApp(
             title: 'Flux Radio',
             theme: themeProvider.theme,
+            themeMode: ThemeMode.light,
             builder: (context, child) {
               return DefaultTextStyle.merge(
                 style: const TextStyle(decoration: TextDecoration.none),

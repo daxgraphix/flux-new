@@ -89,16 +89,22 @@ class PodcastService {
     try {
       final response = await http.get(Uri.parse(rssUrl)).timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
-        final document = XmlDocument.parse(response.body);
+        final body = utf8.decode(response.bodyBytes);
+        final document = XmlDocument.parse(body);
         final items = document.findAllElements('item');
         
+        final channelImage = document.findAllElements('channel').first.findElements('itunes:image').isNotEmpty 
+            ? document.findAllElements('channel').first.findElements('itunes:image').first.getAttribute('href') ?? ''
+            : '';
+
         return items.map((node) {
           final title = node.findElements('title').isNotEmpty 
               ? node.findElements('title').first.innerText 
               : 'Untitled Episode';
           final description = node.findElements('description').isNotEmpty 
               ? node.findElements('description').first.innerText 
-              : '';
+              : (node.findElements('itunes:summary').isNotEmpty ? node.findElements('itunes:summary').first.innerText : '');
+          
           final enclosures = node.findElements('enclosure');
           if (enclosures.isEmpty) return null;
           
@@ -121,6 +127,7 @@ class PodcastService {
           if (itunesImage.isNotEmpty) {
             imageUrl = itunesImage.first.getAttribute('href') ?? '';
           }
+          if (imageUrl.isEmpty) imageUrl = channelImage;
 
           return Episode(
             id: audioUrl, 

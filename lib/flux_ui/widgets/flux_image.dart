@@ -53,20 +53,22 @@ class FluxImage extends StatelessWidget {
   }
 
   Widget _defaultPlaceholder(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Icon(
         Icons.radio_rounded,
-        color: Colors.red.withValues(alpha: 0.5),
+        color: theme.colorScheme.primary.withValues(alpha: 0.5),
         size: (width ?? 24) * 0.5,
       ),
     );
   }
 
   Widget _defaultError(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Icon(
         Icons.radio_rounded,
-        color: Colors.red,
+        color: theme.colorScheme.error,
         size: (width ?? 24) * 0.5,
       ),
     );

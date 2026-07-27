@@ -72,6 +72,8 @@ class Episode {
   final String image;
   @HiveField(7)
   final String? downloadPath;
+  @HiveField(8)
+  final int lastPosition;
 
   Episode({
     required this.id,
@@ -82,6 +84,7 @@ class Episode {
     required this.pubDate,
     required this.image,
     this.downloadPath,
+    this.lastPosition = 0,
   });
 
   bool get isDownloaded => downloadPath != null;
@@ -96,6 +99,7 @@ class Episode {
       pubDate: DateTime.fromMillisecondsSinceEpoch(json['pub_date_ms'] ?? 0),
       image: json['image'] ?? '',
       downloadPath: json['download_path'],
+      lastPosition: json['last_position'] ?? 0,
     );
   }
 
@@ -109,10 +113,11 @@ class Episode {
       'pub_date_ms': pubDate.millisecondsSinceEpoch,
       'image': image,
       'download_path': downloadPath,
+      'last_position': lastPosition,
     };
   }
 
-  Episode copyWith({String? downloadPath}) {
+  Episode copyWith({String? downloadPath, int? lastPosition}) {
     return Episode(
       id: id,
       title: title,
@@ -122,6 +127,7 @@ class Episode {
       pubDate: pubDate,
       image: image,
       downloadPath: downloadPath ?? this.downloadPath,
+      lastPosition: lastPosition ?? this.lastPosition,
     );
   }
 }

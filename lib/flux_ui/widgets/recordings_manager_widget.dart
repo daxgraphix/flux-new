@@ -4,12 +4,10 @@ import '../../flux_engine/radio_engine.dart';
 
 class RecordingsManagerWidget extends StatefulWidget {
   final RadioEngine engine;
-  final bool isDark;
 
   const RecordingsManagerWidget({
     super.key,
     required this.engine,
-    required this.isDark,
   });
 
   @override
@@ -34,9 +32,7 @@ class _RecordingsManagerWidgetState extends State<RecordingsManagerWidget> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: widget.isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.05),
+        color: Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: Colors.orange.withValues(alpha: 0.3),
@@ -49,10 +45,10 @@ class _RecordingsManagerWidgetState extends State<RecordingsManagerWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Recordings',
                 style: TextStyle(
-                  color: widget.isDark ? Colors.white : Colors.black87,
+                  color: Color(0xFF1A1C1E),
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -82,20 +78,16 @@ class _RecordingsManagerWidgetState extends State<RecordingsManagerWidget> {
               child: Center(
                 child: Column(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.mic_off,
                       size: 32,
-                      color: widget.isDark
-                          ? Colors.grey[600]
-                          : Colors.grey[400],
+                      color: Color(0xFF9E9E9E),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'No recordings yet',
                       style: TextStyle(
-                        color: widget.isDark
-                            ? Colors.grey[400]
-                            : Colors.grey[600],
+                        color: Color(0xFF616161),
                       ),
                     ),
                   ],
@@ -115,18 +107,15 @@ class _RecordingsManagerWidgetState extends State<RecordingsManagerWidget> {
                 final sizeStr = _formatBytes(size);
 
                 return Card(
-                  color: widget.isDark
-                      ? Colors.white.withValues(alpha: 0.05)
-                      : Colors.black.withValues(alpha: 0.03),
+                  elevation: 0,
+                  color: Colors.black.withValues(alpha: 0.03),
                   margin: const EdgeInsets.symmetric(vertical: 6),
                   child: ListTile(
                     leading: const Icon(Icons.mic, color: Colors.red, size: 20),
                     title: Text(
                       filename,
-                      style: TextStyle(
-                        color: widget.isDark
-                            ? Colors.white
-                            : Colors.black87,
+                      style: const TextStyle(
+                        color: Color(0xFF1A1C1E),
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
@@ -135,10 +124,8 @@ class _RecordingsManagerWidgetState extends State<RecordingsManagerWidget> {
                     ),
                     subtitle: Text(
                       sizeStr,
-                      style: TextStyle(
-                        color: widget.isDark
-                            ? Colors.grey[400]
-                            : Colors.grey[600],
+                      style: const TextStyle(
+                        color: Color(0xFF616161),
                         fontSize: 11,
                       ),
                     ),

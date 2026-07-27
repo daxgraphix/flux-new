@@ -25,6 +25,7 @@ Future<RadioAudioHandler> initAudioService() async {
 class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   final _equalizer = AndroidEqualizer();
   final _loudnessEnhancer = AndroidLoudnessEnhancer();
+  // final _bassBoost = AndroidBassBoost();
   late AudioPlayer _player;
   
   VoidCallback? onSkipNext;
@@ -36,6 +37,7 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
         androidAudioEffects: [
           _equalizer,
           _loudnessEnhancer,
+          // _bassBoost,
         ],
       ),
     );
@@ -44,9 +46,10 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
     
     // Listen to changes in the player's current item to update mediaItem
     _player.sequenceStateStream.listen((state) {
-      final sequence = state?.sequence;
-      if (sequence == null || sequence.isEmpty) return;
-      final currentItem = sequence[state!.currentIndex];
+      final sequence = state.sequence;
+      final currentIndex = state.currentIndex;
+      if (sequence.isEmpty || currentIndex == null) return;
+      final currentItem = sequence[currentIndex];
       if (currentItem.tag is MediaItem) {
         mediaItem.add(currentItem.tag as MediaItem);
       }
@@ -116,6 +119,7 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
 
   AndroidEqualizer get equalizer => _equalizer;
   AndroidLoudnessEnhancer get loudnessEnhancer => _loudnessEnhancer;
+  // AndroidBassBoost get bassBoost => _bassBoost;
 
   @override
   Future<void> play() async {
@@ -159,9 +163,17 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
 
   Future<void> setUrl(String url, MediaItem item) async {
     try {
-      final source = AudioSource.uri(Uri.parse(url), tag: item);
+      AudioSource source;
+      if (url.startsWith('http')) {
+        source = AudioSource.uri(Uri.parse(url), tag: item);
+      } else {
+        source = AudioSource.file(url, tag: item);
+      }
+
       mediaItem.add(item);
       await _player.setAudioSource(source);
+      // Ensure the UI and service are perfectly in sync for the notification
+      mediaItem.add(item);
     } catch (e) {
       debugPrint("Error setting audio source: $e");
       rethrow;
@@ -169,22 +181,31 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   PlaybackState _transformEvent(PlaybackEvent event) {
+    final item = mediaItem.value;
+    final isStation = item?.extras?['type'] == 'station';
+    
+    final controls = [
+      MediaControl.skipToPrevious,
+      if (_player.playing) MediaControl.pause else MediaControl.play,
+      MediaControl.stop,
+      MediaControl.skipToNext,
+      if (!isStation) MediaControl.rewind,
+      if (!isStation) MediaControl.fastForward,
+    ];
+
     return PlaybackState(
-      controls: [
-        MediaControl.skipToPrevious,
-        if (_player.playing) MediaControl.pause else MediaControl.play,
-        MediaControl.stop,
-        MediaControl.skipToNext,
-      ],
-      systemActions: const {
+      controls: controls,
+      systemActions: {
         MediaAction.play,
         MediaAction.pause,
         MediaAction.stop,
         MediaAction.seek,
         MediaAction.skipToNext,
         MediaAction.skipToPrevious,
+        if (!isStation) MediaAction.fastForward,
+        if (!isStation) MediaAction.rewind,
       },
-      androidCompactActionIndices: const [1, 2],
+      androidCompactActionIndices: const [0, 1, 3],
       processingState: const {
         ProcessingState.idle: AudioProcessingState.idle,
         ProcessingState.loading: AudioProcessingState.loading,

@@ -20,34 +20,18 @@ class _CountriesScreenState extends State<CountriesScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canPop = Navigator.of(context).canPop();
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text('Radio by Country'),
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
+        elevation: 0,
+        automaticallyImplyLeading: true,
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  if (canPop)
-                    IconButton(
-                      icon: Icon(Icons.arrow_back, color: theme.primaryColor),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  Expanded(
-                    child: Text(
-                      'Radio by Country',
-                      style: TextStyle(
-                        color: theme.primaryColor,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -55,13 +39,14 @@ class _CountriesScreenState extends State<CountriesScreen> {
                   final isTablet = constraints.maxWidth >= 600;
                   
                   return ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: countriesData.length,
                     itemBuilder: (context, index) {
                       final region = countriesData[index];
                       final isExpanded = _expandedRegionIndex == index;
 
                       return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -71,28 +56,32 @@ class _CountriesScreenState extends State<CountriesScreen> {
                                   _expandedRegionIndex = isExpanded ? null : index;
                                 });
                               },
+                              borderRadius: BorderRadius.circular(12),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                 decoration: BoxDecoration(
-                                  color: theme.cardColor,
-                                  border: Border(left: BorderSide(color: theme.primaryColor, width: 4)),
-                                  borderRadius: const BorderRadius.horizontal(right: Radius.circular(8)),
+                                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                  border: Border(left: BorderSide(color: theme.colorScheme.primary, width: 4)),
+                                  borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       region.regionName,
-                                      style: TextStyle(color: theme.textTheme.titleMedium?.color, fontSize: 16, fontWeight: FontWeight.bold),
+                                      style: theme.textTheme.titleMedium,
                                     ),
-                                    Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: theme.primaryColor),
+                                    Icon(
+                                      isExpanded ? Icons.expand_less : Icons.expand_more, 
+                                      color: theme.colorScheme.primary
+                                    ),
                                   ],
                                 ),
                               ),
                             ),
                             if (isExpanded)
                               Padding(
-                                padding: const EdgeInsets.only(top: 8),
+                                padding: const EdgeInsets.only(top: 12, bottom: 8),
                                 child: isTablet 
                                   ? GridView.builder(
                                       shrinkWrap: true,
@@ -142,15 +131,16 @@ class _CountriesScreenState extends State<CountriesScreen> {
   void _loadAndNavigateToCountry(BuildContext context, String countryName) {
     final engine = context.read<RadioEngine>();
     final service = context.read<RadioService>();
+    final theme = Theme.of(context);
     engine.loadStationsByCountry(countryName);
     Navigator.push(
       context,
-      NavigationHelper.slideUpRoute(
+      NavigationHelper.slideRightRoute(
         StationsListScreen(
           title: countryName,
           actions: [
             IconButton(
-              icon: const Icon(Icons.open_in_new, size: 20, color: Colors.red),
+              icon: Icon(Icons.open_in_new, size: 20, color: theme.primaryColor),
               onPressed: () {
                 final urlString = service.getStreemaCountryUrl(countryName);
                 Navigator.push(

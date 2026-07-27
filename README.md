@@ -20,14 +20,13 @@
 ### 📱 **Professional Audio Engine**
 - **High-Fidelity Playback**: Optimized buffering and 15s connection timeout handling for 320kbps streams.
 - **Audio Effects**: Professional 5-band equalizer and digital loudness enhancer with persistent settings.
-- **Enhanced Sleep Timer**: Features a **60-second linear volume fade-out** logic that gracefully silences audio, with robustness checks to prevent volume "jumps" if the user adjusts settings during the fade.
 - **Recording**: Record live broadcasts directly to your device with background service support.
 - **Region-Aware**: Smart error handling for 403 (Regional restrictions), 404 (Broken links), and SocketExceptions.
 
 ### 🖥️ **Responsive UI/UX (Redesign)**
 - **Adaptive Layouts**: Seamlessly switches between `ListView` (Mobile) and high-density `GridView` (Tablet) using a 600dp threshold.
 - **Multi-Column Grids**: Dynamic 2-column (small tablets) and 3-4 column (large tablets) layouts with a 3.5 aspect ratio for ergonomic browsing.
-- **Ergonomic Constraints**: The `NowPlayingScreen` and modal bottom sheets (Equalizer, Timer, Recording) are width-constrained to **500-600dp** on tablets to ensure focus and usability.
+- **Ergonomic Constraints**: The `NowPlayingScreen` and modal bottom sheets (Equalizer, Recording) are width-constrained to **500-600dp** on tablets to ensure focus and usability.
 - **Unified Navigation**: A global `NavigationWrapper` that provides a `BottomNavigationBar` on phones and a `NavigationRail` on tablets.
 
 ---
@@ -104,7 +103,6 @@ lib/
 
 ## 🎯 Recent Enhancements
 - ✅ **Tablet Migration**: Refactored `LibraryScreen`, `RecentScreen`, and `StationsList` to support high-density grids.
-- ✅ **Sleep Timer 2.0**: Implemented granular 60s fade-out with linear interpolation.
 - ✅ **UI Ergonomics**: Constrained wide-screen content to 500-600dp to prevent UI "stretching" on tablets.
 - ✅ **Stability**: Added SHA256 fallback for station IDs and enhanced stream timeout logic.
 

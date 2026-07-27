@@ -134,8 +134,12 @@ class RadioStorage {
   Box<String>? _searchesBox;
   Box<RadioAlarm>? _alarmsBox;
   Box<Episode>? _downloadsBox;
+  Box<Episode>? _progressBox;
   Box<dynamic>? _settingsBox;
   bool _initialized = false;
+  
+  // Error reporting
+  static Function(String)? onError;
 
   Future<void> init() async {
     if (_initialized) return;
@@ -156,10 +160,12 @@ class RadioStorage {
       _searchesBox = await _openSafeBox<String>('recent_searches');
       _alarmsBox = await _openSafeBox<RadioAlarm>('alarms');
       _downloadsBox = await _openSafeBox<Episode>('downloads');
+      _progressBox = await _openSafeBox<Episode>('episode_progress');
       _settingsBox = await _openSafeBox('settings');
       _initialized = true;
     } catch (e) {
       debugPrint('RadioStorage critical failure: $e');
+      onError?.call('Storage initialization failed: $e');
     }
   }
 
@@ -168,8 +174,15 @@ class RadioStorage {
       return await Hive.openBox<T>(name);
     } catch (e) {
       debugPrint('Box $name is corrupted, recreating...');
-      await Hive.deleteBoxFromDisk(name);
-      return await Hive.openBox<T>(name);
+      onError?.call('Database corrupted ($name), attempting recovery...');
+      try {
+        await Hive.deleteBoxFromDisk(name);
+        return await Hive.openBox<T>(name);
+      } catch (e2) {
+        debugPrint('Failed to recover box $name: $e2');
+        onError?.call('Critical storage error: Could not recover $name');
+        rethrow;
+      }
     }
   }
 
@@ -180,6 +193,7 @@ class RadioStorage {
       await _cacheBox?.put(key, {'data': data, 'timestamp': timestamp});
     } catch (e) {
       debugPrint('Failed to cache data for $key: $e');
+      onError?.call('Failed to save to cache: $e');
     }
   }
 
@@ -234,11 +248,17 @@ class RadioStorage {
       await _favoritesBox?.put(favorite.id, favorite);
     } catch (e) {
       debugPrint('Failed to add favorite: $e');
+      onError?.call('Failed to add to favorites');
     }
   }
 
   Future<void> removeFavorite(String id) async {
     await _favoritesBox?.delete(id);
+  }
+
+  Future<void> clearFavorites() async {
+    if (!_initialized) await init();
+    await _favoritesBox?.clear();
   }
 
   Future<List<FavoriteStation>> getFavorites() async {
@@ -273,6 +293,7 @@ class RadioStorage {
       }
     } catch (e) {
       debugPrint('Failed to add recent: $e');
+      onError?.call('Failed to update history');
     }
   }
 
@@ -282,16 +303,41 @@ class RadioStorage {
     return list.map((e) => e.station).toList();
   }
 
+  Future<void> clearRecent() async {
+    if (!_initialized) await init();
+    await _recentBox?.clear();
+  }
+
   Future<void> addRecentSearch(String query) async {
     if (!_initialized) await init();
     final searches = _searchesBox?.values.toList() ?? [];
     if (searches.contains(query)) {
-      await _searchesBox?.delete(searches.indexOf(query));
+      // Find the key for the existing query to delete it
+      final key = _searchesBox?.keys.firstWhere((k) => _searchesBox?.get(k) == query, orElse: () => null);
+      if (key != null) {
+        await _searchesBox?.delete(key);
+      }
     }
     await _searchesBox?.add(query);
     if ((_searchesBox?.length ?? 0) > 10) {
       await _searchesBox?.deleteAt(0);
     }
+  }
+
+  Future<void> removeRecentSearch(String query) async {
+    if (!_initialized) await init();
+    final key = _searchesBox?.keys.firstWhere(
+      (k) => _searchesBox?.get(k) == query,
+      orElse: () => null,
+    );
+    if (key != null) {
+      await _searchesBox?.delete(key);
+    }
+  }
+
+  Future<void> clearRecentSearches() async {
+    if (!_initialized) await init();
+    await _searchesBox?.clear();
   }
 
   Future<List<String>> getRecentSearches() async {
@@ -353,6 +399,7 @@ class RadioStorage {
       }
     } catch (e) {
       debugPrint('Failed to import database: $e');
+      onError?.call('Import failed: $e');
       rethrow;
     }
   }
@@ -384,6 +431,11 @@ class RadioStorage {
     await _downloadsBox?.delete(id);
   }
 
+  Future<void> clearAllDownloadedEpisodes() async {
+    if (!_initialized) await init();
+    await _downloadsBox?.clear();
+  }
+
   Future<List<Episode>> getDownloadedEpisodes() async {
     if (!_initialized) await init();
     return _downloadsBox?.values.toList() ?? [];
@@ -392,6 +444,53 @@ class RadioStorage {
   Future<Episode?> getDownloadedEpisode(String id) async {
     if (!_initialized) await init();
     return _downloadsBox?.get(id);
+  }
+
+  Future<void> updateEpisodePosition(String id, int position, {Episode? episode}) async {
+    if (!_initialized) await init();
+    
+    // Update in downloads box if it exists there
+    final downloadedEpisode = _downloadsBox?.get(id);
+    if (downloadedEpisode != null) {
+      await _downloadsBox?.put(id, downloadedEpisode.copyWith(lastPosition: position));
+    }
+
+    // Update in progress box
+    final progressEpisode = _progressBox?.get(id) ?? episode;
+    if (progressEpisode != null) {
+      try {
+        await _progressBox?.put(id, progressEpisode.copyWith(lastPosition: position));
+      } catch (e) {
+        debugPrint('Failed to save episode progress: $e');
+      }
+    }
+
+    // Optional: Limit progress box size to last 50 episodes
+    if ((_progressBox?.length ?? 0) > 50) {
+      final keys = _progressBox!.keys.toList();
+      await _progressBox?.delete(keys.first);
+    }
+  }
+
+  Future<int> getEpisodePosition(String id) async {
+    if (!_initialized) await init();
+    final episode = _progressBox?.get(id) ?? _downloadsBox?.get(id);
+    return episode?.lastPosition ?? 0;
+  }
+
+  Future<Map<String, dynamic>?> getLastPlayed() async {
+    if (!_initialized) await init();
+    final data = await getSettings<String>('last_played');
+    if (data == null) return null;
+    return jsonDecode(data) as Map<String, dynamic>;
+  }
+
+  Future<void> saveLastPlayed(String type, Map<String, dynamic> item) async {
+    if (!_initialized) await init();
+    await saveSettings('last_played', jsonEncode({
+      'type': type,
+      'item': item,
+    }));
   }
 
   // --- Settings & Equalizer ---
@@ -405,17 +504,23 @@ class RadioStorage {
     return _settingsBox?.get(key, defaultValue: defaultValue) as T?;
   }
 
-  Future<void> saveEqualizer(List<double> bands, double loudness) async {
+  Future<void> saveEqualizer(List<double> bands, double loudness, {double? bass, double? speed, double? pitch}) async {
     if (!_initialized) await init();
     await _settingsBox?.put('eq_bands', bands);
     await _settingsBox?.put('eq_loudness', loudness);
+    if (bass != null) await _settingsBox?.put('eq_bass', bass);
+    if (speed != null) await _settingsBox?.put('eq_speed', speed);
+    if (pitch != null) await _settingsBox?.put('eq_pitch', pitch);
   }
 
   Future<Map<String, dynamic>> getEqualizer() async {
     if (!_initialized) await init();
     return {
-      'bands': _settingsBox?.get('eq_bands') as List<double>?,
+      'bands': _settingsBox?.get('eq_bands')?.cast<double>(),
       'loudness': _settingsBox?.get('eq_loudness') as double?,
+      'bass_boost': _settingsBox?.get('eq_bass') as double?,
+      'speed': _settingsBox?.get('eq_speed') as double?,
+      'pitch': _settingsBox?.get('eq_pitch') as double?,
     };
   }
 }
