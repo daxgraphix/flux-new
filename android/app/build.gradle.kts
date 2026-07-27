@@ -8,8 +8,8 @@ plugins {
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 android {
-    namespace = "com.example.flux"
-    compileSdk = flutter.compileSdkVersion
+    namespace = "co.fluxradio.mobile"
+    compileSdk = 36 // Android 16 (API 36)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -21,11 +21,11 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.flux"
+        applicationId = "co.fluxradio.mobile"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         externalNativeBuild {

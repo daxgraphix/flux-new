@@ -133,6 +133,8 @@ class RadioStorage {
   Box<RecentStation>? _recentBox;
   Box<String>? _searchesBox;
   Box<RadioAlarm>? _alarmsBox;
+  Box<Episode>? _downloadsBox;
+  Box<dynamic>? _settingsBox;
   bool _initialized = false;
 
   Future<void> init() async {
@@ -153,6 +155,8 @@ class RadioStorage {
       _recentBox = await _openSafeBox<RecentStation>('recent');
       _searchesBox = await _openSafeBox<String>('recent_searches');
       _alarmsBox = await _openSafeBox<RadioAlarm>('alarms');
+      _downloadsBox = await _openSafeBox<Episode>('downloads');
+      _settingsBox = await _openSafeBox('settings');
       _initialized = true;
     } catch (e) {
       debugPrint('RadioStorage critical failure: $e');
@@ -169,17 +173,17 @@ class RadioStorage {
     }
   }
 
-  Future<void> cacheStations(String key, List<RadioStation> stations) async {
+  Future<void> cacheData(String key, dynamic data) async {
     if (!_initialized) await init();
     try {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      await _cacheBox?.put(key, {'data': stations, 'timestamp': timestamp});
+      await _cacheBox?.put(key, {'data': data, 'timestamp': timestamp});
     } catch (e) {
-      debugPrint('Failed to cache stations: $e');
+      debugPrint('Failed to cache data for $key: $e');
     }
   }
 
-  Future<List<RadioStation>?> getCachedStations(String key, {int minutes = 30}) async {
+  Future<T?> getCachedData<T>(String key, {int minutes = 30}) async {
     if (!_initialized) await init();
     try {
       final result = _cacheBox?.get(key);
@@ -193,11 +197,21 @@ class RadioStorage {
         return null;
       }
 
-      final List<dynamic> data = result['data'];
-      return data.cast<RadioStation>();
+      return result['data'] as T?;
     } catch (e) {
+      debugPrint('Failed to get cached data for $key: $e');
       return null;
     }
+  }
+
+  Future<void> cacheStations(String key, List<RadioStation> stations) async {
+    await cacheData(key, stations);
+  }
+
+  Future<List<RadioStation>?> getCachedStations(String key, {int minutes = 30}) async {
+    return getCachedData<List<dynamic>>(key, minutes: minutes).then((data) {
+      return data?.cast<RadioStation>();
+    });
   }
 
   Future<void> clearCache() async {
@@ -357,6 +371,52 @@ class RadioStorage {
   Future<List<RadioAlarm>> getAlarms() async {
     if (!_initialized) await init();
     return _alarmsBox?.values.toList() ?? [];
+  }
+
+  // --- Downloads ---
+  Future<void> saveDownloadedEpisode(Episode episode) async {
+    if (!_initialized) await init();
+    await _downloadsBox?.put(episode.id, episode);
+  }
+
+  Future<void> removeDownloadedEpisode(String id) async {
+    if (!_initialized) await init();
+    await _downloadsBox?.delete(id);
+  }
+
+  Future<List<Episode>> getDownloadedEpisodes() async {
+    if (!_initialized) await init();
+    return _downloadsBox?.values.toList() ?? [];
+  }
+
+  Future<Episode?> getDownloadedEpisode(String id) async {
+    if (!_initialized) await init();
+    return _downloadsBox?.get(id);
+  }
+
+  // --- Settings & Equalizer ---
+  Future<void> saveSettings(String key, dynamic value) async {
+    if (!_initialized) await init();
+    await _settingsBox?.put(key, value);
+  }
+
+  Future<T?> getSettings<T>(String key, {T? defaultValue}) async {
+    if (!_initialized) await init();
+    return _settingsBox?.get(key, defaultValue: defaultValue) as T?;
+  }
+
+  Future<void> saveEqualizer(List<double> bands, double loudness) async {
+    if (!_initialized) await init();
+    await _settingsBox?.put('eq_bands', bands);
+    await _settingsBox?.put('eq_loudness', loudness);
+  }
+
+  Future<Map<String, dynamic>> getEqualizer() async {
+    if (!_initialized) await init();
+    return {
+      'bands': _settingsBox?.get('eq_bands') as List<double>?,
+      'loudness': _settingsBox?.get('eq_loudness') as double?,
+    };
   }
 }
 

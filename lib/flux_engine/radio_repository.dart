@@ -49,7 +49,7 @@ class RadioRepository {
   Future<List<FavoriteStation>> getFavorites() => _storage.getFavorites();
 
   Future<void> toggleFavorite(RadioStation station) async {
-    final id = station.uuid ?? station.url; // Use consistent ID logic
+    final id = station.id;
     if (await _storage.isFavorite(id)) {
       await _storage.removeFavorite(id);
     } else {
@@ -58,4 +58,46 @@ class RadioRepository {
   }
 
   Future<void> addToRecent(RadioStation station) => _storage.addRecent(station);
+
+  /// Gets all countries, tags, and languages for the station directory.
+  /// Uses a long-term cache (7 days) as these don't change often.
+  Future<Map<String, List<String>>> getDirectoryMetadata({bool forceRefresh = false}) async {
+    const countriesKey = 'directory_countries';
+    const tagsKey = 'directory_tags';
+    const languagesKey = 'directory_languages';
+    const cacheDuration = 7 * 24 * 60; // 7 days in minutes
+
+    if (!forceRefresh) {
+      final countries = await _storage.getCachedData<List<dynamic>>(countriesKey, minutes: cacheDuration);
+      final tags = await _storage.getCachedData<List<dynamic>>(tagsKey, minutes: cacheDuration);
+      final languages = await _storage.getCachedData<List<dynamic>>(languagesKey, minutes: cacheDuration);
+
+      if (countries != null && tags != null && languages != null) {
+        return {
+          'countries': countries.cast<String>(),
+          'tags': tags.cast<String>(),
+          'languages': languages.cast<String>(),
+        };
+      }
+    }
+
+    try {
+      final countries = await _service.getCountries();
+      final tags = await _service.getTags();
+      final languages = await _service.getLanguages();
+
+      await _storage.cacheData(countriesKey, countries);
+      await _storage.cacheData(tagsKey, tags);
+      await _storage.cacheData(languagesKey, languages);
+
+      return {
+        'countries': countries,
+        'tags': tags,
+        'languages': languages,
+      };
+    } catch (e) {
+      debugPrint('Metadata update failed: $e');
+      rethrow;
+    }
+  }
 }

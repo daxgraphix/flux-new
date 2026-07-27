@@ -8,8 +8,14 @@ import 'package:audio_service/audio_service.dart';
 import 'flux_engine/radio_engine.dart';
 import 'flux_engine/theme_provider.dart';
 import 'flux_engine/audio_service_handler.dart';
-import 'flux_ui/main_screen.dart';
+import 'flux_ui/navigation_wrapper.dart';
 import 'flux_ui/onboarding_widget.dart';
+
+import 'flux_engine/recording_service.dart';
+import 'flux_engine/alarm_service.dart';
+import 'flux_engine/station_provider.dart';
+import 'flux_engine/download_service.dart';
+import 'flux_hardware/radio_service.dart';
 
 late AudioHandler _audioHandler;
 
@@ -48,12 +54,20 @@ class FluxApp extends StatefulWidget {
 class _FluxAppState extends State<FluxApp> {
   late RadioEngine _engine;
   late ThemeProvider _themeProvider;
+  late RecordingService _recordingService;
+  late AlarmService _alarmService;
+  late StationProvider _stationProvider;
+  late DownloadService _downloadService;
   AppState _appState = AppState.splash;
 
   @override
   void initState() {
     super.initState();
-    _engine = RadioEngine(_audioHandler);
+    _recordingService = RecordingService();
+    _alarmService = AlarmService();
+    _stationProvider = StationProvider();
+    _downloadService = DownloadService();
+    _engine = RadioEngine(_audioHandler, _recordingService, _alarmService, _stationProvider, _downloadService);
     _themeProvider = ThemeProvider();
     _themeProvider.loadTheme();
     _initializeApp();
@@ -79,6 +93,11 @@ class _FluxAppState extends State<FluxApp> {
       providers: [
         ChangeNotifierProvider<RadioEngine>(create: (_) => _engine),
         ChangeNotifierProvider<ThemeProvider>.value(value: _themeProvider),
+        ChangeNotifierProvider<RecordingService>.value(value: _recordingService),
+        ChangeNotifierProvider<AlarmService>.value(value: _alarmService),
+        ChangeNotifierProvider<StationProvider>.value(value: _stationProvider),
+        ChangeNotifierProvider<DownloadService>.value(value: _downloadService),
+        Provider<RadioService>(create: (_) => RadioService()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -119,7 +138,7 @@ class _FluxAppState extends State<FluxApp> {
           onComplete: () => setState(() => _appState = AppState.main),
         );
       case AppState.main:
-        return const MainScreen(key: ValueKey('main'));
+        return const NavigationWrapper(key: ValueKey('main'));
     }
   }
 }

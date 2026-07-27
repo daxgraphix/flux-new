@@ -3,13 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../flux_engine/radio_engine.dart';
 import '../flux_hardware/radio_service.dart';
 import 'library_screen.dart';
-import 'settings_screen.dart';
 import 'countries_screen.dart';
-import 'now_playing_screen.dart';
-import 'widgets/enhanced_mini_player.dart';
 
 import 'widgets/flux_image.dart';
 
@@ -62,7 +60,7 @@ class _HomeTabState extends State<_HomeTab>
       context.read<RadioEngine>().loadTopStationsIfNeeded();
       return;
     }
-    _debounce = Timer(const Duration(milliseconds: 350), () {
+    _debounce = Timer(const Duration(milliseconds: 500), () {
       if (mounted) {
         final engine = context.read<RadioEngine>();
         engine.searchStations(name: value, limit: 50);
@@ -80,18 +78,6 @@ class _HomeTabState extends State<_HomeTab>
           return CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // ─── Mini Player ──────────────────────────────────────────
-              if (engine.currentStation != null)
-                SliverToBoxAdapter(
-                  child: EnhancedMiniPlayer(
-                    engine: engine,
-                    isDark: true,
-                    onExpandTap: () => Navigator.of(context).push(
-                      _slideRoute(NowPlayingScreen(engine: engine, isDark: true)),
-                    ),
-                  ),
-                ),
-
               // ─── Header ───────────────────────────────────────────────
               SliverToBoxAdapter(child: _buildHeader(engine)),
 
@@ -299,26 +285,6 @@ class _HomeTabState extends State<_HomeTab>
                 const SizedBox(width: 10),
                 _LiveBadge(),
                 const Spacer(),
-                // Settings
-                GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const SettingsScreen()),
-                  ),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: _kCard,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08)),
-                    ),
-                    child: const Icon(Icons.settings_outlined,
-                        color: _kWhite, size: 20),
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -445,23 +411,17 @@ class _HomeTabState extends State<_HomeTab>
 
   // ─── Genre Chips ──────────────────────────────────────────────────────────
   Widget _buildGenreChips(RadioEngine engine) {
-    final genres = [
-      ('Pop', 'pop'),
-      ('Rock', 'rock'),
-      ('Jazz', 'jazz'),
-      ('Classical', 'classical'),
-      ('Electronic', 'electronic'),
-      ('Hip-Hop', 'hip-hop'),
-      ('R&B', 'rnb'),
-      ('Talk', 'talk'),
-    ];
+    final displayGenres = engine.genres.isNotEmpty
+        ? engine.genres.take(24).toList()
+        : ['Pop', 'Rock', 'Jazz', 'Classical', 'Electronic', 'Hip-Hop', 'Talk', 'News', 'Dance', 'Country'];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
           padding: EdgeInsets.only(top: 8, bottom: 10),
           child: Text(
-            'Browse Genres',
+            'Explore Genres',
             style: TextStyle(
                 color: _kWhite, fontSize: 17, fontWeight: FontWeight.w700),
           ),
@@ -470,13 +430,16 @@ class _HomeTabState extends State<_HomeTab>
           height: 38,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: genres.length,
+            itemCount: displayGenres.length,
             itemBuilder: (_, i) {
-              final (label, tag) = genres[i];
+              final tag = displayGenres[i];
+              final label = tag.length > 1 
+                  ? tag[0].toUpperCase() + tag.substring(1) 
+                  : tag.toUpperCase();
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: GestureDetector(
-                  onTap: () => engine.searchStations(tag: tag, limit: 30),
+                  onTap: () => engine.searchStations(tag: tag, limit: 50),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 18, vertical: 8),
@@ -546,6 +509,8 @@ class _HomeTabState extends State<_HomeTab>
     }
 
     final stations = engine.stations.take(50).toList();
+    final isSearching = _searchController.text.isNotEmpty;
+
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       sliver: SliverList(
@@ -556,9 +521,9 @@ class _HomeTabState extends State<_HomeTab>
                 padding: const EdgeInsets.only(top: 4, bottom: 12),
                 child: Row(
                   children: [
-                    const Text(
-                      'Top Stations',
-                      style: TextStyle(
+                    Text(
+                      isSearching ? 'Search Results' : 'Top Stations',
+                      style: const TextStyle(
                           color: _kWhite,
                           fontSize: 17,
                           fontWeight: FontWeight.w700),
@@ -582,13 +547,65 @@ class _HomeTabState extends State<_HomeTab>
                 ),
               );
             }
-            return _StationListItem(
-              station: stations[index - 1],
-              engine: engine,
-            );
+            
+            if (index <= stations.length) {
+              return _StationListItem(
+                station: stations[index - 1],
+                engine: engine,
+              );
+            }
+
+            // Streema Footer for search
+            if (isSearching) {
+              return _buildStreemaFooter(_searchController.text);
+            }
+            return const SizedBox(height: 80);
           },
-          childCount: stations.length + 1,
+          childCount: stations.length + (isSearching ? 2 : 1),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStreemaFooter(String query) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
+      child: Column(
+        children: [
+          Text(
+            "Can't find your favorite station?",
+            style: TextStyle(color: _kGrey.withValues(alpha: 0.7), fontSize: 13),
+          ),
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: () async {
+              final url = RadioService().getStreemaSearchUrl(query);
+              final uri = Uri.parse(url);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                border: Border.all(color: _kRed.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.travel_explore_rounded, size: 18, color: _kRed),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Search Streema Global Directory',
+                    style: TextStyle(color: _kRed, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -914,12 +931,29 @@ class _StationListItem extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: isLoading ? null : () async {
+          final messenger = ScaffoldMessenger.of(context);
           try {
             await engine.playStation(station);
+            if (engine.errorMessage != null && context.mounted) {
+              messenger.showSnackBar(SnackBar(
+                content: Text(engine.errorMessage!),
+                backgroundColor: _kRed,
+                action: (engine.errorMessage!.contains('broken') || engine.errorMessage!.contains('unavailable'))
+                    ? SnackBarAction(
+                        label: 'Report',
+                        textColor: _kWhite,
+                        onPressed: () => engine.reportBrokenStation(station.uuid ?? ''),
+                      )
+                    : SnackBarAction(
+                        label: 'Retry',
+                        textColor: _kWhite,
+                        onPressed: () => engine.playStation(station)),
+              ));
+            }
           } catch (e) {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text('Failed to play: ${station.name}'),
+              messenger.showSnackBar(SnackBar(
+                content: const Text('We couldn\'t play this station right now.'),
                 backgroundColor: _kRed,
                 action: SnackBarAction(
                     label: 'Retry',
@@ -1034,18 +1068,3 @@ class _StationListItem extends StatelessWidget {
 }
 
 // ─── Page transition helper ───────────────────────────────────────────────
-PageRoute _slideRoute(Widget page) {
-  return PageRouteBuilder(
-    pageBuilder: (context, animation, secondaryAnimation) => page,
-    transitionsBuilder: (context, anim, secondaryAnim, child) {
-      return SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 1),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
-        child: child,
-      );
-    },
-    transitionDuration: const Duration(milliseconds: 380),
-  );
-}

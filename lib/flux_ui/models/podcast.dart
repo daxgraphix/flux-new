@@ -70,6 +70,8 @@ class Episode {
   final DateTime pubDate;
   @HiveField(6)
   final String image;
+  @HiveField(7)
+  final String? downloadPath;
 
   Episode({
     required this.id,
@@ -79,7 +81,10 @@ class Episode {
     required this.duration,
     required this.pubDate,
     required this.image,
+    this.downloadPath,
   });
+
+  bool get isDownloaded => downloadPath != null;
 
   factory Episode.fromJson(Map<String, dynamic> json) {
     return Episode(
@@ -90,6 +95,33 @@ class Episode {
       duration: json['duration'] ?? 0,
       pubDate: DateTime.fromMillisecondsSinceEpoch(json['pub_date_ms'] ?? 0),
       image: json['image'] ?? '',
+      downloadPath: json['download_path'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'audio': audio,
+      'duration': duration,
+      'pub_date_ms': pubDate.millisecondsSinceEpoch,
+      'image': image,
+      'download_path': downloadPath,
+    };
+  }
+
+  Episode copyWith({String? downloadPath}) {
+    return Episode(
+      id: id,
+      title: title,
+      description: description,
+      audio: audio,
+      duration: duration,
+      pubDate: pubDate,
+      image: image,
+      downloadPath: downloadPath ?? this.downloadPath,
     );
   }
 }

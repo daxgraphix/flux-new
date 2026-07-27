@@ -1,13 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
-import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:crypto/crypto.dart';
 import '../flux_hardware/radio_service.dart';
 import '../flux_storage/radio_storage.dart';
@@ -17,30 +12,26 @@ import '../flux_ui/models/podcast.dart';
 import 'package:audio_service/audio_service.dart';
 import 'audio_service_handler.dart';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'recording_service.dart';
+import 'alarm_service.dart';
+import 'station_provider.dart';
+import 'download_service.dart';
+
 class RadioEngine extends ChangeNotifier {
   final AudioHandler _audioHandler;
+  final RecordingService _recordingService;
+  final AlarmService _alarmService;
+  final StationProvider _stationProvider;
+  final DownloadService _downloadService;
   AudioPlayer get _player => (_audioHandler as RadioAudioHandler).player;
   final RadioRepository _repository = RadioRepository();
 
   RadioStation? _currentStation;
+  Episode? _currentEpisode;
   String _currentTitle = '';
   bool _isPlaying = false;
-  bool _isLoading = false;
-  String? _loadingKey;
-  List<RadioStation> _stations = [];
-  List<Podcast> _podcasts = [];
-  List<String> _countries = [];
-  List<String> _genres = [];
-  List<String> _languages = [];
-  String? _errorMessage;
-  Timer? _sleepTimer;
-  Duration _sleepDuration = Duration.zero;
-  Duration _sleepRemainingTime = Duration.zero;
-  bool _isRecording = false;
-  String? _recordingPath;
-  DateTime? _recordingStartTime;
-  Duration _recordingDuration = Duration.zero;
-  Timer? _recordingTimer;
+  
   List<double> _equalizerBands = [0.0, 0.0, 0.0, 0.0, 0.0];
   List<int> _equalizerCenterFrequencies = [60, 230, 910, 3600, 14000];
   double _loudnessGain = 0.0;
@@ -52,16 +43,12 @@ class RadioEngine extends ChangeNotifier {
   bool _autoPlay = true;
   bool _highQuality = false;
   bool _dataSaver = false;
-  List<RadioAlarm> _alarms = [];
   
-  HttpClient? _recordingClient;
-  HttpClientRequest? _recordingRequest;
-  HttpClientResponse? _recordingResponse;
-  IOSink? _recordingSink;
-
   bool _isNetworkAvailable = true;
-  Timer? _networkCheckTimer;
-  StreamSubscription? _topStationsSubscription;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  Timer? _sleepTimer;
+  Duration _sleepDuration = Duration.zero;
+  Duration _sleepRemainingTime = Duration.zero;
 
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
@@ -74,10 +61,10 @@ class RadioEngine extends ChangeNotifier {
   Duration get duration => _duration;
   bool get isNetworkAvailable => _isNetworkAvailable;
   bool get isSleepTimerActive => _sleepTimer != null;
-  bool get isRecording => _isRecording;
-  String? get recordingPath => _recordingPath;
-  Duration get recordingDuration => _recordingDuration;
-  DateTime? get recordingStartTime => _recordingStartTime;
+  bool get isRecording => _recordingService.isRecording;
+  String? get recordingPath => _recordingService.recordingPath;
+  Duration get recordingDuration => _recordingService.recordingDuration;
+  DateTime? get recordingStartTime => _recordingService.recordingStartTime;
   Duration get sleepRemainingTime => _sleepRemainingTime;
   List<double> get equalizerBands => List.unmodifiable(_equalizerBands);
   List<int> get equalizerCenterFrequencies => List.unmodifiable(_equalizerCenterFrequencies);
@@ -90,42 +77,42 @@ class RadioEngine extends ChangeNotifier {
   bool get autoPlay => _autoPlay;
   bool get highQuality => _highQuality;
   bool get dataSaver => _dataSaver;
-  List<RadioAlarm> get alarms => List.unmodifiable(_alarms);
-  String? get errorMessage => _errorMessage;
-  String? get loadingKey => _loadingKey;
+  List<RadioAlarm> get alarms => _alarmService.alarms;
+  bool _isLoading = false;
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage ?? _stationProvider.errorMessage;
   RadioStation? get currentStation => _currentStation;
+  Episode? get currentEpisode => _currentEpisode;
   bool get isPlaying => _isPlaying;
-  bool get isLoading => _isLoading;
+  bool get isLoading => _isLoading || _stationProvider.isLoading;
   String get currentTitle => _currentTitle;
-  List<RadioStation> get stations => _stations;
-  List<Podcast> get podcasts => _podcasts;
-  List<String> get countries => _countries;
-  List<String> get genres => _genres;
-  List<String> get languages => _languages;
+  List<RadioStation> get stations => _stationProvider.stations;
+  List<Podcast> get podcasts => _stationProvider.podcasts;
+  List<Episode> get episodes => _stationProvider.episodes;
+  List<String> get countries => _stationProvider.countries;
+  List<String> get genres => _stationProvider.genres;
+  List<String> get languages => _stationProvider.languages;
   double get volume => _volume;
   Duration get sleepDuration => _sleepDuration;
 
-  List<Map<String, dynamic>> get categories => [
-        {'title': 'Trending', 'icon': Icons.trending_up, 'color': Colors.red, 'action': loadTopStations},
-        {'title': 'Tanzania', 'icon': Icons.location_on, 'color': Colors.red, 'action': loadTanzaniaStations},
-        {'title': 'Music', 'icon': Icons.music_note, 'color': Colors.red, 'action': loadMusicStations},
-        {'title': 'Sports', 'icon': Icons.sports_soccer, 'color': Colors.red, 'action': loadSportsStations},
-        {'title': 'News', 'icon': Icons.article, 'color': Colors.red, 'action': loadNewsStations},
-        {'title': 'AM/FM', 'icon': Icons.radio, 'color': Colors.red, 'action': loadGlobalAmFmStations},
-        {'title': 'Talk', 'icon': Icons.mic, 'color': Colors.red, 'action': loadTalkStations},
-        {'title': 'Live', 'icon': Icons.wifi, 'color': Colors.red, 'action': loadLiveStations},
-      ];
+  // Download states delegation
+  double getDownloadProgress(String id) => _downloadService.getDownloadProgress(id);
+  bool isDownloading(String id) => _downloadService.isDownloading(id);
 
-  RadioEngine(this._audioHandler);
+  RadioEngine(this._audioHandler, this._recordingService, this._alarmService, this._stationProvider, this._downloadService) {
+    _recordingService.addListener(notifyListeners);
+    _alarmService.addListener(notifyListeners);
+    _stationProvider.addListener(notifyListeners);
+    _downloadService.addListener(notifyListeners);
+  }
 
   Future<void> initialize() async {
     await RadioStorage().init();
     await _loadSettings();
-    await _loadCountriesGenresAndLanguages();
-    await loadTopStations();
+    await _stationProvider.initialize();
     await loadRecentStations();
     await loadFavorites();
-    _alarms = await RadioStorage().getAlarms();
+    await _alarmService.initialize();
     await _configureAudioSession();
     await loadSavedRecordings();
     await loadRecentSearches();
@@ -138,24 +125,21 @@ class RadioEngine extends ChangeNotifier {
   }
 
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    _autoPlay = prefs.getBool('auto_play') ?? true;
-    _highQuality = prefs.getBool('high_quality') ?? false;
-    _dataSaver = prefs.getBool('data_saver') ?? false;
-    _volume = prefs.getDouble('volume') ?? 1.0;
+    _autoPlay = await RadioStorage().getSettings<bool>('auto_play', defaultValue: true) ?? true;
+    _highQuality = await RadioStorage().getSettings<bool>('high_quality', defaultValue: false) ?? false;
+    _dataSaver = await RadioStorage().getSettings<bool>('data_saver', defaultValue: false) ?? false;
+    _volume = await RadioStorage().getSettings<double>('volume', defaultValue: 1.0) ?? 1.0;
   }
 
   Future<void> setAutoPlay(bool value) async {
     _autoPlay = value;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('auto_play', value);
+    await RadioStorage().saveSettings('auto_play', value);
     notifyListeners();
   }
 
   Future<void> setHighQuality(bool value) async {
     _highQuality = value;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('high_quality', value);
+    await RadioStorage().saveSettings('high_quality', value);
     notifyListeners();
     // Refresh current list with new quality preference
     loadTopStations(forceRefresh: true);
@@ -163,18 +147,16 @@ class RadioEngine extends ChangeNotifier {
 
   Future<void> setDataSaver(bool value) async {
     _dataSaver = value;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('data_saver', value);
+    await RadioStorage().saveSettings('data_saver', value);
     notifyListeners();
   }
 
   void _startNetworkMonitoring() {
-    _networkCheckTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) async {
       final wasAvailable = _isNetworkAvailable;
-      _isNetworkAvailable = await _checkNetwork();
+      _isNetworkAvailable = !results.contains(ConnectivityResult.none);
       
       if (wasAvailable && !_isNetworkAvailable && _isPlaying) {
-        _errorMessage = 'Network lost. Pausing playback.';
         await _player.pause();
         _isPlaying = false;
         notifyListeners();
@@ -182,23 +164,12 @@ class RadioEngine extends ChangeNotifier {
         try {
           await _player.play();
           _isPlaying = true;
-          _errorMessage = null;
           notifyListeners();
         } catch (e) {
-          _errorMessage = 'Failed to resume playback';
-          notifyListeners();
+          debugPrint('Failed to resume playback after network restored: $e');
         }
       }
     });
-  }
-
-  Future<bool> _checkNetwork() async {
-    try {
-      final response = await http.get(Uri.parse('https://www.google.com')).timeout(const Duration(seconds: 5));
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
   }
 
   Future<void> _configureAudioSession() async {
@@ -221,94 +192,31 @@ class RadioEngine extends ChangeNotifier {
     });
   }
 
-  Future<void> _loadCountriesGenresAndLanguages() async {
-    try {
-      final service = RadioService();
-      _countries = await service.getCountries();
-      _genres = await service.getTags();
-      _languages = await service.getLanguages();
-      notifyListeners();
-    } catch (e) {
-      _errorMessage = 'Failed to load countries/genres: ${e.toString()}';
-      notifyListeners();
-    }
-  }
 
   Future<void> loadTrendingStations() async {
-    _isLoading = true;
-    notifyListeners();
-    try {
-      _stations = await RadioService().getTrendingStations();
-    } catch (e) {
-      _errorMessage = 'Failed to load trending: $e';
-    }
-    _isLoading = false;
-    notifyListeners();
+    await _stationProvider.loadTrendingStations();
   }
 
   Future<void> loadStationsByCountry(String country) async {
-    _isLoading = true;
-    notifyListeners();
-    try {
-      _stations = await RadioService().getStationsByCountry(country);
-    } catch (e) {
-      _errorMessage = 'Failed to load stations for $country: $e';
-    }
-    _isLoading = false;
-    notifyListeners();
+    await _stationProvider.loadStationsByCountry(country);
   }
 
   Future<void> loadTopStationsIfNeeded() async {
-    if (_stations.isEmpty) {
-      await loadTopStations();
+    if (stations.isEmpty) {
+      await _stationProvider.loadTopStations(highQuality: _highQuality);
     }
   }
 
   Future<void> searchStations({String? name, String? tag, int limit = 50}) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      if (name != null) {
-        _stations = await _repository.searchStations(name);
-      } else if (tag != null) {
-        _stations = await RadioService().getStationsByGenre(
-          tag, 
-          limit: limit,
-          bitrateMin: _highQuality ? 128 : null,
-        );
-      }
-    } catch (e) {
-      _stations = [];
-      _errorMessage = 'Search failed: ${e.toString()}';
+    if (name != null) {
+      await _stationProvider.searchStations(name);
+    } else if (tag != null) {
+      await _stationProvider.loadStationsByTag(tag, limit: limit, highQuality: _highQuality);
     }
-
-    _isLoading = false;
-    notifyListeners();
   }
 
   Future<void> loadTopStations({bool forceRefresh = false}) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    await _topStationsSubscription?.cancel();
-    // Pass high quality preference to repository/service
-    final service = RadioService();
-    try {
-      final stations = await service.getTopStations(
-        limit: 100,
-        bitrateMin: _highQuality ? 128 : null,
-      );
-      _stations = stations;
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _errorMessage = 'Failed to load stations: ${e.toString()}';
-      _isLoading = false;
-      notifyListeners();
-    }
+    await _stationProvider.loadTopStations(forceRefresh: forceRefresh, highQuality: _highQuality);
   }
 
   Future<void> playStation(RadioStation station) async {
@@ -356,16 +264,19 @@ class RadioEngine extends ChangeNotifier {
       await _repository.addToRecent(station);
       await loadRecentStations();
     } on TimeoutException catch (_) {
-      _errorMessage = 'Connection timeout: The station might be offline or slow.';
+      _errorMessage = 'Station is taking too long to respond. It might be offline.';
       _isPlaying = false;
       _currentStation = null;
     } catch (e) {
-      if (e.toString().contains('403')) {
-        _errorMessage = 'Access denied (403): Station might be geo-restricted.';
-      } else if (e.toString().contains('404')) {
-        _errorMessage = 'Station not found (404): The link is broken.';
+      final errorStr = e.toString();
+      if (errorStr.contains('403')) {
+        _errorMessage = 'This station is currently unavailable in your region.';
+      } else if (errorStr.contains('404')) {
+        _errorMessage = 'The station link seems to be broken.';
+      } else if (errorStr.contains('SocketException')) {
+        _errorMessage = 'No internet connection. Please check your network.';
       } else {
-        _errorMessage = 'Playback error: ${e.toString()}';
+        _errorMessage = 'Oops! Something went wrong while trying to play this station.';
       }
       _isPlaying = false;
       _currentStation = null;
@@ -382,10 +293,48 @@ class RadioEngine extends ChangeNotifier {
   }
 
   Future<void> resume() async {
-    if (_currentStation != null) {
+    if (_currentStation != null || _currentEpisode != null) {
       await _audioHandler.play();
       _isPlaying = true;
       notifyListeners();
+    }
+  }
+
+  Future<void> skipNext() async {
+    if (_currentStation != null) {
+      final list = stations;
+      if (list.isEmpty) return;
+      int index = list.indexWhere((s) => s.url == _currentStation!.url);
+      if (index != -1) {
+        int nextIndex = (index + 1) % list.length;
+        await playStation(list[nextIndex]);
+      }
+    } else if (_currentEpisode != null) {
+      final list = episodes;
+      if (list.isEmpty) return;
+      int index = list.indexWhere((e) => e.audio == _currentEpisode!.audio);
+      if (index != -1 && index < list.length - 1) {
+        await playEpisode(list[index + 1]);
+      }
+    }
+  }
+
+  Future<void> skipPrevious() async {
+    if (_currentStation != null) {
+      final list = stations;
+      if (list.isEmpty) return;
+      int index = list.indexWhere((s) => s.url == _currentStation!.url);
+      if (index != -1) {
+        int prevIndex = (index - 1 + list.length) % list.length;
+        await playStation(list[prevIndex]);
+      }
+    } else if (_currentEpisode != null) {
+      final list = episodes;
+      if (list.isEmpty) return;
+      int index = list.indexWhere((e) => e.audio == _currentEpisode!.audio);
+      if (index != -1 && index > 0) {
+        await playEpisode(list[index - 1]);
+      }
     }
   }
 
@@ -395,8 +344,8 @@ class RadioEngine extends ChangeNotifier {
     _currentStation = null;
     _currentTitle = '';
     cancelSleepTimer();
-    if (_isRecording) {
-      await stopRecording();
+    if (_recordingService.isRecording) {
+      await _recordingService.stopRecording();
     }
     notifyListeners();
   }
@@ -407,11 +356,30 @@ class RadioEngine extends ChangeNotifier {
       final equalizer = _audioHandler.equalizer;
       final parameters = await equalizer.parameters;
       
-      _equalizerBands = parameters.bands.map((b) => b.gain).toList();
       _equalizerCenterFrequencies = parameters.bands.map((b) => b.centerFrequency.toInt()).toList();
       
+      final savedEq = await RadioStorage().getEqualizer();
+      final List<dynamic>? savedBands = savedEq['bands'];
+      final double? savedLoudness = savedEq['loudness'];
+      
+      if (savedBands != null && savedBands.length == _equalizerCenterFrequencies.length) {
+        _equalizerBands = savedBands.cast<double>();
+        for (int i = 0; i < _equalizerBands.length; i++) {
+          if (i < parameters.bands.length) {
+            parameters.bands[i].setGain(_equalizerBands[i]);
+          }
+        }
+      } else {
+        _equalizerBands = parameters.bands.map((b) => b.gain).toList();
+      }
+      
       final loudness = _audioHandler.loudnessEnhancer;
-      _loudnessGain = loudness.targetGain;
+      if (savedLoudness != null) {
+        _loudnessGain = savedLoudness;
+        _audioHandler.loudnessEnhancer.setTargetGain(_loudnessGain);
+      } else {
+        _loudnessGain = loudness.targetGain;
+      }
       
       notifyListeners();
     }
@@ -425,6 +393,7 @@ class RadioEngine extends ChangeNotifier {
         equalizer.parameters.then((parameters) {
           if (index < parameters.bands.length) {
             parameters.bands[index].setGain(value);
+            RadioStorage().saveEqualizer(_equalizerBands, _loudnessGain);
           }
         });
       }
@@ -436,6 +405,7 @@ class RadioEngine extends ChangeNotifier {
     _loudnessGain = value;
     if (_audioHandler is RadioAudioHandler) {
       _audioHandler.loudnessEnhancer.setTargetGain(value);
+      RadioStorage().saveEqualizer(_equalizerBands, _loudnessGain);
     }
     notifyListeners();
   }
@@ -452,7 +422,11 @@ class RadioEngine extends ChangeNotifier {
         });
       }
     }
-    setLoudnessGain(0.0);
+    _loudnessGain = 0.0;
+    if (_audioHandler is RadioAudioHandler) {
+      _audioHandler.loudnessEnhancer.setTargetGain(0.0);
+    }
+    RadioStorage().saveEqualizer(_equalizerBands, _loudnessGain);
     notifyListeners();
   }
 
@@ -463,7 +437,7 @@ class RadioEngine extends ChangeNotifier {
   }
 
   Future<void> toggleFavorite(RadioStation station) async {
-    final id = _generateStationId(station.url, station.uuid);
+    final id = station.id;
     if (await RadioStorage().isFavorite(id)) {
       await RadioStorage().removeFavorite(id);
     } else {
@@ -473,18 +447,19 @@ class RadioEngine extends ChangeNotifier {
   }
 
   Future<void> removeFromFavorites(RadioStation station) async {
-    final id = _generateStationId(station.url, station.uuid);
-    await RadioStorage().removeFavorite(id);
+    await RadioStorage().removeFavorite(station.id);
     await loadFavorites();
   }
 
   Future<void> addToFavorites(RadioStation station) async {
-    await _repository.toggleFavorite(station);
+    await RadioStorage().addFavorite(station);
     await loadFavorites();
   }
 
-  Future<bool> isFavorite(String url) async {
-    final id = _generateStationId(url, null);
+  Future<bool> isFavorite(String url, {String? uuid}) async {
+    if (uuid != null && uuid.isNotEmpty) return await RadioStorage().isFavorite(uuid);
+    // Fallback to generating ID if we don't have a station object
+    final id = sha256.convert(utf8.encode(url)).toString().substring(0, 16);
     return await RadioStorage().isFavorite(id);
   }
 
@@ -509,79 +484,15 @@ class RadioEngine extends ChangeNotifier {
 
   // --- Alarms ---
   Future<void> addAlarm(RadioAlarm alarm) async {
-    _alarms.add(alarm);
-    await RadioStorage().saveAlarm(alarm);
-    if (alarm.isEnabled) {
-      await _scheduleAlarm(alarm);
-    }
-    notifyListeners();
+    await _alarmService.addAlarm(alarm);
   }
 
   Future<void> deleteAlarm(String id) async {
-    _alarms.removeWhere((a) => a.id == id);
-    await RadioStorage().deleteAlarm(id);
-    if (Platform.isAndroid) {
-      await AndroidAlarmManager.cancel(id.hashCode);
-    }
-    notifyListeners();
+    await _alarmService.deleteAlarm(id);
   }
 
   Future<void> toggleAlarm(String id) async {
-    final index = _alarms.indexWhere((a) => a.id == id);
-    if (index != -1) {
-      final alarm = _alarms[index];
-      final updatedAlarm = RadioAlarm(
-        id: alarm.id,
-        stationName: alarm.stationName,
-        stationUrl: alarm.stationUrl,
-        hour: alarm.hour,
-        minute: alarm.minute,
-        isEnabled: !alarm.isEnabled,
-        daysOfWeek: alarm.daysOfWeek,
-      );
-      _alarms[index] = updatedAlarm;
-      await RadioStorage().saveAlarm(updatedAlarm);
-      
-      if (updatedAlarm.isEnabled) {
-        await _scheduleAlarm(updatedAlarm);
-      } else if (Platform.isAndroid) {
-        await AndroidAlarmManager.cancel(updatedAlarm.id.hashCode);
-      }
-      notifyListeners();
-    }
-  }
-
-  Future<void> _scheduleAlarm(RadioAlarm alarm) async {
-    if (!Platform.isAndroid) return;
-
-    final now = DateTime.now();
-    var scheduledDate = DateTime(now.year, now.month, now.day, alarm.hour, alarm.minute);
-    
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-
-    await AndroidAlarmManager.oneShotAt(
-      scheduledDate,
-      alarm.id.hashCode,
-      alarmCallback,
-      exact: true,
-      wakeup: true,
-      allowWhileIdle: true,
-      params: {
-        'url': alarm.stationUrl,
-        'name': alarm.stationName,
-      },
-    );
-  }
-
-  @pragma('vm:entry-point')
-  static void alarmCallback(int id, Map<String, dynamic> params) async {
-    // This runs in a separate isolate.
-    // Use platform channels or just re-initialize the audio handler if possible.
-    // Actually, for alarm manager plus, we can't easily access the main isolate.
-    // A better way is to use a background service that can be started.
-    debugPrint('FLUX_ALARM: Fired for ${params['name']}');
+    await _alarmService.toggleAlarm(id);
   }
 
   Future<void> getRecentSearches() async {
@@ -594,10 +505,24 @@ class RadioEngine extends ChangeNotifier {
     _sleepDuration = duration;
     _sleepRemainingTime = duration;
     
-    _sleepTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    // Original volume to restore after fade or cancellation
+    final double originalVolume = _volume;
+
+    _sleepTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
       _sleepRemainingTime = _sleepRemainingTime - const Duration(seconds: 1);
+      
+      // Volume fade-out: Linear fade in the last 60 seconds (increased from 30)
+      if (_sleepRemainingTime.inSeconds <= 60 && _sleepRemainingTime.inSeconds > 0) {
+        double fadeVolume = originalVolume * (_sleepRemainingTime.inSeconds / 60.0);
+        // Ensure volume doesn't suddenly jump if user adjusted it during fade
+        if (fadeVolume < _volume) {
+           _player.setVolume(fadeVolume);
+        }
+      }
+
       if (_sleepRemainingTime.inSeconds <= 0) {
-        stop();
+        await stop();
+        await _player.setVolume(originalVolume); // Reset volume for next time
         _sleepTimer?.cancel();
         _sleepTimer = null;
         _sleepDuration = Duration.zero;
@@ -619,154 +544,58 @@ class RadioEngine extends ChangeNotifier {
   // --- Recordings ---
   Future<void> startRecording() async {
     if (_currentStation == null) return;
-    
-    // Request permission first
-    var status = await Permission.manageExternalStorage.request();
-    if (!status.isGranted) {
-      status = await Permission.storage.request();
-    }
-
-    try {
-      Directory? recordingsDir;
-      if (Platform.isAndroid) {
-        recordingsDir = Directory('/storage/emulated/0/Music/FluxRecordings');
-      } else {
-        final dir = await getApplicationDocumentsDirectory();
-        recordingsDir = Directory('${dir.path}/Recordings');
-      }
-      
-      if (!await recordingsDir.exists()) await recordingsDir.create(recursive: true);
-
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final cleanName = _currentStation!.name.replaceAll(RegExp(r'[^\w\s]+'), '_').replaceAll(' ', '_');
-      _recordingPath = '${recordingsDir.path}/${cleanName}_$timestamp.mp3';
-      
-      _isRecording = true;
-      _recordingStartTime = DateTime.now();
-      _recordingDuration = Duration.zero;
-
-      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (_recordingStartTime != null) {
-          _recordingDuration = DateTime.now().difference(_recordingStartTime!);
-        }
-        notifyListeners();
-      });
-
-      _recordingClient = HttpClient();
-      _recordingRequest = await _recordingClient!.getUrl(Uri.parse(_currentStation!.url));
-      _recordingResponse = await _recordingRequest!.close();
-      _recordingSink = File(_recordingPath!).openWrite();
-      
-      _recordingResponse!.listen((chunk) => _recordingSink?.add(chunk));
-      notifyListeners();
-    } catch (e) {
-      _errorMessage = 'Recording failed: $e';
-      _isRecording = false;
+    final success = await _recordingService.startRecording(_currentStation!);
+    if (!success) {
+      _errorMessage = 'Recording failed. Check permissions.';
       notifyListeners();
     }
   }
 
   Future<void> stopRecording() async {
-    _isRecording = false;
-    _recordingTimer?.cancel();
-    await _recordingSink?.close();
-    _recordingClient?.close();
+    await _recordingService.stopRecording();
     await loadSavedRecordings();
-    notifyListeners();
   }
 
   Future<void> loadSavedRecordings() async {
-    Directory? recordingsDir;
-    if (Platform.isAndroid) {
-      recordingsDir = Directory('/storage/emulated/0/Music/FluxRecordings');
-    } else {
-      final dir = await getApplicationDocumentsDirectory();
-      recordingsDir = Directory('${dir.path}/Recordings');
-    }
-
-    if (await recordingsDir.exists()) {
-      _savedRecordings = recordingsDir
-          .listSync()
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.mp3'))
-          .map((f) => f.path)
-          .toList();
-      _savedRecordings.sort((a, b) => b.compareTo(a)); // Newest first
-      notifyListeners();
-    }
+    _savedRecordings = await _recordingService.getSavedRecordings();
+    notifyListeners();
   }
 
   // --- Other Methods ---
   Future<void> loadTanzaniaStations() async {
-    _isLoading = true;
-    notifyListeners();
-    try {
-      _stations = await RadioService().getTanzaniaStations();
-    } catch (e) {
-      _stations = RadioService.getStaticTanzaniaStations();
-    }
-    _isLoading = false;
-    notifyListeners();
+    await _stationProvider.loadTanzaniaStations();
   }
 
   Future<void> loadMusicStations() async {
-    _isLoading = true;
-    notifyListeners();
-    _stations = await RadioService().getMusicStations();
-    _isLoading = false;
-    notifyListeners();
+    await _stationProvider.loadMusicStations();
   }
 
   Future<void> loadNewsStations() async {
-    _isLoading = true;
-    notifyListeners();
-    _stations = await RadioService().getNewsStations();
-    _isLoading = false;
-    notifyListeners();
+    await _stationProvider.loadNewsStations();
   }
 
   Future<void> loadSportsStations() async {
-    _isLoading = true;
-    notifyListeners();
-    _stations = await RadioService().getSportsStations();
-    _isLoading = false;
-    notifyListeners();
+    await _stationProvider.loadSportsStations();
   }
 
   Future<void> loadTalkStations() async {
-    _isLoading = true;
-    notifyListeners();
-    _stations = await RadioService().getTalkStations();
-    _isLoading = false;
-    notifyListeners();
+    await _stationProvider.loadTalkStations();
   }
 
   Future<void> loadGlobalAmFmStations() async {
-    _isLoading = true;
-    notifyListeners();
-    _stations = await RadioService().getGlobalAmFmStations();
-    _isLoading = false;
-    notifyListeners();
+    await _stationProvider.loadGlobalAmFmStations();
   }
 
   Future<void> loadLiveStations() async {
-    _isLoading = true;
-    notifyListeners();
-    _stations = await RadioService().getLiveStations();
-    _isLoading = false;
-    notifyListeners();
+    await _stationProvider.loadLiveStations();
   }
 
   Future<void> loadNearbyStations() async {
-    _isLoading = true;
-    notifyListeners();
-    try {
-      // For now, we'll use Tanzania as a default nearby if location is not handled
-      _stations = await RadioService().getTanzaniaStations();
-    } catch (e) {
-      _stations = RadioService.getStaticTanzaniaStations();
-    }
-    _isLoading = false;
+    await _stationProvider.loadTanzaniaStations(); // Defaulting to TZ for now
+  }
+
+  Future<void> checkForUpdates() async {
+    await _stationProvider.checkForUpdates();
     notifyListeners();
   }
 
@@ -784,7 +613,7 @@ class RadioEngine extends ChangeNotifier {
       _currentTitle = path.split('/').last;
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Failed to play recording: $e';
+      _errorMessage = 'Oops! We couldn\'t play this recording.';
       notifyListeners();
     }
   }
@@ -804,47 +633,118 @@ class RadioEngine extends ChangeNotifier {
     }
   }
 
-  String _generateStationId(String url, String? uuid) {
-    if (uuid != null && uuid.isNotEmpty) return uuid;
-    return sha256.convert(utf8.encode(url)).toString().substring(0, 16);
+  Future<void> reportBrokenStation(String uuid) async {
+    try {
+      final success = await RadioService().reportStation(uuid);
+      if (!success) {
+        _errorMessage = 'We couldn\'t submit your report. Please try again later.';
+        notifyListeners();
+      }
+    } catch (e) {
+      _errorMessage = 'Something went wrong while reporting. Please try again.';
+      notifyListeners();
+    }
   }
 
   // --- Podcasts ---
   Future<void> searchPodcasts(String query) async {
+    await _stationProvider.searchPodcasts(query);
+  }
+
+  Future<void> loadEpisodes(String rssUrl) async {
+    await _stationProvider.loadEpisodes(rssUrl);
+  }
+
+  Future<void> playEpisode(Episode episode) async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
+
     try {
-      // Mocked for now until a real Podcast API is integrated
-      await Future.delayed(const Duration(seconds: 1));
-      _podcasts = [
-        Podcast(
-          id: '1',
-          title: 'The Daily',
-          publisher: 'The New York Times',
-          image: 'https://static01.nyt.com/images/2017/01/29/podcasts/the-daily-album-art/the-daily-album-art-square320-v4.png',
-          description: 'This is what the news should sound like.',
-          rss: '',
-        ),
-        Podcast(
-          id: '2',
-          title: 'Joe Rogan Experience',
-          publisher: 'Joe Rogan',
-          image: 'https://upload.wikimedia.org/wikipedia/en/4/4b/The_Joe_Rogan_Experience_logo.jpg',
-          description: 'The official podcast of comedian Joe Rogan.',
-          rss: '',
-        ),
-      ];
+      if (_isPlaying) {
+        await _audioHandler.pause();
+        _isPlaying = false;
+      }
+
+      final source = episode.downloadPath != null 
+          ? episode.downloadPath! 
+          : episode.audio;
+
+      final mediaItem = MediaItem(
+        id: source,
+        album: 'Podcast',
+        title: episode.title,
+        artist: 'Flux Radio',
+        artUri: episode.image.isNotEmpty ? Uri.parse(episode.image) : null,
+        duration: Duration(seconds: episode.duration),
+      );
+      
+      _audioHandler.addQueueItem(mediaItem);
+      
+      if (_audioHandler is RadioAudioHandler) {
+        _audioHandler.setMediaItem(mediaItem);
+        if (episode.downloadPath != null) {
+          await _audioHandler.player.setFilePath(source);
+        } else {
+          await _audioHandler.setUrl(source).timeout(
+            const Duration(seconds: 15),
+            onTimeout: () => throw TimeoutException('Connection timed out'),
+          );
+        }
+      }
+
+      await _audioHandler.play();
+
+      _isPlaying = true;
+      _currentTitle = episode.title;
+      _currentStation = null;
+      _currentEpisode = episode;
+
+    } on TimeoutException catch (_) {
+      _errorMessage = 'Episode is taking too long to respond.';
+      _isPlaying = false;
     } catch (e) {
-      _errorMessage = 'Failed to load podcasts: $e';
+      _errorMessage = 'Oops! Something went wrong while trying to play this episode.';
+      _isPlaying = false;
     }
+
     _isLoading = false;
     notifyListeners();
+  }
+
+  // --- Downloads ---
+  Future<void> downloadEpisode(Episode episode) async {
+    final path = await _downloadService.downloadEpisode(episode);
+    if (path != null) {
+      final updatedEpisode = episode.copyWith(downloadPath: path);
+      // We need to persist this in RadioStorage if we want it to survive app restarts
+      await RadioStorage().saveDownloadedEpisode(updatedEpisode);
+      await _stationProvider.updateEpisode(updatedEpisode);
+    }
+  }
+
+  Future<void> deleteDownloadedEpisode(Episode episode) async {
+    if (episode.downloadPath != null) {
+      await _downloadService.deleteEpisode(episode.downloadPath!);
+      final updatedEpisode = Episode(
+        id: episode.id,
+        title: episode.title,
+        description: episode.description,
+        audio: episode.audio,
+        duration: episode.duration,
+        pubDate: episode.pubDate,
+        image: episode.image,
+        downloadPath: null,
+      );
+      await RadioStorage().removeDownloadedEpisode(episode.id);
+      await _stationProvider.updateEpisode(updatedEpisode);
+    }
   }
 
   void setVolume(double value) {
     _volume = value.clamp(0.0, 1.0);
     _player.setVolume(_volume);
-    SharedPreferences.getInstance().then((prefs) => prefs.setDouble('volume', _volume));
+    RadioStorage().saveSettings('volume', _volume);
     notifyListeners();
   }
 
@@ -859,14 +759,15 @@ class RadioEngine extends ChangeNotifier {
 
   @override
   void dispose() {
-    _topStationsSubscription?.cancel();
+    _connectivitySubscription?.cancel();
     _sleepTimer?.cancel();
-    _recordingTimer?.cancel();
-    _networkCheckTimer?.cancel();
     _positionSubscription?.cancel();
     _durationSubscription?.cancel();
     _playerStateSubscription?.cancel();
     _player.dispose();
+    _recordingService.removeListener(notifyListeners);
+    _alarmService.removeListener(notifyListeners);
+    _stationProvider.removeListener(notifyListeners);
     super.dispose();
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../flux_engine/radio_engine.dart';
+import '../flux_hardware/radio_service.dart';
+import 'widgets/flux_image.dart';
 
 class RecentScreen extends StatefulWidget {
   const RecentScreen({super.key});
@@ -53,49 +55,30 @@ class _RecentScreenState extends State<RecentScreen> {
                             style: TextStyle(color: Colors.grey),
                           ),
                         )
-                      : ListView.builder(
-                          itemCount: recent.length,
-                          itemBuilder: (context, index) {
-                            final item = recent[index];
-                            return Card(
-                              color: Colors.white.withValues(alpha: 0.05),
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 4,
-                              ),
-                              child: ListTile(
-                                leading: item.favicon.isNotEmpty
-                                    ? CircleAvatar(
-                                        backgroundImage: NetworkImage(item.favicon),
-                                      )
-                                    : const CircleAvatar(
-                                        backgroundColor: Colors.red,
-                                        child: Icon(
-                                          Icons.history,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                title: Text(
-                                  item.name.isNotEmpty ? item.name : 'Unknown Station',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isTablet = constraints.maxWidth >= 600;
+                            if (isTablet) {
+                              return GridView.builder(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: constraints.maxWidth > 900 ? 3 : 2,
+                                  childAspectRatio: 3.5,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 8,
                                 ),
-                                subtitle: Text(
-                                  "${item.country.isNotEmpty ? item.country : 'Unknown'} • ${item.genre}",
-                                  style: const TextStyle(color: Colors.grey),
-                                ),
-                                trailing: IconButton(
-                                  icon: const Icon(
-                                    Icons.play_arrow,
-                                    color: Colors.red,
-                                  ),
-                                  onPressed: () {
-                                    engine.playStation(item);
-                                  },
-                                ),
-                              ),
+                                itemCount: recent.length,
+                                itemBuilder: (context, index) {
+                                  return _buildRecentItem(recent[index], engine);
+                                },
+                              );
+                            }
+                            return ListView.builder(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              itemCount: recent.length,
+                              itemBuilder: (context, index) {
+                                return _buildRecentItem(recent[index], engine);
+                              },
                             );
                           },
                         ),
@@ -105,6 +88,55 @@ class _RecentScreenState extends State<RecentScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildRecentItem(RadioStation item, RadioEngine engine) {
+    return Card(
+      color: Colors.white.withValues(alpha: 0.05),
+      margin: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 4,
+      ),
+      child: ListTile(
+        leading: FluxImage(
+          imageUrl: item.favicon,
+          width: 40,
+          height: 40,
+          errorWidget: const CircleAvatar(
+            backgroundColor: Colors.red,
+            child: Icon(
+              Icons.history,
+              color: Colors.black,
+            ),
+          ),
+        ),
+        title: Text(
+          item.name.isNotEmpty ? item.name : 'Unknown Station',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          "${item.country.isNotEmpty ? item.country : 'Unknown'} • ${item.genre}",
+          style: const TextStyle(color: Colors.grey),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: IconButton(
+          icon: const Icon(
+            Icons.play_arrow,
+            color: Colors.red,
+          ),
+          onPressed: () {
+            engine.playStation(item);
+          },
+        ),
+        onTap: () => engine.playStation(item),
+      ),
     );
   }
 }

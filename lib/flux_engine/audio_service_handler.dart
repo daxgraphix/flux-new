@@ -1,7 +1,12 @@
 import 'package:audio_service/audio_service.dart';
+import 'package:audio_session/audio_session.dart';
+import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 
 Future<AudioHandler> initAudioService() async {
+  final session = await AudioSession.instance;
+  await session.configure(const AudioSessionConfiguration.music());
+
   return await AudioService.init(
     builder: () => RadioAudioHandler(),
     config: AudioServiceConfig(
@@ -9,6 +14,8 @@ Future<AudioHandler> initAudioService() async {
       androidNotificationChannelName: 'Flux Radio Playback',
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: false,
+      androidShowNotificationBadge: true,
+      notificationColor: const Color(0xFFE53935),
     ),
   );
 }
@@ -27,7 +34,56 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
         ],
       ),
     );
+    _player.setAudioSource(
+      AudioSource.uri(Uri.parse(''), tag: const MediaItem(id: '', title: '')),
+      preload: false,
+    );
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
+    _listenToMetadata();
+    _handleAudioInterruptions();
+  }
+
+  void _handleAudioInterruptions() {
+    AudioSession.instance.then((session) {
+      session.interruptionEventStream.listen((event) {
+        if (event.begin) {
+          switch (event.type) {
+            case AudioInterruptionType.duck:
+              _player.setVolume(0.5);
+              break;
+            case AudioInterruptionType.pause:
+            case AudioInterruptionType.unknown:
+              pause();
+              break;
+          }
+        } else {
+          switch (event.type) {
+            case AudioInterruptionType.duck:
+              _player.setVolume(1.0);
+              break;
+            case AudioInterruptionType.pause:
+            case AudioInterruptionType.unknown:
+              play();
+              break;
+          }
+        }
+      });
+    });
+  }
+
+  void _listenToMetadata() {
+    _player.icyMetadataStream.listen((icy) {
+      final title = icy?.info?.title;
+      if (title != null && title.isNotEmpty) {
+        final currentItem = mediaItem.value;
+        if (currentItem != null) {
+          mediaItem.add(currentItem.copyWith(
+            displaySubtitle: title,
+            title: currentItem.title, // Keep station name as main title
+          ));
+        }
+      }
+    });
   }
 
   AndroidEqualizer get equalizer => _equalizer;

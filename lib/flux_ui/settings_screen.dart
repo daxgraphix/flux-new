@@ -73,6 +73,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        automaticallyImplyLeading: false,
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -182,6 +183,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: 'Cache Management',
                     subtitle: 'Current limit: ${_cacheSize}MB',
                     onTap: () => _showCacheDialog(context),
+                  ),
+                  _buildModernTile(
+                    icon: Icons.update_rounded,
+                    title: 'Update Directory',
+                    subtitle: 'Refresh countries, genres & tags',
+                    onTap: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      try {
+                        await engine.checkForUpdates();
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text('Station directory updated!')),
+                        );
+                      } catch (e) {
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text('Failed to update directory.')),
+                        );
+                      }
+                    },
                   ),
                   _buildModernTile(
                     icon: Icons.delete_sweep_rounded,

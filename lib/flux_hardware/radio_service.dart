@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:hive/hive.dart';
+import 'package:crypto/crypto.dart';
 
 part 'radio_service.g.dart';
 
@@ -59,21 +61,78 @@ class RadioStation {
       'uuid': uuid,
     };
   }
+
+  String get id {
+    if (uuid != null && uuid!.isNotEmpty) return uuid!;
+    return sha256.convert(utf8.encode(url)).toString().substring(0, 16);
+  }
 }
 
 class RadioService {
-  static const String _baseUrl = 'https://de1.api.radio-browser.info';
+  static const List<String> _baseUrls = [
+    'https://de1.api.radio-browser.info',
+    'https://at1.api.radio-browser.info',
+    'https://fr1.api.radio-browser.info',
+    'https://nl1.api.radio-browser.info',
+  ];
+  static String _baseUrl = _baseUrls[0];
+  static const String _streemaUrl = 'https://streema.com/radios/country/';
   static const Duration _requestTimeout = Duration(seconds: 10);
 
   static final List<RadioStation> _staticTanzaniaStations = [
     RadioStation(
-      name: 'Radio Tanzania',
-      url: 'https://radio.tz:8000/radiotanzania',
+      name: 'Clouds FM',
+      url: 'http://173.249.21.17:8000/cloudsfm',
       country: 'Tanzania',
       language: 'sw',
-      genre: 'News',
+      genre: 'Entertainment, Music',
       bitrate: 128,
-      favicon: 'https://_radio.tz/favicon.ico',
+      favicon: 'https://cmg.co.tz/wp-content/uploads/2021/05/Clouds-FM-Logo.png',
+    ),
+    RadioStation(
+      name: 'Wasafi FM',
+      url: 'https://stream.wasafifm.co.tz/radio/8000/radio.mp3',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Entertainment, Music',
+      bitrate: 128,
+      favicon: 'https://wasafifm.co.tz/wp-content/uploads/2023/07/wasafi-fm-logo.png',
+    ),
+    RadioStation(
+      name: 'Radio One Stereo',
+      url: 'http://41.222.181.187:8000/radioone',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'News, Talk',
+      bitrate: 128,
+      favicon: 'https://www.ippmedia.com/sites/default/files/styles/medium/public/radio-one-logo.jpg',
+    ),
+    RadioStation(
+      name: 'E-FM Radio',
+      url: 'http://197.250.35.210:8000/efm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Music, Sports',
+      bitrate: 128,
+      favicon: 'https://efm.co.tz/wp-content/uploads/2019/08/efm-logo.png',
+    ),
+    RadioStation(
+      name: 'Radio Free Africa',
+      url: 'http://41.222.176.162:8000/rfa',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'News, Music',
+      bitrate: 128,
+      favicon: 'https://radiofreeafrica.co.tz/wp-content/uploads/2020/06/RFA-Logo.png',
+    ),
+    RadioStation(
+      name: 'TBC Taifa',
+      url: 'http://41.59.225.234:8000/tbctaifa',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'News, National',
+      bitrate: 128,
+      favicon: 'https://www.tbc.go.tz/images/logo.png',
     ),
     RadioStation(
       name: 'BBC Swahili',
@@ -86,57 +145,12 @@ class RadioService {
     ),
     RadioStation(
       name: 'East African Radio',
-      url: 'https://stream.radio.co/s123456789:east-african',
+      url: 'http://41.222.181.187:8000/eastafricanradio',
       country: 'Tanzania',
       language: 'en',
-      genre: 'Music',
+      genre: 'Music, Culture',
       bitrate: 128,
-      favicon: '',
-    ),
-    RadioStation(
-      name: 'Cube Radio',
-      url: 'https://stream.radio.co/s5f9a8b123:cube',
-      country: 'Tanzania',
-      language: 'en',
-      genre: 'Music',
-      bitrate: 128,
-      favicon: '',
-    ),
-    RadioStation(
-      name: 'Heaven FM',
-      url: 'https://stream.zamradio.net:8000/heaven',
-      country: 'Tanzania',
-      language: 'en',
-      genre: 'Music',
-      bitrate: 128,
-      favicon: '',
-    ),
-    RadioStation(
-      name: 'Ramogi FM',
-      url: 'https://stream.radio.co/s7g8h9i01:ramogi',
-      country: 'Tanzania',
-      language: 'od',
-      genre: 'Music',
-      bitrate: 128,
-      favicon: '',
-    ),
-    RadioStation(
-      name: 'Inooro FM',
-      url: 'https://stream.zamradio.net:8000/inooro',
-      country: 'Tanzania',
-      language: 'sw',
-      genre: 'News',
-      bitrate: 128,
-      favicon: '',
-    ),
-    RadioStation(
-      name: 'Spice FM',
-      url: 'https://stream.radio.co/s2j3k4l56:spice',
-      country: 'Tanzania',
-      language: 'en',
-      genre: 'Music',
-      bitrate: 128,
-      favicon: '',
+      favicon: 'https://www.ippmedia.com/sites/default/files/styles/medium/public/ear-logo.jpg',
     ),
   ];
 
@@ -177,68 +191,102 @@ class RadioService {
     queryParams['offset'] = offset.toString();
     queryParams['hidebroken'] = 'true';
 
-    final uri = Uri.parse(
-      '$_baseUrl/json/stations/search',
-    ).replace(queryParameters: queryParams);
-    final response = await http.get(uri).timeout(_requestTimeout);
+    // Try multiple mirrors in parallel or sequence for reliability
+    for (final baseUrl in _baseUrls) {
+      try {
+        final uri = Uri.parse(
+          '$baseUrl/json/stations/search',
+        ).replace(queryParameters: queryParams);
+        final response = await http.get(uri).timeout(_requestTimeout);
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((json) => RadioStation.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to load stations');
+        if (response.statusCode == 200) {
+          _baseUrl = baseUrl; // Update to currently working mirror
+          final List<dynamic> data = json.decode(response.body);
+          return data.map((json) => RadioStation.fromJson(json)).toList();
+        }
+      } catch (e) {
+        debugPrint('Mirror $baseUrl failed: $e');
+        continue;
+      }
     }
+    throw Exception('Failed to load stations from all mirrors');
   }
 
   Future<List<String>> getCountries() async {
-    final uri = Uri.parse('$_baseUrl/json/countries');
-    final response = await http.get(uri).timeout(_requestTimeout);
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((json) => json['name'] as String).toList();
-    } else {
-      throw Exception('Failed to load countries');
+    for (final baseUrl in _baseUrls) {
+      try {
+        final uri = Uri.parse('$baseUrl/json/countries');
+        final response = await http.get(uri).timeout(_requestTimeout);
+        if (response.statusCode == 200) {
+          _baseUrl = baseUrl;
+          final List<dynamic> data = json.decode(response.body);
+          return data.map((json) => json['name'] as String).toList();
+        }
+      } catch (e) {
+        continue;
+      }
     }
+    throw Exception('Failed to load countries from mirrors');
   }
 
-  Future<List<String>> getTags() async {
-    final uri = Uri.parse('$_baseUrl/json/tags');
-    final response = await http.get(uri).timeout(_requestTimeout);
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((json) => json['name'] as String).toList();
-    } else {
-      throw Exception('Failed to load tags');
+  Future<List<String>> getTags({int limit = 500}) async {
+    final queryParams = {
+      'hidebroken': 'true',
+      'order': 'stationcount',
+      'reverse': 'true',
+    };
+    for (final baseUrl in _baseUrls) {
+      try {
+        final uri = Uri.parse('$baseUrl/json/tags').replace(queryParameters: queryParams);
+        final response = await http.get(uri).timeout(_requestTimeout);
+        if (response.statusCode == 200) {
+          _baseUrl = baseUrl;
+          final List<dynamic> data = json.decode(response.body);
+          return data.take(limit).map((json) => json['name'] as String).toList();
+        }
+      } catch (e) {
+        continue;
+      }
     }
+    return ['Pop', 'Rock', 'Jazz', 'News', 'Classical', 'Dance'];
+  }
+
+  /// Generates a Streema search URL for global aggregation
+  String getStreemaSearchUrl(String query) {
+    final encodedQuery = Uri.encodeComponent(query);
+    return 'https://streema.com/radios/search/?q=$encodedQuery';
   }
 
   Future<List<String>> getLanguages() async {
-    final uri = Uri.parse('$_baseUrl/json/languages');
-    final response = await http.get(uri).timeout(_requestTimeout);
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((json) => json['name'] as String).toList();
-    } else {
-      throw Exception('Failed to load languages');
+    for (final baseUrl in _baseUrls) {
+      try {
+        final uri = Uri.parse('$baseUrl/json/languages');
+        final response = await http.get(uri).timeout(_requestTimeout);
+        if (response.statusCode == 200) {
+          _baseUrl = baseUrl;
+          final List<dynamic> data = json.decode(response.body);
+          return data.map((json) => json['name'] as String).toList();
+        }
+      } catch (e) {
+        continue;
+      }
     }
+    throw Exception('Failed to load languages');
   }
 
-  Future<List<RadioStation>> getTopStations({int limit = 100, int? bitrateMin}) async {
+  Future<List<RadioStation>> getTopStations({int limit = 250, int? bitrateMin}) async {
     return searchStations(limit: limit, order: 'votes', reverse: true, bitrateMin: bitrateMin);
   }
 
-  Future<List<RadioStation>> getTrendingStations({int limit = 100, int? bitrateMin}) async {
+  Future<List<RadioStation>> getTrendingStations({int limit = 250, int? bitrateMin}) async {
     return searchStations(limit: limit, order: 'clicktrend', reverse: true, bitrateMin: bitrateMin);
   }
 
-  Future<List<RadioStation>> getStationsByCountry(String country, {int limit = 100, int? bitrateMin}) async {
+  Future<List<RadioStation>> getStationsByCountry(String country, {int limit = 250, int? bitrateMin}) async {
     return searchStations(country: country, limit: limit, order: 'votes', reverse: true, bitrateMin: bitrateMin);
   }
 
-  Future<List<RadioStation>> getStationsByGenre(String genre, {int limit = 100, int? bitrateMin}) async {
+  Future<List<RadioStation>> getStationsByGenre(String genre, {int limit = 250, int? bitrateMin}) async {
     return searchStations(tag: genre, limit: limit, order: 'votes', reverse: true, bitrateMin: bitrateMin);
   }
 
@@ -248,11 +296,18 @@ class RadioService {
 
   Future<List<RadioStation>> getMusicStations({int limit = 100}) async {
     final musicGenres = ['pop', 'rock', 'jazz', 'classical', 'electronic', 'hip hop', 'country', 'reggae'];
-    final List<RadioStation> allStations = [];
-    for (final genre in musicGenres) {
-      final stations = await searchStations(tag: genre, limit: (limit / musicGenres.length).round(), order: 'votes', reverse: true);
-      allStations.addAll(stations);
-    }
+    final int limitPerGenre = (limit / musicGenres.length).round();
+    
+    final futures = musicGenres.map((genre) => searchStations(
+      tag: genre, 
+      limit: limitPerGenre, 
+      order: 'votes', 
+      reverse: true,
+    ));
+
+    final results = await Future.wait(futures);
+    final List<RadioStation> allStations = results.expand((stations) => stations).toList();
+    
     return allStations.take(limit).toList();
   }
 
@@ -266,11 +321,18 @@ class RadioService {
 
   Future<List<RadioStation>> getTalkStations({int limit = 100}) async {
     final talkTags = ['talk', 'comedy', 'business', 'tech', 'politics'];
-    final List<RadioStation> allStations = [];
-    for (final tag in talkTags) {
-      final stations = await searchStations(tag: tag, limit: (limit / talkTags.length).round(), order: 'votes', reverse: true);
-      allStations.addAll(stations);
-    }
+    final int limitPerTag = (limit / talkTags.length).round();
+
+    final futures = talkTags.map((tag) => searchStations(
+      tag: tag, 
+      limit: limitPerTag, 
+      order: 'votes', 
+      reverse: true,
+    ));
+
+    final results = await Future.wait(futures);
+    final List<RadioStation> allStations = results.expand((stations) => stations).toList();
+    
     return allStations.take(limit).toList();
   }
 
@@ -279,55 +341,19 @@ class RadioService {
   }
 
   Future<List<RadioStation>> getGlobalAmFmStations({int limit = 500}) async {
-    final List<RadioStation> allStations = [];
+    final int quarterLimit = (limit / 4).round();
+    final int eighthLimit = (limit / 8).round();
 
-    // Get stations from multiple sources for better variety
-    final amStations = await searchStations(
-      tag: 'am',
-      limit: (limit / 4).round(),
-      order: 'clicktrend',
-      reverse: true,
-      hasGeoInfo: false,
-    );
+    final futures = [
+      searchStations(tag: 'am', limit: quarterLimit, order: 'clicktrend', reverse: true, hasGeoInfo: false),
+      searchStations(tag: 'fm', limit: quarterLimit, order: 'clicktrend', reverse: true, hasGeoInfo: false),
+      searchStations(country: 'United States', tag: 'fm', limit: quarterLimit, order: 'votes', reverse: true),
+      searchStations(country: 'United Kingdom', tag: 'fm', limit: eighthLimit, order: 'votes', reverse: true),
+      searchStations(country: 'Germany', tag: 'fm', limit: eighthLimit, order: 'votes', reverse: true),
+    ];
 
-    final fmStations = await searchStations(
-      tag: 'fm',
-      limit: (limit / 4).round(),
-      order: 'clicktrend',
-      reverse: true,
-      hasGeoInfo: false,
-    );
-
-    // Get additional stations by country for global coverage
-    final usStations = await searchStations(
-      country: 'United States',
-      tag: 'fm',
-      limit: (limit / 4).round(),
-      order: 'votes',
-      reverse: true,
-    );
-
-    final ukStations = await searchStations(
-      country: 'United Kingdom',
-      tag: 'fm',
-      limit: (limit / 8).round(),
-      order: 'votes',
-      reverse: true,
-    );
-
-    final germanStations = await searchStations(
-      country: 'Germany',
-      tag: 'fm',
-      limit: (limit / 8).round(),
-      order: 'votes',
-      reverse: true,
-    );
-
-    allStations.addAll(amStations);
-    allStations.addAll(fmStations);
-    allStations.addAll(usStations);
-    allStations.addAll(ukStations);
-    allStations.addAll(germanStations);
+    final results = await Future.wait(futures);
+    final List<RadioStation> allStations = results.expand((stations) => stations).toList();
 
     // Remove duplicates and limit results
     final uniqueStations = <String, RadioStation>{};
@@ -351,5 +377,32 @@ class RadioService {
 
   Future<List<RadioStation>> getNearbyStations({required double lat, required double lon, int limit = 50}) async {
     return getStationsByLocation(lat: lat, lon: lon, limit: limit);
+  }
+
+  Future<bool> reportStation(String uuid) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/json/report/$uuid');
+      final response = await http.get(uri).timeout(_requestTimeout);
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('Failed to report station: $e');
+      return false;
+    }
+  }
+
+  Future<void> clickStation(String uuid) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/json/url/$uuid');
+      await http.get(uri).timeout(_requestTimeout);
+    } catch (e) {
+      // Ignore click tracking errors
+    }
+  }
+
+  /// Note: Streema doesn't have a public API for direct station fetching in the same format.
+  /// This method is a placeholder or for potential future scraping/integration.
+  String getStreemaCountryUrl(String countryName) {
+    final slug = countryName.toLowerCase().replaceAll(' ', '_');
+    return '$_streemaUrl$slug';
   }
 }
