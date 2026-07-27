@@ -36,6 +36,7 @@ class RecordingService extends ChangeNotifier {
     try {
       Directory? recordingsDir;
       if (Platform.isAndroid) {
+        // Use more reliable public directory for recordings
         recordingsDir = Directory('/storage/emulated/0/Music/FluxRecordings');
       } else {
         final dir = await getApplicationDocumentsDirectory();
@@ -60,14 +61,28 @@ class RecordingService extends ChangeNotifier {
       });
 
       _recordingClient = HttpClient();
+      // Set a longer connection timeout for potentially unstable radio streams
+      _recordingClient!.connectionTimeout = const Duration(seconds: 15);
+      
       _recordingRequest = await _recordingClient!.getUrl(Uri.parse(station.url));
       _recordingResponse = await _recordingRequest!.close();
+      
+      if (_recordingResponse!.statusCode >= 400) {
+        throw Exception('Server returned status code ${_recordingResponse!.statusCode}');
+      }
+      
       _recordingSink = File(_recordingPath!).openWrite();
       
       _recordingResponse!.listen(
         (chunk) => _recordingSink?.add(chunk),
-        onError: (e) => stopRecording(),
-        onDone: () => stopRecording(),
+        onError: (e) {
+          debugPrint('Recording stream error: $e');
+          stopRecording();
+        },
+        onDone: () {
+          debugPrint('Recording stream closed');
+          stopRecording();
+        },
         cancelOnError: true,
       );
       

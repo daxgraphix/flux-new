@@ -7,25 +7,20 @@ class StationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Consumer<RadioEngine>(
       builder: (context, engine, child) {
         return Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF1A1A2E), Color(0xFF0A0A0A)],
-            ),
-          ),
+          color: theme.scaffoldBackgroundColor,
           child: SafeArea(
             child: Column(
               children: [
-                const Padding(
-                  padding: EdgeInsets.all(16),
+                Padding(
+                  padding: const EdgeInsets.all(16),
                   child: Text(
                     'All Stations',
                     style: TextStyle(
-                      color: Colors.red,
+                      color: theme.primaryColor,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -33,13 +28,13 @@ class StationsScreen extends StatelessWidget {
                 ),
                 Expanded(
                   child: engine.isLoading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? Center(child: CircularProgressIndicator(color: theme.primaryColor))
                       : ListView.builder(
                           itemCount: engine.stations.length,
                           itemBuilder: (context, index) {
                             final station = engine.stations[index];
                             return Card(
-                              color: Colors.white.withValues(alpha: 0.05),
+                              color: theme.cardColor,
                               margin: const EdgeInsets.symmetric(
                                 horizontal: 16,
                                 vertical: 4,
@@ -51,25 +46,25 @@ class StationsScreen extends StatelessWidget {
                                           station.favicon,
                                         ),
                                       )
-                                    : const CircleAvatar(
-                                        backgroundColor: Colors.red,
-                                        child: Icon(
+                                    : CircleAvatar(
+                                        backgroundColor: theme.primaryColor,
+                                        child: const Icon(
                                           Icons.radio,
-                                          color: Colors.black,
+                                          color: Colors.white,
                                         ),
                                       ),
                                 title: Text(
                                   station.name,
-                                  style: const TextStyle(color: Colors.white),
+                                  style: TextStyle(color: theme.textTheme.bodyLarge?.color),
                                 ),
                                 subtitle: Text(
                                   '${station.country} • ${station.genre} • ${station.bitrate}kbps',
-                                  style: const TextStyle(color: Colors.grey),
+                                  style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6)),
                                 ),
                                 trailing: IconButton(
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.play_arrow,
-                                    color: Colors.red,
+                                    color: theme.primaryColor,
                                   ),
                                   onPressed: () => engine.playStation(station),
                                 ),

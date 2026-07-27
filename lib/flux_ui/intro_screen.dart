@@ -53,8 +53,9 @@ class _IntroScreenState extends State<IntroScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -64,7 +65,7 @@ class _IntroScreenState extends State<IntroScreen> {
                 alignment: Alignment.topRight,
                 child: TextButton(
                   onPressed: _skip,
-                  child: const Text('Skip', style: TextStyle(color: Colors.white70)),
+                  child: Text('Skip', style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7))),
                 ),
               ),
               Expanded(
@@ -82,12 +83,12 @@ class _IntroScreenState extends State<IntroScreen> {
                           height: 120,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              colors: [Colors.red, Color(0xFFFF6B6B)],
+                            gradient: LinearGradient(
+                              colors: [theme.primaryColor, theme.primaryColor.withValues(alpha: 0.7)],
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.red.withValues(alpha: 0.3),
+                                color: theme.primaryColor.withValues(alpha: 0.3),
                                 blurRadius: 20,
                                 spreadRadius: 5,
                               ),
@@ -98,8 +99,8 @@ class _IntroScreenState extends State<IntroScreen> {
                         const SizedBox(height: 32),
                         Text(
                           item.title,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: theme.textTheme.titleLarge?.color,
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
                           ),
@@ -108,7 +109,7 @@ class _IntroScreenState extends State<IntroScreen> {
                         const SizedBox(height: 16),
                         Text(
                           item.subtitle,
-                          style: const TextStyle(color: Colors.white70, fontSize: 16),
+                          style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7), fontSize: 16),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -119,7 +120,7 @@ class _IntroScreenState extends State<IntroScreen> {
               ElevatedButton(
                 onPressed: _nextPage,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: theme.primaryColor,
                   foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(52),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),

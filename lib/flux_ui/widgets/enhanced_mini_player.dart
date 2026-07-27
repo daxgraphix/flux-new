@@ -5,20 +5,13 @@ import '../../flux_engine/radio_engine.dart';
 
 import 'flux_image.dart';
 
-const _kBlack = Color(0xFF0A0A0A);
-const _kCard = Color(0xFF1C1C1C);
-const _kRed = Color(0xFFE53935);
-const _kGrey = Color(0xFF9E9E9E);
-
 class EnhancedMiniPlayer extends StatefulWidget {
   final RadioEngine engine;
-  final bool isDark;
   final VoidCallback onExpandTap;
 
   const EnhancedMiniPlayer({
     super.key,
     required this.engine,
-    required this.isDark,
     required this.onExpandTap,
   });
 
@@ -47,6 +40,13 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = theme.cardColor;
+    final primaryColor = theme.primaryColor;
+    final textColor = theme.textTheme.bodyLarge?.color ?? (isDark ? Colors.white : Colors.black);
+    final secondaryTextColor = theme.textTheme.bodyMedium?.color ?? Colors.grey;
+
     return Consumer<RadioEngine>(
       builder: (context, engine, _) {
         final station = engine.currentStation;
@@ -56,15 +56,15 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
           child: Container(
             margin: const EdgeInsets.fromLTRB(12, 6, 12, 4),
             decoration: BoxDecoration(
-              color: _kCard,
+              color: cardColor,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: _kRed.withValues(alpha: 0.35),
+                color: primaryColor.withValues(alpha: 0.35),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: _kRed.withValues(alpha: 0.12),
+                  color: primaryColor.withValues(alpha: 0.12),
                   blurRadius: 16,
                   spreadRadius: 0,
                   offset: const Offset(0, 4),
@@ -78,7 +78,7 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                 Container(
                   height: 3,
                   decoration: BoxDecoration(
-                    color: _kRed,
+                    color: primaryColor,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
                       topRight: Radius.circular(16),
@@ -96,19 +96,19 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                         height: 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _kBlack,
+                          color: isDark ? Colors.black : Colors.grey[200],
                           border:
-                              Border.all(color: _kRed.withValues(alpha: 0.5), width: 1.5),
+                              Border.all(color: primaryColor.withValues(alpha: 0.5), width: 1.5),
                         ),
                         child: ClipOval(
                           child: FluxImage(
                             imageUrl: station.favicon,
                             width: 44,
                             height: 44,
-                            placeholder: const Icon(Icons.radio_rounded,
-                                color: _kRed, size: 22),
-                            errorWidget: const Icon(Icons.radio_rounded,
-                                color: _kRed, size: 22),
+                            placeholder: Icon(Icons.radio_rounded,
+                                color: primaryColor, size: 22),
+                            errorWidget: Icon(Icons.radio_rounded,
+                                color: primaryColor, size: 22),
                           ),
                         ),
                       ),
@@ -120,9 +120,11 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              station.name,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              engine.currentTitle.isNotEmpty 
+                                  ? engine.currentTitle 
+                                  : station.name,
+                              style: TextStyle(
+                                color: textColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
@@ -131,14 +133,16 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              [
-                                station.country,
-                                station.genre,
-                              ]
-                                  .where((s) => s.isNotEmpty)
-                                  .join(' • '),
-                              style: const TextStyle(
-                                  color: _kGrey, fontSize: 11),
+                              engine.currentTitle.isNotEmpty && engine.currentTitle != station.name
+                                  ? station.name
+                                  : [
+                                      station.country,
+                                      station.genre,
+                                    ]
+                                      .where((s) => s.isNotEmpty)
+                                      .join(' • '),
+                              style: TextStyle(
+                                  color: secondaryTextColor, fontSize: 11),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -150,7 +154,8 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                       if (engine.isPlaying)
                         RepaintBoundary(
                           child: _MiniWaveform(
-                              controller: _waveController),
+                              controller: _waveController,
+                              color: primaryColor),
                         ),
                       const SizedBox(width: 8),
                       // Play / Pause button
@@ -162,11 +167,11 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: _kRed,
+                            color: primaryColor,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: _kRed.withValues(alpha: 0.35),
+                                color: primaryColor.withValues(alpha: 0.35),
                                 blurRadius: 10,
                               )
                             ],
@@ -196,7 +201,8 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
 
 class _MiniWaveform extends StatelessWidget {
   final AnimationController controller;
-  const _MiniWaveform({required this.controller});
+  final Color color;
+  const _MiniWaveform({required this.controller, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -222,8 +228,7 @@ class _MiniWaveform extends StatelessWidget {
                   width: 3,
                   height: h,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE53935)
-                        .withValues(alpha: i % 2 == 0 ? 1.0 : 0.6),
+                    color: color.withValues(alpha: i % 2 == 0 ? 1.0 : 0.6),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),

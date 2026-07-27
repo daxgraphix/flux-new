@@ -4,7 +4,6 @@ import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:audio_service/audio_service.dart';
 import 'flux_engine/radio_engine.dart';
 import 'flux_engine/theme_provider.dart';
 import 'flux_engine/audio_service_handler.dart';
@@ -17,7 +16,7 @@ import 'flux_engine/station_provider.dart';
 import 'flux_engine/download_service.dart';
 import 'flux_hardware/radio_service.dart';
 
-late AudioHandler _audioHandler;
+late RadioAudioHandler _audioHandler;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,7 +34,7 @@ void main() async {
   runApp(const FluxApp());
 }
 
-Future<AudioHandler> _createAudioHandler() async {
+Future<RadioAudioHandler> _createAudioHandler() async {
   try {
     return await initAudioService().timeout(const Duration(seconds: 8));
   } catch (e) {

@@ -34,6 +34,9 @@ class StationProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get categories => [
         {'title': 'Trending', 'icon': Icons.trending_up, 'color': Colors.red, 'action': loadTopStations},
         {'title': 'Tanzania', 'icon': Icons.location_on, 'color': Colors.red, 'action': loadTanzaniaStations},
+        {'title': 'Kenya', 'icon': Icons.location_on, 'color': Colors.red, 'action': loadKenyaStations},
+        {'title': 'Uganda', 'icon': Icons.location_on, 'color': Colors.red, 'action': loadUgandaStations},
+        {'title': 'Rwanda', 'icon': Icons.location_on, 'color': Colors.red, 'action': loadRwandaStations},
         {'title': 'Music', 'icon': Icons.music_note, 'color': Colors.red, 'action': loadMusicStations},
         {'title': 'Sports', 'icon': Icons.sports_soccer, 'color': Colors.red, 'action': loadSportsStations},
         {'title': 'News', 'icon': Icons.article, 'color': Colors.red, 'action': loadNewsStations},
@@ -143,6 +146,50 @@ class StationProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> loadKenyaStations() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final stations = await RadioService().getKenyaStations();
+      _stations = stations;
+    } catch (e) {
+      _stations = RadioService.getStaticKenyaStations();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadUgandaStations() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final stations = await RadioService().getUgandaStations();
+      _stations = stations;
+    } catch (e) {
+      // Static fallback handled in RadioService
+      _stations = []; 
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadRwandaStations() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final stations = await RadioService().getRwandaStations();
+      _stations = stations;
+    } catch (e) {
+      // Static fallback handled in RadioService
+      _stations = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> loadMusicStations() async {
     _isLoading = true;
     notifyListeners();
@@ -217,35 +264,13 @@ class StationProvider extends ChangeNotifier {
 
   Future<void> searchPodcasts(String query) async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
     try {
-      await Future.delayed(const Duration(seconds: 1));
-      _podcasts = [
-        Podcast(
-          id: '1',
-          title: 'The Daily',
-          publisher: 'The New York Times',
-          image: 'https://static01.nyt.com/images/2017/01/29/podcasts/the-daily-album-art/the-daily-album-art-square320-v4.png',
-          description: 'This is what the news should sound like.',
-          rss: 'https://feeds.simplecast.com/54nAGpEC',
-        ),
-        Podcast(
-          id: '2',
-          title: 'Joe Rogan Experience',
-          publisher: 'Joe Rogan',
-          image: 'https://upload.wikimedia.org/wikipedia/en/4/4b/The_Joe_Rogan_Experience_logo.jpg',
-          description: 'The official podcast of comedian Joe Rogan.',
-          rss: 'https://feeds.megaphone.fm/WWO3519750118',
-        ),
-        Podcast(
-          id: '3',
-          title: 'BBC Global News',
-          publisher: 'BBC World Service',
-          image: 'https://ichef.bbci.co.uk/images/ic/1200x675/p03r82bc.jpg',
-          description: 'The day\'s top stories from BBC News.',
-          rss: 'https://podcasts.files.bbci.co.uk/p02nq0gn.rss',
-        ),
-      ];
+      _podcasts = await _podcastService.searchPodcasts(query);
+      if (_podcasts.isEmpty) {
+        _errorMessage = 'No podcasts found for "$query"';
+      }
     } catch (e) {
       _errorMessage = 'Failed to load podcasts: $e';
     }

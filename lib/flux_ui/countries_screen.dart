@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'streema_browser_screen.dart';
 import '../flux_engine/radio_engine.dart';
 import '../flux_hardware/radio_service.dart';
+import '../helpers/navigation_helper.dart';
 import 'models/countries_data.dart';
 import 'stations_list_screen.dart';
 
@@ -18,9 +19,10 @@ class _CountriesScreenState extends State<CountriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final canPop = Navigator.of(context).canPop();
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -30,14 +32,14 @@ class _CountriesScreenState extends State<CountriesScreen> {
                 children: [
                   if (canPop)
                     IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.red),
+                      icon: Icon(Icons.arrow_back, color: theme.primaryColor),
                       onPressed: () => Navigator.pop(context),
                     ),
                   Expanded(
                     child: Text(
                       'Radio by Country',
-                      style: const TextStyle(
-                        color: Colors.red,
+                      style: TextStyle(
+                        color: theme.primaryColor,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
@@ -72,8 +74,8 @@ class _CountriesScreenState extends State<CountriesScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1A1A1A),
-                                  border: Border(left: BorderSide(color: Colors.red, width: 4)),
+                                  color: theme.cardColor,
+                                  border: Border(left: BorderSide(color: theme.primaryColor, width: 4)),
                                   borderRadius: const BorderRadius.horizontal(right: Radius.circular(8)),
                                 ),
                                 child: Row(
@@ -81,9 +83,9 @@ class _CountriesScreenState extends State<CountriesScreen> {
                                   children: [
                                     Text(
                                       region.regionName,
-                                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                      style: TextStyle(color: theme.textTheme.titleMedium?.color, fontSize: 16, fontWeight: FontWeight.bold),
                                     ),
-                                    Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: Colors.red),
+                                    Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: theme.primaryColor),
                                   ],
                                 ),
                               ),
@@ -143,18 +145,22 @@ class _CountriesScreenState extends State<CountriesScreen> {
     engine.loadStationsByCountry(countryName);
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => StationsListScreen(
+      NavigationHelper.slideUpRoute(
+        StationsListScreen(
           title: countryName,
           actions: [
             IconButton(
               icon: const Icon(Icons.open_in_new, size: 20, color: Colors.red),
-              onPressed: () async {
+              onPressed: () {
                 final urlString = service.getStreemaCountryUrl(countryName);
-                final url = Uri.parse(urlString);
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StreemaBrowserScreen(
+                      url: urlString,
+                    ),
+                  ),
+                );
               },
               tooltip: 'View more on Streema',
             ),
@@ -173,13 +179,14 @@ class _CountryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.red.withValues(alpha: 0.1),
-          border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+          color: theme.primaryColor.withValues(alpha: 0.1),
+          border: Border.all(color: theme.primaryColor.withValues(alpha: 0.3)),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -189,7 +196,7 @@ class _CountryCard extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               country.name,
-              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+              style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ],
         ),

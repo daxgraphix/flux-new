@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 import '../flux_engine/radio_engine.dart';
 import '../flux_storage/radio_storage.dart';
 import '../flux_hardware/radio_service.dart';
+import '../helpers/navigation_helper.dart';
 import 'recent_screen.dart';
 import 'widgets/flux_image.dart';
 import 'podcast_details_screen.dart';
+import 'now_playing_screen.dart';
 import 'models/podcast.dart';
 
 class CategoryScreen extends StatefulWidget {
@@ -40,26 +42,29 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
-        backgroundColor: const Color(0xFF0A0A0A),
-        foregroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
         elevation: 0,
       ),
       body: Container(
-        color: const Color(0xFF0A0A0A),
+        color: theme.scaffoldBackgroundColor,
         child: Consumer<RadioEngine>(
           builder: (context, engine, child) {
             if (engine.isLoading) {
-              return const Center(child: CircularProgressIndicator(color: Colors.red));
+              return Center(child: CircularProgressIndicator(color: theme.primaryColor));
             }
             if (engine.stations.isEmpty) {
               return Center(
                 child: Text(
                   'No stations found',
-                  style: TextStyle(color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.7)),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                  ),
                 ),
               );
             }
@@ -101,10 +106,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   Widget _buildStationItem(BuildContext context, RadioStation station, bool isDark) {
+    final theme = Theme.of(context);
     final engine = context.read<RadioEngine>();
     return Card(
       key: ValueKey('category_station_${station.id}_${station.name}'),
-      color: const Color(0xFF1C1C1C),
+      color: theme.cardColor,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -114,43 +120,47 @@ class _CategoryScreenState extends State<CategoryScreen> {
           height: 40,
           placeholder: CircleAvatar(
             radius: 20,
-            backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08),
-            child: const Icon(Icons.radio, color: Colors.red, size: 16),
+            backgroundColor: theme.dividerColor.withValues(alpha: 0.1),
+            child: Icon(Icons.radio, color: theme.primaryColor, size: 16),
           ),
           errorWidget: CircleAvatar(
             radius: 20,
-            backgroundColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08),
-            child: const Icon(Icons.radio, color: Colors.red, size: 16),
+            backgroundColor: theme.dividerColor.withValues(alpha: 0.1),
+            child: Icon(Icons.radio, color: theme.primaryColor, size: 16),
           ),
         ),
         title: Text(
           station.name,
-          style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 14),
+          style: theme.textTheme.bodyLarge?.copyWith(fontSize: 14),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           '${station.country} • ${station.genre}',
-          style: TextStyle(
-            color: isDark ? Colors.white70 : Colors.black54,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
             fontSize: 12,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.play_arrow, color: Colors.red, size: 20),
+          icon: Icon(Icons.play_arrow, color: theme.primaryColor, size: 20),
           onPressed: () async {
             try {
               await engine.playStation(station);
+              if (context.mounted) {
+                Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+              }
             } catch (e) {
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Failed to play: ${station.name}'),
-                    backgroundColor: Colors.red,
+                    backgroundColor: theme.colorScheme.error,
                     action: SnackBarAction(
                       label: 'Retry',
+                      textColor: Colors.white,
                       onPressed: () => engine.playStation(station),
                     ),
                   ),
@@ -161,11 +171,15 @@ class _CategoryScreenState extends State<CategoryScreen> {
         ),
         onTap: () {
           final messenger = ScaffoldMessenger.of(context);
-          engine.playStation(station).catchError((e) {
+          engine.playStation(station).then((_) {
+            if (context.mounted) {
+              Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+            }
+          }).catchError((e) {
             messenger.showSnackBar(
               SnackBar(
                 content: Text('Failed to play: ${station.name}'),
-                backgroundColor: Colors.red,
+                backgroundColor: theme.colorScheme.error,
               ),
             );
           });
@@ -200,17 +214,18 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Library', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
-        backgroundColor: const Color(0xFF0A0A0A),
-        foregroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
         elevation: 0,
         automaticallyImplyLeading: false,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.grey,
+          labelColor: theme.tabBarTheme.labelColor,
+          unselectedLabelColor: theme.tabBarTheme.unselectedLabelColor,
           isScrollable: true,
           tabs: const [
             Tab(text: 'Stations'),
@@ -222,7 +237,7 @@ class _LibraryScreenState extends State<LibraryScreen>
         ),
       ),
       body: Container(
-        color: const Color(0xFF0A0A0A),
+        color: theme.scaffoldBackgroundColor,
         child: TabBarView(
           controller: _tabController,
           children: [
@@ -238,22 +253,25 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   Widget _buildDownloadsTab() {
+    final theme = Theme.of(context);
     return Consumer<RadioEngine>(
       builder: (context, engine, child) {
         return FutureBuilder<List<Episode>>(
           future: RadioStorage().getDownloadedEpisodes(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: Colors.red));
+              return Center(child: CircularProgressIndicator(color: theme.primaryColor));
             }
             
             final downloadedEpisodes = snapshot.data ?? [];
             
             if (downloadedEpisodes.isEmpty) {
-              return const Center(
+              return Center(
                 child: Text(
                   'No downloaded episodes yet',
-                  style: TextStyle(color: Colors.white70),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                  ),
                 ),
               );
             }
@@ -292,8 +310,9 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   Widget _buildDownloadItem(BuildContext context, Episode episode, RadioEngine engine) {
+    final theme = Theme.of(context);
     return Card(
-      color: const Color(0xFF1C1C1C),
+      color: theme.cardColor,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: ListTile(
         leading: ClipRRect(
@@ -302,29 +321,35 @@ class _LibraryScreenState extends State<LibraryScreen>
             imageUrl: episode.image,
             width: 50,
             height: 50,
-            errorWidget: const Icon(Icons.mic, color: Colors.red),
+            errorWidget: Icon(Icons.mic, color: theme.primaryColor),
           ),
         ),
         title: Text(
           episode.title,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           'Downloaded • ${(episode.duration / 60).floor()} min',
-          style: const TextStyle(color: Colors.red, fontSize: 12),
+          style: TextStyle(color: theme.primaryColor, fontSize: 12),
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, color: Colors.white54),
+          icon: Icon(Icons.delete_outline, color: theme.iconTheme.color?.withValues(alpha: 0.5)),
           onPressed: () => engine.deleteDownloadedEpisode(episode),
         ),
-        onTap: () => engine.playEpisode(episode),
+        onTap: () {
+          engine.playEpisode(episode);
+          if (context.mounted) {
+            Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+          }
+        },
       ),
     );
   }
 
   Widget _buildStationsTab() {
+    final theme = Theme.of(context);
     return Consumer<RadioEngine>(
       builder: (context, engine, child) {
         return LayoutBuilder(
@@ -335,11 +360,10 @@ class _LibraryScreenState extends State<LibraryScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Browse Stations',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 24,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: theme.primaryColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -355,8 +379,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.trending_up,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Trending Stations',
                                 loadFunction: () => engine.loadTrendingStations(),
                               ),
@@ -368,8 +392,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.music_note,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Music Stations',
                                 loadFunction: () => engine.loadMusicStations(),
                               ),
@@ -381,8 +405,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.article,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'News Stations',
                                 loadFunction: () => engine.loadNewsStations(),
                               ),
@@ -394,8 +418,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.sports_soccer,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Sports Stations',
                                 loadFunction: () => engine.loadSportsStations(),
                               ),
@@ -407,8 +431,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.mic,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Talk Stations',
                                 loadFunction: () => engine.loadTalkStations(),
                               ),
@@ -420,8 +444,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.wifi,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Live Stations',
                                 loadFunction: () => engine.loadLiveStations(),
                               ),
@@ -433,8 +457,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.public,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Global AM/FM Stations',
                                 loadFunction: () => engine.loadGlobalAmFmStations(),
                               ),
@@ -446,10 +470,49 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.location_on,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Tanzania Stations',
                                 loadFunction: () => engine.loadTanzaniaStations(),
+                              ),
+                            ),
+                          ),
+                        ),
+                        _CategoryCard(
+                          title: 'Kenya',
+                          icon: Icons.location_on,
+                          onTap: () => Navigator.push(
+                            context,
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
+                                title: 'Kenya Stations',
+                                loadFunction: () => engine.loadKenyaStations(),
+                              ),
+                            ),
+                          ),
+                        ),
+                        _CategoryCard(
+                          title: 'Uganda',
+                          icon: Icons.location_on,
+                          onTap: () => Navigator.push(
+                            context,
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
+                                title: 'Uganda Stations',
+                                loadFunction: () => engine.loadUgandaStations(),
+                              ),
+                            ),
+                          ),
+                        ),
+                        _CategoryCard(
+                          title: 'Rwanda',
+                          icon: Icons.location_on,
+                          onTap: () => Navigator.push(
+                            context,
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
+                                title: 'Rwanda Stations',
+                                loadFunction: () => engine.loadRwandaStations(),
                               ),
                             ),
                           ),
@@ -459,8 +522,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.my_location,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Nearby Stations',
                                 loadFunction: () => engine.loadNearbyStations(),
                               ),
@@ -472,8 +535,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.radio,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'All Stations',
                                 loadFunction: () => engine.loadTopStations(),
                               ),
@@ -485,8 +548,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.piano,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Classical Music',
                                 tag: 'classical',
                               ),
@@ -498,8 +561,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.music_note,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Jazz Music',
                                 tag: 'jazz',
                               ),
@@ -511,8 +574,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.album,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Rock Music',
                                 tag: 'rock',
                               ),
@@ -524,8 +587,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.queue_music,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Pop Music',
                                 tag: 'pop',
                               ),
@@ -537,8 +600,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.surround_sound,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Electronic Music',
                                 tag: 'electronic',
                               ),
@@ -550,8 +613,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.grass,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Reggae Music',
                                 tag: 'reggae',
                               ),
@@ -563,8 +626,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.mic_external_on,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Blues Music',
                                 tag: 'blues',
                               ),
@@ -576,8 +639,8 @@ class _LibraryScreenState extends State<LibraryScreen>
                           icon: Icons.agriculture,
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => CategoryScreen(
+                            NavigationHelper.slideUpRoute(
+                              CategoryScreen(
                                 title: 'Country Music',
                                 tag: 'country',
                               ),
@@ -597,10 +660,11 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   Widget _buildPodcastsTab() {
+    final theme = Theme.of(context);
     return Consumer<RadioEngine>(
       builder: (context, engine, child) {
         if (engine.isLoading) {
-          return const Center(child: CircularProgressIndicator(color: Colors.red));
+          return Center(child: CircularProgressIndicator(color: theme.primaryColor));
         }
         
         return LayoutBuilder(
@@ -614,16 +678,15 @@ class _LibraryScreenState extends State<LibraryScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Podcasts',
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontSize: 24,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: theme.primaryColor,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.refresh, color: Colors.white70),
+                        icon: Icon(Icons.refresh, color: theme.iconTheme.color?.withValues(alpha: 0.7)),
                         onPressed: () => engine.searchPodcasts(''),
                       ),
                     ],
@@ -707,8 +770,9 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   Widget _buildPodcastItem(Podcast podcast) {
+    final theme = Theme.of(context);
     return Card(
-      color: const Color(0xFF1C1C1C),
+      color: theme.cardColor,
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: ClipRRect(
@@ -717,27 +781,25 @@ class _LibraryScreenState extends State<LibraryScreen>
             imageUrl: podcast.image,
             width: 50,
             height: 50,
-            errorWidget: const Icon(Icons.podcasts, color: Colors.red),
+            errorWidget: Icon(Icons.podcasts, color: theme.primaryColor),
           ),
         ),
         title: Text(
           podcast.title,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: theme.textTheme.bodyLarge?.color),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           podcast.publisher,
-          style: const TextStyle(color: Colors.grey),
+          style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6)),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => PodcastDetailsScreen(podcast: podcast),
-            ),
+            NavigationHelper.slideUpRoute(PodcastDetailsScreen(podcast: podcast)),
           );
         },
       ),
@@ -745,14 +807,17 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   Widget _buildFavoritesTab() {
+    final theme = Theme.of(context);
     return Consumer<RadioEngine>(
       builder: (context, engine, child) {
         final favorites = engine.favorites;
         if (favorites.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
               'No favorites yet',
-              style: TextStyle(color: Colors.white70),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+              ),
             ),
           );
         }
@@ -788,45 +853,52 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   Widget _buildFavoriteItem(BuildContext context, FavoriteStation favorite, RadioEngine engine) {
+    final theme = Theme.of(context);
     final station = favorite.toRadioStation();
     return Card(
-      color: const Color(0xFF1C1C1C),
+      color: theme.cardColor,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: ListTile(
         leading: FluxImage(
           imageUrl: station.favicon,
           width: 40,
           height: 40,
-          errorWidget: const CircleAvatar(
-            backgroundColor: Colors.red,
-            child: Icon(Icons.radio, color: Colors.white),
+          errorWidget: CircleAvatar(
+            backgroundColor: theme.primaryColor,
+            child: Icon(Icons.radio, color: theme.colorScheme.onPrimary),
           ),
         ),
         title: Text(
           station.name,
-          style: const TextStyle(color: Colors.white),
+          style: theme.textTheme.bodyLarge,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           '${station.country} • ${station.genre}',
-          style: const TextStyle(color: Colors.grey),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.delete, color: Colors.red),
+          icon: Icon(Icons.delete, color: theme.primaryColor),
           onPressed: () {
             engine.removeFromFavorites(station);
           },
         ),
         onTap: () {
           final messenger = ScaffoldMessenger.of(context);
-          engine.playStation(station).catchError((e) {
+          engine.playStation(station).then((_) {
+            if (context.mounted) {
+              Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+            }
+          }).catchError((e) {
             messenger.showSnackBar(
               SnackBar(
                 content: Text('Failed to play: ${station.name}'),
-                backgroundColor: Colors.red,
+                backgroundColor: theme.colorScheme.error,
               ),
             );
           });
@@ -849,8 +921,9 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
-      color: const Color(0xFF1C1C1C),
+      color: theme.cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
@@ -860,12 +933,11 @@ class _CategoryCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 40, color: Colors.red),
+              Icon(icon, size: 40, color: theme.primaryColor),
               const SizedBox(height: 12),
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: theme.textTheme.bodyLarge?.copyWith(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),

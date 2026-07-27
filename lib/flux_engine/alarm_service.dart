@@ -82,12 +82,25 @@ class AlarmService extends ChangeNotifier {
 
   @pragma('vm:entry-point')
   static void alarmCallback(int id, Map<String, dynamic> params) async {
-    debugPrint('FLUX_ALARM: Fired for ${params['name']}');
-    // In a real app, we would use a platform channel or a background service 
-    // to start the RadioAudioHandler and begin playback.
-    // For now, we'll log it clearly.
-    // To implement full background playback on alarm:
-    // 1. Start AudioService if not running
-    // 2. Call playMediaItem with the station details
+    final stationName = params['name'] ?? 'Unknown Station';
+    final stationUrl = params['url'] ?? '';
+    
+    debugPrint('FLUX_ALARM: Fired for $stationName ($stationUrl)');
+    
+    // BACKGROUND CONTEXT LIMITATIONS:
+    // This callback runs in a separate background isolate. 
+    // It does not have access to the main isolate's state or UI.
+    // To trigger playback:
+    // 1. Android: AudioService.playMediaItem can be used if the service is already running.
+    // 2. Alternatively, use a MethodChannel to communicate with the main activity,
+    //    but the activity must be brought to the foreground or the service started as a foreground service.
+    
+    // Note for iOS: android_alarm_manager_plus is Android-only.
+    // For iOS background alarms, use flutter_local_notifications to 
+    // alert the user, who then taps to open the app and start playback.
+    
+    // Implementation for production: 
+    // In a full production app, you'd likely want to start a foreground service 
+    // here that plays the radio stream, ensuring it's not killed by the OS.
   }
 }

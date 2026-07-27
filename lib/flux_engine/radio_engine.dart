@@ -19,12 +19,12 @@ import 'station_provider.dart';
 import 'download_service.dart';
 
 class RadioEngine extends ChangeNotifier {
-  final AudioHandler _audioHandler;
+  final RadioAudioHandler _audioHandler;
   final RecordingService _recordingService;
   final AlarmService _alarmService;
   final StationProvider _stationProvider;
   final DownloadService _downloadService;
-  AudioPlayer get _player => (_audioHandler as RadioAudioHandler).player;
+  AudioPlayer get _player => _audioHandler.player;
   final RadioRepository _repository = RadioRepository();
 
   RadioStation? _currentStation;
@@ -43,10 +43,14 @@ class RadioEngine extends ChangeNotifier {
   bool _autoPlay = true;
   bool _highQuality = false;
   bool _dataSaver = false;
+  bool _notificationsEnabled = true;
+  String _language = 'en';
+  int _cacheSize = 100;
   
   bool _isNetworkAvailable = true;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   Timer? _sleepTimer;
+  Timer? _updateTimer;
   Duration _sleepDuration = Duration.zero;
   Duration _sleepRemainingTime = Duration.zero;
 
@@ -55,6 +59,7 @@ class RadioEngine extends ChangeNotifier {
   StreamSubscription? _positionSubscription;
   StreamSubscription? _durationSubscription;
   StreamSubscription? _playerStateSubscription;
+  StreamSubscription? _mediaItemSubscription;
 
   AudioPlayer get player => _player;
   Duration get position => _position;
@@ -77,6 +82,9 @@ class RadioEngine extends ChangeNotifier {
   bool get autoPlay => _autoPlay;
   bool get highQuality => _highQuality;
   bool get dataSaver => _dataSaver;
+  bool get notificationsEnabled => _notificationsEnabled;
+  String get language => _language;
+  int get cacheSize => _cacheSize;
   List<RadioAlarm> get alarms => _alarmService.alarms;
   bool _isLoading = false;
   String? _errorMessage;
@@ -118,16 +126,30 @@ class RadioEngine extends ChangeNotifier {
     await loadRecentSearches();
     await _initializeEqualizer();
     _startNetworkMonitoring();
+    _startBackgroundUpdates();
     
     if (_autoPlay && _recentStations.isNotEmpty) {
       playStation(_recentStations.first);
     }
   }
 
+  void _startBackgroundUpdates() {
+    _updateTimer?.cancel();
+    _updateTimer = Timer.periodic(const Duration(hours: 4), (timer) {
+      if (_isNetworkAvailable) {
+        debugPrint('Performing periodic background station directory update...');
+        _stationProvider.checkForUpdates();
+      }
+    });
+  }
+
   Future<void> _loadSettings() async {
     _autoPlay = await RadioStorage().getSettings<bool>('auto_play', defaultValue: true) ?? true;
     _highQuality = await RadioStorage().getSettings<bool>('high_quality', defaultValue: false) ?? false;
     _dataSaver = await RadioStorage().getSettings<bool>('data_saver', defaultValue: false) ?? false;
+    _notificationsEnabled = await RadioStorage().getSettings<bool>('notifications_enabled', defaultValue: true) ?? true;
+    _language = await RadioStorage().getSettings<String>('language', defaultValue: 'en') ?? 'en';
+    _cacheSize = await RadioStorage().getSettings<int>('cache_size', defaultValue: 100) ?? 100;
     _volume = await RadioStorage().getSettings<double>('volume', defaultValue: 1.0) ?? 1.0;
   }
 
@@ -148,6 +170,24 @@ class RadioEngine extends ChangeNotifier {
   Future<void> setDataSaver(bool value) async {
     _dataSaver = value;
     await RadioStorage().saveSettings('data_saver', value);
+    notifyListeners();
+  }
+
+  Future<void> setNotificationsEnabled(bool value) async {
+    _notificationsEnabled = value;
+    await RadioStorage().saveSettings('notifications_enabled', value);
+    notifyListeners();
+  }
+
+  Future<void> setLanguage(String value) async {
+    _language = value;
+    await RadioStorage().saveSettings('language', value);
+    notifyListeners();
+  }
+
+  Future<void> setCacheSize(int value) async {
+    _cacheSize = value;
+    await RadioStorage().saveSettings('cache_size', value);
     notifyListeners();
   }
 
@@ -187,8 +227,30 @@ class RadioEngine extends ChangeNotifier {
       _isPlaying = state.playing;
       if (state.processingState == ProcessingState.completed) {
         _isPlaying = false;
+        _audioHandler.stop();
       }
       notifyListeners();
+    });
+
+    _audioHandler.playbackState.listen((state) {
+      final playing = state.playing;
+      if (_isPlaying != playing) {
+        _isPlaying = playing;
+        notifyListeners();
+      }
+    });
+
+    _audioHandler.onSkipNext = skipNext;
+    _audioHandler.onSkipPrevious = skipPrevious;
+
+    _mediaItemSubscription = _audioHandler.mediaItem.listen((item) {
+      if (item != null) {
+        final newTitle = item.displaySubtitle ?? item.title;
+        if (_currentTitle != newTitle) {
+          _currentTitle = newTitle;
+          notifyListeners();
+        }
+      }
     });
   }
 
@@ -243,13 +305,11 @@ class RadioEngine extends ChangeNotifier {
         title: station.name,
         artist: station.country,
         artUri: station.favicon.isNotEmpty ? Uri.parse(station.favicon) : null,
+        extras: {'type': 'station', 'station': jsonEncode(station.toJson())},
       );
       
-      _audioHandler.addQueueItem(mediaItem);
-      
-      if (_audioHandler is RadioAudioHandler) {
-        _audioHandler.setMediaItem(mediaItem);
-        await _audioHandler.setUrl(station.url).timeout(
+      if (true) {
+        await _audioHandler.setUrl(station.url, mediaItem).timeout(
           const Duration(seconds: 15),
           onTimeout: () => throw TimeoutException('Connection timed out'),
         );
@@ -352,9 +412,8 @@ class RadioEngine extends ChangeNotifier {
 
   // --- Equalizer & Audio Effects ---
   Future<void> _initializeEqualizer() async {
-    if (_audioHandler is RadioAudioHandler) {
-      final equalizer = _audioHandler.equalizer;
-      final parameters = await equalizer.parameters;
+    final equalizer = _audioHandler.equalizer;
+    final parameters = await equalizer.parameters;
       
       _equalizerCenterFrequencies = parameters.bands.map((b) => b.centerFrequency.toInt()).toList();
       
@@ -382,13 +441,12 @@ class RadioEngine extends ChangeNotifier {
       }
       
       notifyListeners();
-    }
   }
 
   void updateEqualizerBand(int index, double value) {
     if (index >= 0 && index < _equalizerBands.length) {
       _equalizerBands[index] = value;
-      if (_audioHandler is RadioAudioHandler) {
+      if (true) {
         final equalizer = _audioHandler.equalizer;
         equalizer.parameters.then((parameters) {
           if (index < parameters.bands.length) {
@@ -403,29 +461,23 @@ class RadioEngine extends ChangeNotifier {
 
   void setLoudnessGain(double value) {
     _loudnessGain = value;
-    if (_audioHandler is RadioAudioHandler) {
-      _audioHandler.loudnessEnhancer.setTargetGain(value);
-      RadioStorage().saveEqualizer(_equalizerBands, _loudnessGain);
-    }
+    _audioHandler.loudnessEnhancer.setTargetGain(value);
+    RadioStorage().saveEqualizer(_equalizerBands, _loudnessGain);
     notifyListeners();
   }
 
   void resetEqualizer() {
     for (int i = 0; i < _equalizerBands.length; i++) {
       _equalizerBands[i] = 0.0;
-      if (_audioHandler is RadioAudioHandler) {
-        final equalizer = _audioHandler.equalizer;
-        equalizer.parameters.then((parameters) {
-          if (i < parameters.bands.length) {
-            parameters.bands[i].setGain(0.0);
-          }
-        });
-      }
+      final equalizer = _audioHandler.equalizer;
+      equalizer.parameters.then((parameters) {
+        if (i < parameters.bands.length) {
+          parameters.bands[i].setGain(0.0);
+        }
+      });
     }
     _loudnessGain = 0.0;
-    if (_audioHandler is RadioAudioHandler) {
-      _audioHandler.loudnessEnhancer.setTargetGain(0.0);
-    }
+    _audioHandler.loudnessEnhancer.setTargetGain(0.0);
     RadioStorage().saveEqualizer(_equalizerBands, _loudnessGain);
     notifyListeners();
   }
@@ -566,6 +618,10 @@ class RadioEngine extends ChangeNotifier {
     await _stationProvider.loadTanzaniaStations();
   }
 
+  Future<void> loadKenyaStations() async {
+    await _stationProvider.loadKenyaStations();
+  }
+
   Future<void> loadMusicStations() async {
     await _stationProvider.loadMusicStations();
   }
@@ -594,6 +650,14 @@ class RadioEngine extends ChangeNotifier {
     await _stationProvider.loadTanzaniaStations(); // Defaulting to TZ for now
   }
 
+  Future<void> loadUgandaStations() async {
+    await _stationProvider.loadStationsByCountry('Uganda');
+  }
+
+  Future<void> loadRwandaStations() async {
+    await _stationProvider.loadStationsByCountry('Rwanda');
+  }
+
   Future<void> checkForUpdates() async {
     await _stationProvider.checkForUpdates();
     notifyListeners();
@@ -601,6 +665,18 @@ class RadioEngine extends ChangeNotifier {
 
   Future<void> clearCache() async {
     await RadioStorage().clearCache();
+    notifyListeners();
+  }
+
+  Future<void> resetSettings() async {
+    await RadioStorage().saveSettings('auto_play', true);
+    await RadioStorage().saveSettings('high_quality', false);
+    await RadioStorage().saveSettings('data_saver', false);
+    await RadioStorage().saveSettings('notifications_enabled', true);
+    await RadioStorage().saveSettings('language', 'en');
+    await RadioStorage().saveSettings('cache_size', 100);
+    await RadioStorage().saveSettings('volume', 1.0);
+    await _loadSettings();
     notifyListeners();
   }
 
@@ -677,20 +753,14 @@ class RadioEngine extends ChangeNotifier {
         artist: 'Flux Radio',
         artUri: episode.image.isNotEmpty ? Uri.parse(episode.image) : null,
         duration: Duration(seconds: episode.duration),
+        extras: {'type': 'episode'},
       );
       
-      _audioHandler.addQueueItem(mediaItem);
-      
-      if (_audioHandler is RadioAudioHandler) {
-        _audioHandler.setMediaItem(mediaItem);
-        if (episode.downloadPath != null) {
-          await _audioHandler.player.setFilePath(source);
-        } else {
-          await _audioHandler.setUrl(source).timeout(
-            const Duration(seconds: 15),
-            onTimeout: () => throw TimeoutException('Connection timed out'),
-          );
-        }
+      if (true) {
+        await _audioHandler.setUrl(source, mediaItem).timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => throw TimeoutException('Connection timed out'),
+        );
       }
 
       await _audioHandler.play();
@@ -741,10 +811,10 @@ class RadioEngine extends ChangeNotifier {
     }
   }
 
-  void setVolume(double value) {
+  Future<void> setVolume(double value) async {
     _volume = value.clamp(0.0, 1.0);
-    _player.setVolume(_volume);
-    RadioStorage().saveSettings('volume', _volume);
+    await _player.setVolume(_volume);
+    await RadioStorage().saveSettings('volume', _volume);
     notifyListeners();
   }
 
@@ -761,9 +831,11 @@ class RadioEngine extends ChangeNotifier {
   void dispose() {
     _connectivitySubscription?.cancel();
     _sleepTimer?.cancel();
+    _updateTimer?.cancel();
     _positionSubscription?.cancel();
     _durationSubscription?.cancel();
     _playerStateSubscription?.cancel();
+    _mediaItemSubscription?.cancel();
     _player.dispose();
     _recordingService.removeListener(notifyListeners);
     _alarmService.removeListener(notifyListeners);

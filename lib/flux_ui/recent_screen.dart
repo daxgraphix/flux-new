@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../flux_engine/radio_engine.dart';
 import '../flux_hardware/radio_service.dart';
+import '../helpers/navigation_helper.dart';
 import 'widgets/flux_image.dart';
+import 'now_playing_screen.dart';
 
 class RecentScreen extends StatefulWidget {
   const RecentScreen({super.key});
@@ -22,37 +24,33 @@ class _RecentScreenState extends State<RecentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Consumer<RadioEngine>(
       builder: (context, engine, child) {
         final recent = engine.recentStations;
         return Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF1A1A2E), Color(0xFF0A0A0A)],
-            ),
-          ),
+          color: theme.scaffoldBackgroundColor,
           child: SafeArea(
             child: Column(
               children: [
-                const Padding(
-                  padding: EdgeInsets.all(16),
+                Padding(
+                  padding: const EdgeInsets.all(16),
                   child: Text(
                     'Recently Played',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 24,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: theme.primaryColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
                 Expanded(
                   child: recent.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Text(
                             'No recent stations',
-                            style: TextStyle(color: Colors.grey),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                            ),
                           ),
                         )
                       : LayoutBuilder(
@@ -92,8 +90,9 @@ class _RecentScreenState extends State<RecentScreen> {
   }
 
   Widget _buildRecentItem(RadioStation item, RadioEngine engine) {
+    final theme = Theme.of(context);
     return Card(
-      color: Colors.white.withValues(alpha: 0.05),
+      color: theme.cardColor,
       margin: const EdgeInsets.symmetric(
         horizontal: 16,
         vertical: 4,
@@ -103,39 +102,66 @@ class _RecentScreenState extends State<RecentScreen> {
           imageUrl: item.favicon,
           width: 40,
           height: 40,
-          errorWidget: const CircleAvatar(
-            backgroundColor: Colors.red,
-            child: Icon(
+          errorWidget: CircleAvatar(
+            backgroundColor: theme.primaryColor,
+            child: const Icon(
               Icons.history,
-              color: Colors.black,
+              color: Colors.white,
             ),
           ),
         ),
         title: Text(
           item.name.isNotEmpty ? item.name : 'Unknown Station',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           "${item.country.isNotEmpty ? item.country : 'Unknown'} • ${item.genre}",
-          style: const TextStyle(color: Colors.grey),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         trailing: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.play_arrow,
-            color: Colors.red,
+            color: theme.primaryColor,
           ),
           onPressed: () {
-            engine.playStation(item);
+            engine.playStation(item).then((_) {
+              if (mounted) {
+                Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+              }
+            }).catchError((e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to play: ${item.name}'),
+                    backgroundColor: theme.colorScheme.error,
+                  ),
+                );
+              }
+            });
           },
         ),
-        onTap: () => engine.playStation(item),
+        onTap: () {
+          engine.playStation(item).then((_) {
+            if (mounted) {
+              Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+            }
+          }).catchError((e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to play: ${item.name}'),
+                  backgroundColor: theme.colorScheme.error,
+                ),
+              );
+            }
+          });
+        },
       ),
     );
   }

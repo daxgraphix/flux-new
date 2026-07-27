@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../flux_engine/radio_engine.dart';
+import '../helpers/navigation_helper.dart';
 import 'models/podcast.dart';
 import 'widgets/flux_image.dart';
+import 'now_playing_screen.dart';
 import 'package:intl/intl.dart';
 
 class PodcastDetailsScreen extends StatefulWidget {
@@ -25,14 +27,15 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 300,
             pinned: true,
-            backgroundColor: const Color(0xFF0A0A0A),
+            backgroundColor: theme.scaffoldBackgroundColor,
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -42,14 +45,14 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> {
                     width: double.infinity,
                     height: double.infinity,
                   ),
-                  const DecoratedBox(
+                  DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Color(0xFF0A0A0A),
+                          theme.scaffoldBackgroundColor,
                         ],
                       ),
                     ),
@@ -66,8 +69,8 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> {
                 children: [
                   Text(
                     widget.podcast.title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: theme.textTheme.titleLarge?.color,
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                     ),
@@ -84,16 +87,16 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> {
                   const SizedBox(height: 16),
                   Text(
                     widget.podcast.description,
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                       fontSize: 14,
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'Episodes',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: theme.textTheme.titleLarge?.color,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -112,9 +115,9 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> {
               }
               
               if (engine.episodes.isEmpty) {
-                return const SliverFillRemaining(
+                return SliverFillRemaining(
                   child: Center(
-                    child: Text('No episodes found', style: TextStyle(color: Colors.white70)),
+                    child: Text('No episodes found', style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6))),
                   ),
                 );
               }
@@ -143,6 +146,7 @@ class _EpisodeListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final engine = Provider.of<RadioEngine>(context);
     final dateStr = DateFormat('MMM d, yyyy').format(episode.pubDate);
     final durationStr = '${(episode.duration / 60).floor()} min';
@@ -152,7 +156,7 @@ class _EpisodeListItem extends StatelessWidget {
     final isDownloaded = episode.isDownloaded;
 
     return Card(
-      color: const Color(0xFF1C1C1C),
+      color: theme.cardColor,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: ListTile(
         contentPadding: const EdgeInsets.all(12),
@@ -163,14 +167,14 @@ class _EpisodeListItem extends StatelessWidget {
             width: 60,
             height: 60,
             errorWidget: Container(
-              color: Colors.grey[900],
+              color: theme.scaffoldBackgroundColor,
               child: const Icon(Icons.mic, color: Colors.red),
             ),
           ),
         ),
         title: Text(
           episode.title,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.bold),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
@@ -182,7 +186,7 @@ class _EpisodeListItem extends StatelessWidget {
               episode.description,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6), fontSize: 12),
             ),
             const SizedBox(height: 8),
             Row(
@@ -212,7 +216,7 @@ class _EpisodeListItem extends StatelessWidget {
             : IconButton(
                 icon: Icon(
                   isDownloaded ? Icons.delete_outline : Icons.download_for_offline,
-                  color: isDownloaded ? Colors.white54 : Colors.red,
+                  color: isDownloaded ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5) : Colors.red,
                 ),
                 onPressed: () {
                   if (isDownloaded) {
@@ -222,7 +226,12 @@ class _EpisodeListItem extends StatelessWidget {
                   }
                 },
               ),
-        onTap: () => engine.playEpisode(episode),
+        onTap: () {
+          engine.playEpisode(episode);
+          if (context.mounted) {
+            Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+          }
+        },
       ),
     );
   }

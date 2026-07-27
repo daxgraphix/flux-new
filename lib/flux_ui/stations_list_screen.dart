@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'streema_browser_screen.dart';
 import '../flux_engine/radio_engine.dart';
 import '../flux_hardware/radio_service.dart';
 import 'widgets/flux_image.dart';
@@ -62,7 +62,7 @@ class _StationsListScreenState extends State<StationsListScreen> {
                     child: Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.red),
+                          icon: Icon(Icons.arrow_back, color: Theme.of(context).primaryColor),
                           onPressed: () => Navigator.pop(context),
                         ),
                         if (widget.flag != null) ...[
@@ -75,8 +75,8 @@ class _StationsListScreenState extends State<StationsListScreen> {
                         Expanded(
                           child: Text(
                             widget.title,
-                            style: const TextStyle(
-                              color: Colors.red,
+                            style: TextStyle(
+                              color: Theme.of(context).primaryColor,
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),
@@ -101,8 +101,8 @@ class _StationsListScreenState extends State<StationsListScreen> {
                   // Stations list
                   Expanded(
                     child: engine.isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(color: Colors.red),
+                        ? Center(
+                            child: CircularProgressIndicator(color: Theme.of(context).primaryColor),
                           )
                         : engine.stations.isEmpty
                             ? Center(
@@ -188,19 +188,19 @@ class _StationsListScreenState extends State<StationsListScreen> {
           imageUrl: station.favicon,
           width: 40,
           height: 40,
-          placeholder: const CircleAvatar(
-            backgroundColor: Colors.red,
+          placeholder: CircleAvatar(
+            backgroundColor: Theme.of(context).primaryColor,
             child: Icon(
               Icons.radio,
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onPrimary,
               size: 20,
             ),
           ),
-          errorWidget: const CircleAvatar(
-            backgroundColor: Colors.red,
+          errorWidget: CircleAvatar(
+            backgroundColor: Theme.of(context).primaryColor,
             child: Icon(
               Icons.radio,
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onPrimary,
               size: 20,
             ),
           ),
@@ -224,9 +224,9 @@ class _StationsListScreenState extends State<StationsListScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         trailing: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.play_arrow,
-            color: Colors.red,
+            color: Theme.of(context).primaryColor,
             size: 24,
           ),
           onPressed: () => engine.playStation(station),
@@ -246,28 +246,30 @@ class _StationsListScreenState extends State<StationsListScreen> {
           ),
           const SizedBox(height: 12),
           InkWell(
-            onTap: () async {
+            onTap: () {
               final url = RadioService().getStreemaSearchUrl(query);
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => StreemaBrowserScreen(url: url),
+                ),
+              );
             },
             borderRadius: BorderRadius.circular(12),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.travel_explore_rounded, size: 20, color: Colors.red),
-                  SizedBox(width: 10),
+                  Icon(Icons.travel_explore_rounded, size: 20, color: Theme.of(context).primaryColor),
+                  const SizedBox(width: 10),
                   Text(
                     'Search Streema Directory',
-                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),

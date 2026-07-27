@@ -29,27 +29,26 @@ class FluxImage extends StatelessWidget {
       return errorWidget ?? _defaultError(context);
     }
 
-    return Consumer<RadioEngine>(
-      builder: (context, engine, _) {
-        String finalUrl = imageUrl;
-        
-        // Apply Data Saver logic: Resize image via proxy to save bandwidth
-        if (engine.dataSaver && useProxy && imageUrl.startsWith('http')) {
-          final int size = (width ?? 100).toInt() * 2; // Request 2x for retina-ish quality but still small
-          finalUrl = 'https://wsrv.nl/?url=${Uri.encodeComponent(imageUrl)}&w=$size&h=$size&fit=cover&q=60';
-        }
+    final engine = context.read<RadioEngine>();
+    String finalUrl = imageUrl;
+    
+    // Apply Data Saver logic: Resize image via proxy to save bandwidth
+    if (engine.dataSaver && useProxy && imageUrl.startsWith('http')) {
+      final int size = (width ?? 100).toInt() * 2; // Request 2x for retina-ish quality but still small
+      finalUrl = 'https://wsrv.nl/?url=${Uri.encodeComponent(imageUrl)}&w=$size&h=$size&fit=cover&q=60';
+    }
 
-        return CachedNetworkImage(
-          imageUrl: finalUrl,
-          width: width,
-          height: height,
-          fit: fit,
-          memCacheWidth: width != null ? (width! * 2).toInt() : null,
-          memCacheHeight: height != null ? (height! * 2).toInt() : null,
-          placeholder: (context, url) => placeholder ?? _defaultPlaceholder(context),
-          errorWidget: (context, url, error) => errorWidget ?? _defaultError(context),
-        );
-      },
+    return CachedNetworkImage(
+      imageUrl: finalUrl,
+      width: width,
+      height: height,
+      fit: fit,
+      memCacheWidth: width != null ? (width! * 2).toInt() : null,
+      memCacheHeight: height != null ? (height! * 2).toInt() : null,
+      placeholder: (context, url) => placeholder ?? _defaultPlaceholder(context),
+      errorWidget: (context, url, error) => errorWidget ?? _defaultError(context),
+      fadeOutDuration: const Duration(milliseconds: 300),
+      fadeInDuration: const Duration(milliseconds: 500),
     );
   }
 

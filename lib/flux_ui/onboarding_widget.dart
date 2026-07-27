@@ -2,11 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
 
-// ─── Color System ─────────────────────────────────────────────────
-const _kBlack = Color(0xFF0A0A0A);
-const _kRed = Color(0xFFE53935);
-const _kCard = Color(0xFF1C1C1C);
-
 // ─── Animated Splash Screen ───────────────────────────────────────
 class SplashScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -94,16 +89,17 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      color: _kBlack,
+      color: theme.scaffoldBackgroundColor,
       child: Stack(
         children: [
-          // Animated red particles
+          // Animated primary particles
           AnimatedBuilder(
             animation: _particleAnimation,
             builder: (context, _) => Positioned.fill(
               child: CustomPaint(
-                  painter: _ParticlePainter(_particleAnimation.value)),
+                  painter: _ParticlePainter(_particleAnimation.value, theme.primaryColor)),
             ),
           ),
           // Glow under logo
@@ -117,7 +113,7 @@ class _SplashScreenState extends State<SplashScreen>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: _kRed.withValues(alpha: 0.18 * _glowAnim.value),
+                      color: theme.primaryColor.withValues(alpha: 0.18 * _glowAnim.value),
                       blurRadius: 80,
                       spreadRadius: 30,
                     ),
@@ -142,10 +138,10 @@ class _SplashScreenState extends State<SplashScreen>
                         height: 120,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _kRed,
+                          color: theme.primaryColor,
                           boxShadow: [
                             BoxShadow(
-                              color: _kRed.withValues(alpha: 0.4),
+                              color: theme.primaryColor.withValues(alpha: 0.4),
                               blurRadius: 30,
                               spreadRadius: 6,
                             ),
@@ -170,22 +166,22 @@ class _SplashScreenState extends State<SplashScreen>
                       opacity: _textOpacity.value,
                       child: Column(
                         children: [
-                          const Text(
+                          Text(
                             'FLUX',
                             style: TextStyle(
                               fontSize: 52,
                               fontWeight: FontWeight.w900,
-                              color: Colors.white,
+                              color: theme.textTheme.titleLarge?.color,
                               letterSpacing: 8,
                             ),
                           ),
                           const SizedBox(height: 18),
-                          const Text(
+                          Text(
                             'RADIO',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFFE53935),
+                              color: theme.primaryColor,
                               letterSpacing: 6,
                             ),
                           ),
@@ -193,7 +189,7 @@ class _SplashScreenState extends State<SplashScreen>
                           Text(
                             'Global · Live · Unlimited',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.45),
+                              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.45),
                               fontSize: 13,
                               letterSpacing: 2,
                             ),
@@ -213,7 +209,7 @@ class _SplashScreenState extends State<SplashScreen>
             child: Text(
               'v1.0.0',
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.25),
+                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.25),
                   fontSize: 11),
             ),
           ),
@@ -225,7 +221,8 @@ class _SplashScreenState extends State<SplashScreen>
 
 class _ParticlePainter extends CustomPainter {
   final double animationValue;
-  _ParticlePainter(this.animationValue);
+  final Color particleColor;
+  _ParticlePainter(this.animationValue, this.particleColor);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -243,14 +240,14 @@ class _ParticlePainter extends CustomPainter {
         radius,
         Paint()
           ..color =
-              const Color(0xFFE53935).withValues(alpha: opacity),
+              particleColor.withValues(alpha: opacity),
       );
     }
   }
 
   @override
   bool shouldRepaint(_ParticlePainter old) =>
-      animationValue != old.animationValue;
+      animationValue != old.animationValue || particleColor != old.particleColor;
 }
 
 // ─── Onboarding Screen ────────────────────────────────────────────
@@ -305,8 +302,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: _kBlack,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           PageView.builder(
@@ -331,7 +329,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   width: _page == i ? 28 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: _page == i ? _kRed : Colors.white24,
+                    color: _page == i ? theme.primaryColor : theme.dividerColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -351,9 +349,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     onPressed: () => _pc.previousPage(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOut),
-                    child: const Text('Back',
+                    child: Text('Back',
                         style:
-                            TextStyle(color: Colors.white70, fontSize: 15)),
+                            TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7), fontSize: 15)),
                   )
                 else
                   const SizedBox(width: 60),
@@ -365,7 +363,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             curve: Curves.easeInOut,
                           ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _kRed,
+                    backgroundColor: theme.primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 36, vertical: 14),
@@ -390,9 +388,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             right: 20,
             child: TextButton(
               onPressed: widget.onComplete,
-              child: const Text('Skip',
+              child: Text('Skip',
                   style:
-                      TextStyle(color: Colors.white54, fontSize: 15)),
+                      TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.54), fontSize: 15)),
             ),
           ),
         ],
@@ -419,8 +417,9 @@ class _OnboardingPageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      color: _kBlack,
+      color: theme.scaffoldBackgroundColor,
       padding: const EdgeInsets.symmetric(horizontal: 36),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -431,26 +430,26 @@ class _OnboardingPageWidget extends StatelessWidget {
             height: 160,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _kCard,
+              color: theme.cardColor,
               border: Border.all(
-                  color: _kRed.withValues(alpha: 0.6), width: 2),
+                  color: theme.primaryColor.withValues(alpha: 0.6), width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: _kRed.withValues(alpha: 0.25),
+                  color: theme.primaryColor.withValues(alpha: 0.25),
                   blurRadius: 40,
                   spreadRadius: 8,
                 ),
               ],
             ),
-            child: Icon(page.icon, color: _kRed, size: 80),
+            child: Icon(page.icon, color: theme.primaryColor, size: 80),
           ),
           const SizedBox(height: 52),
           Text(
             page.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: theme.textTheme.titleLarge?.color,
               letterSpacing: 0.5,
             ),
             textAlign: TextAlign.center,
@@ -460,7 +459,7 @@ class _OnboardingPageWidget extends StatelessWidget {
             page.subtitle,
             style: TextStyle(
               fontSize: 16,
-              color: _kRed.withValues(alpha: 0.9),
+              color: theme.primaryColor.withValues(alpha: 0.9),
               fontWeight: FontWeight.w600,
               letterSpacing: 0.3,
             ),
@@ -471,18 +470,18 @@ class _OnboardingPageWidget extends StatelessWidget {
             page.description,
             style: TextStyle(
               fontSize: 15,
-              color: Colors.white.withValues(alpha: 0.65),
+              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.65),
               height: 1.6,
             ),
             textAlign: TextAlign.center,
           ),
-          // Red decorative line
+          // Primary decorative line
           const SizedBox(height: 32),
           Container(
             width: 48,
             height: 3,
             decoration: BoxDecoration(
-              color: _kRed,
+              color: theme.primaryColor,
               borderRadius: BorderRadius.circular(2),
             ),
           ),

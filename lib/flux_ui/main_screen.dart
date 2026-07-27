@@ -3,21 +3,20 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../flux_engine/radio_engine.dart';
 import '../flux_hardware/radio_service.dart';
+import '../helpers/navigation_helper.dart';
+import 'now_playing_screen.dart';
 import 'library_screen.dart';
 import 'countries_screen.dart';
+import 'streema_browser_screen.dart';
 
 import 'widgets/flux_image.dart';
 
-// ─── Color System ──────────────────────────────────────────────────────────
-const _kBlack = Color(0xFF0A0A0A);
-const _kCard = Color(0xFF1C1C1C);
-const _kRed = Color(0xFFE53935);
-const _kWhite = Colors.white;
+// ─── Colors ──────────────────────────────────────────────────────────
 const _kGrey = Color(0xFF9E9E9E);
 
+// ─── Main Screen ──────────────────────────────────────────────────────────
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -71,21 +70,23 @@ class _HomeTabState extends State<_HomeTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final theme = Theme.of(context);
+
     return Container(
-      color: _kBlack,
+      color: theme.scaffoldBackgroundColor,
       child: Consumer<RadioEngine>(
         builder: (context, engine, _) {
           return CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               // ─── Header ───────────────────────────────────────────────
-              SliverToBoxAdapter(child: _buildHeader(engine)),
+              SliverToBoxAdapter(child: _buildHeader(context, engine)),
 
               // ─── Quick Actions ────────────────────────────────────────
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                 sliver: SliverToBoxAdapter(
-                    child: _buildQuickActions(engine)),
+                    child: _buildQuickActions(context, engine)),
               ),
 
               // ─── Genres ───────────────────────────────────────────────
@@ -93,27 +94,25 @@ class _HomeTabState extends State<_HomeTab>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 sliver: SliverToBoxAdapter(
-                    child: _buildGenreChips(engine)),
+                    child: _buildGenreChips(context, engine)),
               ),
 
               // ─── Favourites ───────────────────────────────────────────
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: SliverToBoxAdapter(
-                  child: FutureBuilder<List<RadioStation>>(
-                    future: Future.value(engine.favoriteStations),
-                    builder: (context, snapshot) {
-                      final favs = snapshot.data ?? [];
+                  child: Selector<RadioEngine, List<RadioStation>>(
+                    selector: (_, e) => e.favoriteStations,
+                    builder: (context, favs, _) {
                       if (favs.isEmpty) return const SizedBox.shrink();
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _SectionHeader(
                               title: 'My Favourites',
-                              onViewAll: () => Navigator.push(context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          const LibraryScreen()))),
+                              onViewAll: () => Navigator.push(
+                                  context,
+                                  NavigationHelper.slideUpRoute(const LibraryScreen()))),
                           SizedBox(
                             height: 130,
                             child: ListView.builder(
@@ -124,8 +123,11 @@ class _HomeTabState extends State<_HomeTab>
                                 padding: const EdgeInsets.only(right: 10),
                                 child: _StationCard(
                                   station: favs[i],
-                                  onTap: () =>
-                                      engine.playStation(favs[i]),
+                                  onTap: () => engine.playStation(favs[i]).then((_) {
+                                        if (context.mounted) {
+                                          Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+                                        }
+                                      }),
                                   isPlaying:
                                       engine.currentStation?.name ==
                                               favs[i].name &&
@@ -145,22 +147,18 @@ class _HomeTabState extends State<_HomeTab>
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: SliverToBoxAdapter(
-                  child: FutureBuilder<List<RadioStation>>(
-                    future: engine
-                        .getRecentSearches()
-                        .then((_) => engine.recentStations),
-                    builder: (context, snapshot) {
-                      final recent = snapshot.data ?? [];
+                  child: Selector<RadioEngine, List<RadioStation>>(
+                    selector: (_, e) => e.recentStations,
+                    builder: (context, recent, _) {
                       if (recent.isEmpty) return const SizedBox.shrink();
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _SectionHeader(
                               title: 'Recently Played',
-                              onViewAll: () => Navigator.push(context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          const LibraryScreen()))),
+                              onViewAll: () => Navigator.push(
+                                  context,
+                                  NavigationHelper.slideUpRoute(const LibraryScreen()))),
                           SizedBox(
                             height: 130,
                             child: ListView.builder(
@@ -171,8 +169,11 @@ class _HomeTabState extends State<_HomeTab>
                                 padding: const EdgeInsets.only(right: 10),
                                 child: _StationCard(
                                   station: recent[i],
-                                  onTap: () =>
-                                      engine.playStation(recent[i]),
+                                  onTap: () => engine.playStation(recent[i]).then((_) {
+                                        if (context.mounted) {
+                                          Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+                                        }
+                                      }),
                                   isPlaying:
                                       engine.currentStation?.name ==
                                               recent[i].name &&
@@ -199,8 +200,7 @@ class _HomeTabState extends State<_HomeTab>
                           title: 'Browse by Country',
                           onViewAll: () => Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                  builder: (_) => const CountriesScreen()))),
+                              NavigationHelper.slideUpRoute(const CountriesScreen()))),
                       SizedBox(
                         height: 112,
                         child: ListView.builder(
@@ -218,9 +218,7 @@ class _HomeTabState extends State<_HomeTab>
                                   engine.loadStationsByCountry(c);
                                   Navigator.push(
                                       context,
-                                      MaterialPageRoute(
-                                          builder: (_) =>
-                                              const LibraryScreen()));
+                                      NavigationHelper.slideUpRoute(const LibraryScreen()));
                                 },
                               ),
                             );
@@ -242,7 +240,11 @@ class _HomeTabState extends State<_HomeTab>
   }
 
   // ─── Header ───────────────────────────────────────────────────────────────
-  Widget _buildHeader(RadioEngine engine) {
+  Widget _buildHeader(BuildContext context, RadioEngine engine) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black;
+
     return SafeArea(
       bottom: false,
       child: Padding(
@@ -258,13 +260,13 @@ class _HomeTabState extends State<_HomeTab>
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: _kRed,
+                    color: theme.primaryColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
                     'FLUX',
                     style: TextStyle(
-                      color: _kWhite,
+                      color: Colors.white,
                       fontWeight: FontWeight.w900,
                       fontSize: 20,
                       letterSpacing: 2,
@@ -272,10 +274,10 @@ class _HomeTabState extends State<_HomeTab>
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Text(
+                Text(
                   'RADIO',
                   style: TextStyle(
-                    color: _kWhite,
+                    color: textColor,
                     fontWeight: FontWeight.w300,
                     fontSize: 20,
                     letterSpacing: 3,
@@ -291,25 +293,34 @@ class _HomeTabState extends State<_HomeTab>
             // Search bar
             Container(
               decoration: BoxDecoration(
-                color: _kCard,
+                color: theme.cardColor,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08), width: 1),
+                    color: textColor.withValues(alpha: 0.08), width: 1),
+                boxShadow: isDark ? null : [
+                   BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
               ),
               child: Column(
                 children: [
                   TextField(
                     controller: _searchController,
-                    style: const TextStyle(color: _kWhite, fontSize: 15),
+                    style: TextStyle(color: textColor, fontSize: 15),
                     decoration: InputDecoration(
                       hintText: 'Search 50,000+ stations...',
                       hintStyle:
-                          TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
+                          TextStyle(color: textColor.withValues(alpha: 0.3), fontSize: 14),
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 14),
-                      prefixIcon: const Icon(Icons.search_rounded,
-                          color: _kRed, size: 22),
+                      prefixIcon: Icon(Icons.search_rounded,
+                          color: theme.primaryColor, size: 22),
                       suffixIcon: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -322,8 +333,8 @@ class _HomeTabState extends State<_HomeTab>
                                     .read<RadioEngine>()
                                     .loadTopStationsIfNeeded();
                               },
-                              child: const Icon(Icons.close_rounded,
-                                  color: _kGrey, size: 18),
+                              child: Icon(Icons.close_rounded,
+                                  color: textColor.withValues(alpha: 0.4), size: 18),
                             ),
                           const SizedBox(width: 4),
                         ],
@@ -335,7 +346,7 @@ class _HomeTabState extends State<_HomeTab>
                     },
                   ),
                   if (_searchController.text.isEmpty && engine.recentSearches.isNotEmpty)
-                    _buildRecentSearches(engine),
+                    _buildRecentSearches(context, engine),
                 ],
               ),
             ),
@@ -345,7 +356,11 @@ class _HomeTabState extends State<_HomeTab>
     );
   }
 
-  Widget _buildRecentSearches(RadioEngine engine) {
+  Widget _buildRecentSearches(BuildContext context, RadioEngine engine) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black;
+
     return Container(
       height: 40,
       padding: const EdgeInsets.only(bottom: 8),
@@ -358,9 +373,9 @@ class _HomeTabState extends State<_HomeTab>
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ActionChip(
-              label: Text(query, style: const TextStyle(color: _kWhite, fontSize: 11)),
-              backgroundColor: _kBlack,
-              side: BorderSide(color: _kRed.withValues(alpha: 0.3)),
+              label: Text(query, style: TextStyle(color: textColor, fontSize: 11)),
+              backgroundColor: isDark ? Colors.black : Colors.grey[200],
+              side: BorderSide(color: theme.primaryColor.withValues(alpha: 0.3)),
               padding: EdgeInsets.zero,
               onPressed: () {
                 _searchController.text = query;
@@ -375,11 +390,11 @@ class _HomeTabState extends State<_HomeTab>
   }
 
   // ─── Quick Actions ────────────────────────────────────────────────────────
-  Widget _buildQuickActions(RadioEngine engine) {
+  Widget _buildQuickActions(BuildContext context, RadioEngine engine) {
     final actions = [
       _QA(icon: Icons.public_rounded, label: 'Countries',
           onTap: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const CountriesScreen()))),
+              NavigationHelper.slideUpRoute(const CountriesScreen()))),
       _QA(icon: Icons.trending_up_rounded, label: 'Trending',
           onTap: () => engine.loadTrendingStations()),
       _QA(icon: Icons.flag_rounded, label: 'Tanzania',
@@ -410,7 +425,11 @@ class _HomeTabState extends State<_HomeTab>
   }
 
   // ─── Genre Chips ──────────────────────────────────────────────────────────
-  Widget _buildGenreChips(RadioEngine engine) {
+  Widget _buildGenreChips(BuildContext context, RadioEngine engine) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black;
+    
     final displayGenres = engine.genres.isNotEmpty
         ? engine.genres.take(24).toList()
         : ['Pop', 'Rock', 'Jazz', 'Classical', 'Electronic', 'Hip-Hop', 'Talk', 'News', 'Dance', 'Country'];
@@ -418,12 +437,12 @@ class _HomeTabState extends State<_HomeTab>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(top: 8, bottom: 10),
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 10),
           child: Text(
             'Explore Genres',
             style: TextStyle(
-                color: _kWhite, fontSize: 17, fontWeight: FontWeight.w700),
+                color: textColor, fontSize: 17, fontWeight: FontWeight.w700),
           ),
         ),
         SizedBox(
@@ -444,15 +463,15 @@ class _HomeTabState extends State<_HomeTab>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 18, vertical: 8),
                     decoration: BoxDecoration(
-                      color: _kCard,
+                      color: theme.cardColor,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: _kRed.withValues(alpha: 0.4), width: 1),
+                          color: theme.primaryColor.withValues(alpha: 0.4), width: 1),
                     ),
                     child: Text(
                       label,
-                      style: const TextStyle(
-                          color: _kWhite,
+                      style: TextStyle(
+                          color: textColor,
                           fontSize: 13,
                           fontWeight: FontWeight.w600),
                     ),
@@ -469,8 +488,13 @@ class _HomeTabState extends State<_HomeTab>
 
   // ─── Station List ─────────────────────────────────────────────────────────
   Widget _buildStationList(BuildContext context, RadioEngine engine) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black;
+    final greyColor = isDark ? _kGrey : Colors.grey[600]!;
+
     if (engine.isLoading && engine.stations.isEmpty) {
-      return SliverToBoxAdapter(child: _buildShimmer());
+      return SliverToBoxAdapter(child: _buildShimmer(context));
     }
     if (engine.stations.isEmpty && !engine.isLoading) {
       return SliverFillRemaining(
@@ -481,19 +505,19 @@ class _HomeTabState extends State<_HomeTab>
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.radio_rounded,
-                  size: 72, color: Colors.white.withValues(alpha: 0.1)),
+                  size: 72, color: textColor.withValues(alpha: 0.1)),
               const SizedBox(height: 16),
               Text(
                 engine.errorMessage ?? 'No stations found',
-                style: const TextStyle(color: _kGrey, fontSize: 15),
+                style: TextStyle(color: greyColor, fontSize: 15),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 onPressed: () => engine.loadTopStations(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _kRed,
-                  foregroundColor: _kWhite,
+                  backgroundColor: theme.primaryColor,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                       horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
@@ -523,8 +547,8 @@ class _HomeTabState extends State<_HomeTab>
                   children: [
                     Text(
                       isSearching ? 'Search Results' : 'Top Stations',
-                      style: const TextStyle(
-                          color: _kWhite,
+                      style: TextStyle(
+                          color: textColor,
                           fontSize: 17,
                           fontWeight: FontWeight.w700),
                     ),
@@ -533,14 +557,14 @@ class _HomeTabState extends State<_HomeTab>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _kRed.withValues(alpha: 0.12),
+                        color: theme.primaryColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: _kRed.withValues(alpha: 0.4)),
+                        border: Border.all(color: theme.primaryColor.withValues(alpha: 0.4)),
                       ),
                       child: Text(
                         '${engine.stations.length}',
-                        style: const TextStyle(
-                            color: _kRed, fontSize: 12, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            color: theme.primaryColor, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -557,7 +581,7 @@ class _HomeTabState extends State<_HomeTab>
 
             // Streema Footer for search
             if (isSearching) {
-              return _buildStreemaFooter(_searchController.text);
+              return _buildStreemaFooter(context, _searchController.text);
             }
             return const SizedBox(height: 80);
           },
@@ -567,39 +591,45 @@ class _HomeTabState extends State<_HomeTab>
     );
   }
 
-  Widget _buildStreemaFooter(String query) {
+  Widget _buildStreemaFooter(BuildContext context, String query) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final greyColor = isDark ? _kGrey : Colors.grey[600]!;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
       child: Column(
         children: [
           Text(
             "Can't find your favorite station?",
-            style: TextStyle(color: _kGrey.withValues(alpha: 0.7), fontSize: 13),
+            style: TextStyle(color: greyColor.withValues(alpha: 0.7), fontSize: 13),
           ),
           const SizedBox(height: 12),
           InkWell(
-            onTap: () async {
-              final url = RadioService().getStreemaSearchUrl(query);
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
+            onTap: () {
+              final radioService = context.read<RadioService>();
+              final url = radioService.getStreemaSearchUrl(query);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => StreemaBrowserScreen(url: url),
+                ),
+              );
             },
             borderRadius: BorderRadius.circular(12),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                border: Border.all(color: _kRed.withValues(alpha: 0.3)),
+                border: Border.all(color: theme.primaryColor.withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.travel_explore_rounded, size: 18, color: _kRed),
+                  Icon(Icons.travel_explore_rounded, size: 18, color: theme.primaryColor),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'Search Streema Global Directory',
-                    style: TextStyle(color: _kRed, fontWeight: FontWeight.bold, fontSize: 13),
+                    style: TextStyle(color: theme.primaryColor, fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ],
               ),
@@ -610,15 +640,18 @@ class _HomeTabState extends State<_HomeTab>
     );
   }
 
-  Widget _buildShimmer() {
+  Widget _buildShimmer(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Column(
       children: List.generate(
         8,
         (i) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Shimmer.fromColors(
-            baseColor: const Color(0xFF1C1C1C),
-            highlightColor: const Color(0xFF2C2C2C),
+            baseColor: isDark ? theme.cardColor : Colors.grey[300]!,
+            highlightColor: isDark ? theme.cardColor.withValues(alpha: 0.5) : Colors.grey[100]!,
             child: Row(
               children: [
                 Container(
@@ -664,21 +697,25 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
       child: Row(
         children: [
           Text(title,
-              style: const TextStyle(
-                  color: _kWhite,
+              style: TextStyle(
+                  color: textColor,
                   fontSize: 17,
                   fontWeight: FontWeight.w700)),
           const Spacer(),
           GestureDetector(
             onTap: onViewAll,
-            child: const Text('View All',
+            child: Text('View All',
                 style: TextStyle(
-                    color: _kRed, fontSize: 13, fontWeight: FontWeight.w600)),
+                    color: theme.primaryColor, fontSize: 13, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -712,14 +749,15 @@ class _LiveBadgeState extends State<_LiveBadge>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (context, child) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: _kRed.withValues(alpha: 0.12),
+          color: theme.primaryColor.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: _kRed.withValues(alpha: 0.5)),
+          border: Border.all(color: theme.primaryColor.withValues(alpha: 0.5)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -729,13 +767,13 @@ class _LiveBadgeState extends State<_LiveBadge>
               height: 6,
               decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _kRed
+                  color: theme.primaryColor
                       .withValues(alpha: 0.5 + 0.5 * _ctrl.value)),
             ),
             const SizedBox(width: 5),
-            const Text('LIVE',
+            Text('LIVE',
                 style: TextStyle(
-                    color: _kRed,
+                    color: theme.primaryColor,
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.5)),
@@ -764,6 +802,10 @@ class _QuickActionBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final greyColor = isDark ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6) ?? Colors.grey : Colors.grey[600]!;
+
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -773,23 +815,28 @@ class _QuickActionBtn extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: _kCard,
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _kRed.withValues(alpha: 0.3)),
-              boxShadow: [
+              border: Border.all(color: theme.primaryColor.withValues(alpha: 0.3)),
+              boxShadow: isDark ? [
                 BoxShadow(
-                    color: _kRed.withValues(alpha: 0.06),
+                    color: theme.primaryColor.withValues(alpha: 0.06),
                     blurRadius: 8,
+                    offset: const Offset(0, 2))
+              ] : [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 5,
                     offset: const Offset(0, 2))
               ],
             ),
-            child: Icon(icon, color: _kRed, size: 24),
+            child: Icon(icon, color: theme.primaryColor, size: 24),
           ),
           const SizedBox(height: 5),
           Text(
             label,
-            style: const TextStyle(
-                color: _kGrey, fontSize: 10, fontWeight: FontWeight.w500),
+            style: TextStyle(
+                color: greyColor, fontSize: 10, fontWeight: FontWeight.w500),
             textAlign: TextAlign.center,
           ),
         ],
@@ -809,19 +856,23 @@ class _StationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 110,
         decoration: BoxDecoration(
-          color: _kCard,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: isPlaying ? _kRed : Colors.white.withValues(alpha: 0.06),
+              color: isPlaying ? theme.primaryColor : textColor.withValues(alpha: 0.06),
               width: isPlaying ? 1.5 : 1),
           boxShadow: isPlaying
-              ? [BoxShadow(color: _kRed.withValues(alpha: 0.2), blurRadius: 12)]
-              : null,
+              ? [BoxShadow(color: theme.primaryColor.withValues(alpha: 0.2), blurRadius: 12)]
+              : (isDark ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -831,17 +882,17 @@ class _StationCard extends StatelessWidget {
               height: 52,
               decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _kBlack,
+                  color: isDark ? Colors.black : Colors.white,
                   border: Border.all(
-                      color: _kRed.withValues(alpha: 0.4), width: 1.5)),
+                      color: theme.primaryColor.withValues(alpha: 0.4), width: 1.5)),
               child: FluxImage(
                 imageUrl: station.favicon,
                 width: 52,
                 height: 52,
-                placeholder: const Icon(Icons.radio_rounded,
-                    color: _kRed, size: 22),
-                errorWidget: const Icon(Icons.radio_rounded,
-                    color: _kRed, size: 22),
+                placeholder: Icon(Icons.radio_rounded,
+                    color: theme.primaryColor, size: 22),
+                errorWidget: Icon(Icons.radio_rounded,
+                    color: theme.primaryColor, size: 22),
               ),
             ),
             const SizedBox(height: 8),
@@ -850,7 +901,7 @@ class _StationCard extends StatelessWidget {
               child: Text(
                 station.name,
                 style: TextStyle(
-                    color: isPlaying ? _kRed : _kWhite,
+                    color: isPlaying ? theme.primaryColor : textColor,
                     fontSize: 11,
                     fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
@@ -874,26 +925,31 @@ class _CountryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 80,
         decoration: BoxDecoration(
-          color: _kCard,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _kRed.withValues(alpha: 0.25)),
+          border: Border.all(color: theme.primaryColor.withValues(alpha: 0.25)),
+          boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.flag_rounded, color: _kRed, size: 26),
+            Icon(Icons.flag_rounded, color: theme.primaryColor, size: 26),
             const SizedBox(height: 5),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
                 country,
-                style: const TextStyle(
-                    color: _kWhite, fontSize: 10, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                    color: textColor, fontSize: 10, fontWeight: FontWeight.w500),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -915,18 +971,24 @@ class _StationListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = theme.textTheme.bodyLarge?.color ?? (isDark ? Colors.white : Colors.black);
+    final greyColor = isDark ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6) ?? Colors.grey : Colors.grey[600]!;
+    
     final isPlaying = engine.currentStation?.name == station.name && engine.isPlaying;
     final isLoading = engine.isLoading && engine.currentStation?.name == station.name;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: isPlaying ? _kRed.withValues(alpha: 0.06) : _kCard,
+        color: isPlaying ? theme.primaryColor.withValues(alpha: 0.06) : theme.cardColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isPlaying ? _kRed.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.05),
+          color: isPlaying ? theme.primaryColor.withValues(alpha: 0.5) : textColor.withValues(alpha: 0.05),
           width: isPlaying ? 1.5 : 1,
         ),
+        boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)],
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -934,19 +996,22 @@ class _StationListItem extends StatelessWidget {
           final messenger = ScaffoldMessenger.of(context);
           try {
             await engine.playStation(station);
+            if (context.mounted) {
+              Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+            }
             if (engine.errorMessage != null && context.mounted) {
               messenger.showSnackBar(SnackBar(
                 content: Text(engine.errorMessage!),
-                backgroundColor: _kRed,
+                backgroundColor: theme.primaryColor,
                 action: (engine.errorMessage!.contains('broken') || engine.errorMessage!.contains('unavailable'))
                     ? SnackBarAction(
                         label: 'Report',
-                        textColor: _kWhite,
+                        textColor: Colors.white,
                         onPressed: () => engine.reportBrokenStation(station.uuid ?? ''),
                       )
                     : SnackBarAction(
                         label: 'Retry',
-                        textColor: _kWhite,
+                        textColor: Colors.white,
                         onPressed: () => engine.playStation(station)),
               ));
             }
@@ -954,10 +1019,10 @@ class _StationListItem extends StatelessWidget {
             if (context.mounted) {
               messenger.showSnackBar(SnackBar(
                 content: const Text('We couldn\'t play this station right now.'),
-                backgroundColor: _kRed,
+                backgroundColor: theme.primaryColor,
                 action: SnackBarAction(
                     label: 'Retry',
-                    textColor: _kWhite,
+                    textColor: Colors.white,
                     onPressed: () => engine.playStation(station)),
               ));
             }
@@ -976,21 +1041,21 @@ class _StationListItem extends StatelessWidget {
                     height: 46,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _kBlack,
+                      color: isDark ? Colors.black : Colors.white,
                       border: Border.all(
                           color: isPlaying
-                              ? _kRed
-                              : Colors.white.withValues(alpha: 0.1),
+                              ? theme.primaryColor
+                              : textColor.withValues(alpha: 0.1),
                           width: 1.5),
                     ),
                     child: FluxImage(
                       imageUrl: station.favicon,
                       width: 46,
                       height: 46,
-                      placeholder: const Icon(Icons.radio_rounded,
-                          color: _kRed, size: 18),
-                      errorWidget: const Icon(Icons.radio_rounded,
-                          color: _kRed, size: 18),
+                      placeholder: Icon(Icons.radio_rounded,
+                          color: theme.primaryColor, size: 18),
+                      errorWidget: Icon(Icons.radio_rounded,
+                          color: theme.primaryColor, size: 18),
                     ),
                   ),
                   if (isLoading)
@@ -1000,12 +1065,12 @@ class _StationListItem extends StatelessWidget {
                       decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.55),
                           shape: BoxShape.circle),
-                      child: const Padding(
-                        padding: EdgeInsets.all(12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
                         child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor:
-                                AlwaysStoppedAnimation<Color>(_kRed)),
+                                AlwaysStoppedAnimation<Color>(theme.primaryColor)),
                       ),
                     ),
                 ],
@@ -1020,7 +1085,7 @@ class _StationListItem extends StatelessWidget {
                     Text(
                       station.name,
                       style: TextStyle(
-                          color: isPlaying ? _kRed : _kWhite,
+                          color: isPlaying ? theme.primaryColor : textColor,
                           fontWeight: isPlaying
                               ? FontWeight.bold
                               : FontWeight.w600,
@@ -1036,7 +1101,7 @@ class _StationListItem extends StatelessWidget {
                         if (station.bitrate > 0) '${station.bitrate}kbps',
                       ].join(' \u2022 '),
                       style:
-                          const TextStyle(color: _kGrey, fontSize: 11),
+                          TextStyle(color: greyColor, fontSize: 11),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1050,12 +1115,12 @@ class _StationListItem extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isPlaying
-                      ? _kRed
-                      : _kRed.withValues(alpha: 0.12),
+                      ? theme.primaryColor
+                      : theme.primaryColor.withValues(alpha: 0.12),
                 ),
                 child: Icon(
                   isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                  color: _kWhite,
+                  color: isPlaying ? Colors.white : theme.primaryColor,
                   size: 20,
                 ),
               ),

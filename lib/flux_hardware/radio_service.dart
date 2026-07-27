@@ -152,15 +152,749 @@ class RadioService {
       bitrate: 128,
       favicon: 'https://www.ippmedia.com/sites/default/files/styles/medium/public/ear-logo.jpg',
     ),
+    RadioStation(
+      name: 'TBC International',
+      url: 'http://41.59.225.234:8000/tbcinternational',
+      country: 'Tanzania',
+      language: 'en',
+      genre: 'News, International',
+      bitrate: 128,
+      favicon: 'https://www.tbc.go.tz/images/logo.png',
+    ),
+    RadioStation(
+      name: 'TBC FM',
+      url: 'http://41.59.225.234:8000/tbcfm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Entertainment, Music',
+      bitrate: 128,
+      favicon: 'https://www.tbc.go.tz/images/logo.png',
+    ),
+    RadioStation(
+      name: 'Info Radio',
+      url: 'http://173.249.21.17:8000/inforadio',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'News, Info',
+      bitrate: 128,
+      favicon: 'https://inforadio.co.tz/wp-content/uploads/2021/05/Info-Radio-Logo.png',
+    ),
+    RadioStation(
+      name: 'Kings FM',
+      url: 'http://41.78.163.74:8000/kingsfm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Music, Talk',
+      bitrate: 128,
+      favicon: 'https://kingsfm.co.tz/wp-content/uploads/2020/06/kingsfm.png',
+    ),
+    RadioStation(
+      name: 'Nuru FM',
+      url: 'http://41.78.163.78:8000/nurufm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Gospel, Religious',
+      bitrate: 128,
+      favicon: 'https://nurufm.co.tz/wp-content/uploads/2020/06/nurufm.png',
+    ),
+    RadioStation(
+      name: 'Ebony FM',
+      url: 'http://41.78.163.74:8000/ebonyfm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Music, Entertainment',
+      bitrate: 128,
+      favicon: 'https://ebonyfm.co.tz/wp-content/uploads/2020/06/ebonyfm.png',
+    ),
+    RadioStation(
+      name: 'Radio Kwizera',
+      url: 'http://stream.radiokwizera.org:8000/stream',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Community, News',
+      bitrate: 64,
+      favicon: 'https://radiokwizera.org/wp-content/uploads/2020/06/kwizera.png',
+    ),
+    RadioStation(
+      name: 'Safina FM',
+      url: 'http://173.249.21.17:8000/safinafm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Religious',
+      bitrate: 128,
+      favicon: 'https://safinafm.co.tz/wp-content/uploads/2020/09/safina-logo.png',
+    ),
+    RadioStation(
+      name: 'Boresha Radio',
+      url: 'http://41.78.163.78:8000/boresha',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Education, Health',
+      bitrate: 128,
+      favicon: 'https://boresha.co.tz/wp-content/uploads/2020/06/boresha.png',
+    ),
+    RadioStation(
+      name: 'Ghetto Radio',
+      url: 'http://41.78.163.74:8000/ghettoradio',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Hip Hop, Youth',
+      bitrate: 128,
+      favicon: 'https://ghettoradio.co.tz/wp-content/uploads/2020/06/ghetto.png',
+    ),
+    RadioStation(
+      name: 'Times FM',
+      url: 'http://41.78.163.78:8000/timesfm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Entertainment, Music',
+      bitrate: 128,
+      favicon: 'https://timesfm.co.tz/wp-content/uploads/2019/02/Times-FM-Logo.png',
+    ),
+    RadioStation(
+      name: 'Magic FM',
+      url: 'http://41.222.181.187:8000/magicfm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Talk, Music',
+      bitrate: 128,
+      favicon: 'https://www.ippmedia.com/sites/default/files/styles/medium/public/magic-fm-logo.jpg',
+    ),
+    RadioStation(
+      name: 'Choice FM',
+      url: 'http://41.222.181.187:8000/choicefm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Music, Entertainment',
+      bitrate: 128,
+      favicon: 'https://www.ippmedia.com/sites/default/files/styles/medium/public/choice-fm-logo.jpg',
+    ),
+    RadioStation(
+      name: 'Radio Maria Tanzania',
+      url: 'http://dreamsiteradiocp2.com:8024/stream',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Religious',
+      bitrate: 64,
+      favicon: 'https://www.radiomaria.org/wp-content/uploads/tanzania.png',
+    ),
+    RadioStation(
+      name: 'Bethel Radio',
+      url: 'http://173.249.21.17:8000/bethelradio',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Religious, Gospel',
+      bitrate: 128,
+      favicon: 'https://bethelradio.co.tz/wp-content/uploads/2021/05/Bethel-Radio-Logo.png',
+    ),
+    RadioStation(
+      name: 'Coconut FM',
+      url: 'http://41.78.163.74:8000/coconut',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Entertainment, Zanzibar',
+      bitrate: 128,
+      favicon: 'https://coconut.co.tz/wp-content/uploads/2020/06/coconut.png',
+    ),
+    RadioStation(
+      name: 'Chuchu FM',
+      url: 'http://41.78.163.78:8000/chuchu',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Talk, Zanzibar',
+      bitrate: 128,
+      favicon: 'https://chuchufm.co.tz/wp-content/uploads/2020/06/chuchu.png',
+    ),
+    RadioStation(
+      name: 'Zenj FM',
+      url: 'http://41.78.163.74:8000/zenjfm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Music, Zanzibar',
+      bitrate: 128,
+      favicon: 'https://zenjfm.co.tz/wp-content/uploads/2020/06/zenjfm.png',
+    ),
+    RadioStation(
+      name: 'Morning Star Radio',
+      url: 'http://173.249.21.17:8000/morningstar',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Religious',
+      bitrate: 128,
+      favicon: 'https://morningstar.co.tz/wp-content/uploads/2021/05/Morning-Star-Logo.png',
+    ),
+    RadioStation(
+      name: 'Radio Adhana',
+      url: 'http://41.78.163.78:8000/adhana',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Islamic',
+      bitrate: 128,
+      favicon: 'https://radioadhana.co.tz/wp-content/uploads/2020/06/adhana.png',
+    ),
+    RadioStation(
+      name: 'Radio Kheri',
+      url: 'http://41.78.163.74:8000/kheri',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Islamic',
+      bitrate: 128,
+      favicon: 'https://radiokheri.co.tz/wp-content/uploads/2020/06/kheri.png',
+    ),
+    RadioStation(
+      name: 'Radio Tumaini',
+      url: 'http://41.222.176.162:8000/tumaini',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Religious, Catholic',
+      bitrate: 128,
+      favicon: 'https://radiotumaini.co.tz/wp-content/uploads/2020/06/tumaini.png',
+    ),
+    RadioStation(
+      name: 'Habari Njema',
+      url: 'http://41.78.163.78:8000/habarinjema',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Gospel',
+      bitrate: 128,
+      favicon: 'https://habarinjema.co.tz/wp-content/uploads/2020/06/habarinjema.png',
+    ),
+    RadioStation(
+      name: 'Kahama FM',
+      url: 'http://41.78.163.74:8000/kahamafm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Regional',
+      bitrate: 128,
+      favicon: 'https://kahamafm.co.tz/wp-content/uploads/2020/06/kahamafm.png',
+    ),
+    RadioStation(
+      name: 'Spice FM',
+      url: 'http://41.78.163.78:8000/spicefm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Music, Talk',
+      bitrate: 128,
+      favicon: 'https://spicefm.co.tz/wp-content/uploads/2020/06/spicefm.png',
+    ),
+    RadioStation(
+      name: 'Triple A FM',
+      url: 'http://41.78.163.74:8000/triplea',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Regional, Arusha',
+      bitrate: 128,
+      favicon: 'https://triplea.co.tz/wp-content/uploads/2020/06/triplea.png',
+    ),
+    RadioStation(
+      name: 'TK FM',
+      url: 'http://41.78.163.78:8000/tkfm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Regional, Tanga',
+      bitrate: 128,
+      favicon: 'https://tkfm.co.tz/wp-content/uploads/2020/06/tkfm.png',
+    ),
+    RadioStation(
+      name: 'Sibuka FM',
+      url: 'http://41.78.163.74:8000/sibuka',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Music, Culture',
+      bitrate: 128,
+      favicon: 'https://sibuka.co.tz/wp-content/uploads/2020/06/sibuka.png',
+    ),
+    RadioStation(
+      name: 'Upendo FM',
+      url: 'http://41.59.201.21:8000/upendofm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Gospel, Religious',
+      bitrate: 128,
+      favicon: 'https://upendofm.co.tz/wp-content/uploads/2021/05/cropped-Upendo-FM-Logo.png',
+    ),
+    RadioStation(
+      name: 'CG FM',
+      url: 'http://173.249.21.17:8000/cgfm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'News, Entertainment',
+      bitrate: 128,
+      favicon: 'https://cgfm.co.tz/wp-content/uploads/2020/09/cgfm-logo.png',
+    ),
+    RadioStation(
+      name: 'Abood FM',
+      url: 'http://41.59.192.155:8000/aboodfm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'General',
+      bitrate: 128,
+      favicon: 'https://aboodmedia.co.tz/wp-content/uploads/2020/06/aboodfm.png',
+    ),
+    RadioStation(
+      name: 'Uhuru FM',
+      url: 'http://41.222.176.162:8000/uhurufm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'News, Talk',
+      bitrate: 128,
+      favicon: 'https://uhurufm.co.tz/wp-content/uploads/2020/06/Uhuru-FM-Logo.png',
+    ),
+    RadioStation(
+      name: 'Kiss FM',
+      url: 'http://41.59.192.203:8000/kissfm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Music, Entertainment',
+      bitrate: 128,
+      favicon: 'https://kissfm.co.tz/wp-content/uploads/2020/06/kissfm.png',
+    ),
+    RadioStation(
+      name: 'Pride FM',
+      url: 'http://41.78.163.74:8000/pridefm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'General',
+      bitrate: 128,
+      favicon: 'https://pridefm.co.tz/wp-content/uploads/2020/06/pridefm.png',
+    ),
+    RadioStation(
+      name: 'Passion FM',
+      url: 'http://41.59.192.203:8000/passionfm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Music, Talk',
+      bitrate: 128,
+      favicon: 'https://passionfm.co.tz/wp-content/uploads/2020/06/passionfm.png',
+    ),
+    RadioStation(
+      name: 'Kwanza TV',
+      url: 'http://173.249.21.17:8000/kwanzatv',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Entertainment',
+      bitrate: 128,
+      favicon: 'https://kwanzatv.co.tz/wp-content/uploads/2020/09/kwanza-logo.png',
+    ),
+    RadioStation(
+      name: 'Bomba FM',
+      url: 'http://41.78.163.78:8000/bombafm',
+      country: 'Tanzania',
+      language: 'sw',
+      genre: 'Music, Youth',
+      bitrate: 128,
+      favicon: 'https://bombafm.co.tz/wp-content/uploads/2020/06/bombafm.png',
+    ),
+  ];
+
+  static final List<RadioStation> _staticKenyaStations = [
+    RadioStation(
+      name: 'Classic 105',
+      url: 'https://stream.radiojambo.co.ke/classic105',
+      country: 'Kenya',
+      language: 'en',
+      genre: 'Adult Contemporary',
+      bitrate: 128,
+      favicon: 'https://classic105.s3.amazonaws.com/wp-content/uploads/2016/05/classic-105-logo.png',
+    ),
+    RadioStation(
+      name: 'Radio Jambo',
+      url: 'https://stream.radiojambo.co.ke/radiojambo',
+      country: 'Kenya',
+      language: 'sw',
+      genre: 'Talk, Sports',
+      bitrate: 128,
+      favicon: 'https://radiojambo.co.ke/static/images/logo.png',
+    ),
+    RadioStation(
+      name: 'Kiss 100',
+      url: 'https://stream.radiojambo.co.ke/kiss100',
+      country: 'Kenya',
+      language: 'en',
+      genre: 'Top 40, Pop',
+      bitrate: 128,
+      favicon: 'https://kiss100.co.ke/static/images/logo.png',
+    ),
+    RadioStation(
+      name: 'Capital FM',
+      url: 'https://icecast.capitalfm.co.ke/capitalfm',
+      country: 'Kenya',
+      language: 'en',
+      genre: 'Rock, Pop, Jazz',
+      bitrate: 128,
+      favicon: 'https://www.capitalfm.co.ke/wp-content/themes/capital-fm/images/logo.png',
+    ),
+    RadioStation(
+      name: 'Homeboyz Radio',
+      url: 'https://stream.radiojambo.co.ke/homeboyz',
+      country: 'Kenya',
+      language: 'en',
+      genre: 'Hip Hop, R&B',
+      bitrate: 128,
+      favicon: 'https://hbr.co.ke/static/images/logo.png',
+    ),
+    RadioStation(
+      name: 'NRG Radio',
+      url: 'https://stream.nrg.radio/nrg',
+      country: 'Kenya',
+      language: 'en',
+      genre: 'Top 40, EDM',
+      bitrate: 128,
+      favicon: 'https://nrg.radio/wp-content/uploads/2018/02/nrg-logo.png',
+    ),
+    RadioStation(
+      name: 'Milele FM',
+      url: 'http://41.203.220.138:8000/milele',
+      country: 'Kenya',
+      language: 'sw',
+      genre: 'Entertainment',
+      bitrate: 128,
+      favicon: 'https://www.milelefm.co.ke/wp-content/uploads/2018/07/milele-logo.png',
+    ),
+    RadioStation(
+      name: 'Radio Citizen',
+      url: 'https://rms.co.ke/radiocitizen',
+      country: 'Kenya',
+      language: 'sw',
+      genre: 'News, Talk',
+      bitrate: 128,
+      favicon: 'https://rms.co.ke/wp-content/uploads/2018/04/citizen-radio.png',
+    ),
+    RadioStation(
+      name: 'Hot 96',
+      url: 'https://rms.co.ke/hot96',
+      country: 'Kenya',
+      language: 'en',
+      genre: 'Urban, Hip Hop',
+      bitrate: 128,
+      favicon: 'https://rms.co.ke/wp-content/uploads/2018/04/hot96.png',
+    ),
+    RadioStation(
+      name: 'Inooro FM',
+      url: 'https://rms.co.ke/inoorofm',
+      country: 'Kenya',
+      language: 'ki',
+      genre: 'Vernacular',
+      bitrate: 128,
+      favicon: 'https://rms.co.ke/wp-content/uploads/2018/04/inooro-fm.png',
+    ),
+    RadioStation(
+      name: 'Kameme FM',
+      url: 'http://41.203.220.138:8000/kameme',
+      country: 'Kenya',
+      language: 'ki',
+      genre: 'Vernacular',
+      bitrate: 128,
+      favicon: 'https://www.kameme.co.ke/wp-content/uploads/2018/07/kameme-logo.png',
+    ),
+    RadioStation(
+      name: 'Ramogi FM',
+      url: 'https://rms.co.ke/ramogifm',
+      country: 'Kenya',
+      language: 'luo',
+      genre: 'Vernacular',
+      bitrate: 128,
+      favicon: 'https://rms.co.ke/wp-content/uploads/2018/04/ramogi-fm.png',
+    ),
+    RadioStation(
+      name: 'Spice FM Kenya',
+      url: 'https://stream.standardmedia.co.ke/spicefm',
+      country: 'Kenya',
+      language: 'en',
+      genre: 'Soul, R&B',
+      bitrate: 128,
+      favicon: 'https://www.spicefm.co.ke/img/logo.png',
+    ),
+    RadioStation(
+      name: 'Vybez Radio',
+      url: 'https://stream.standardmedia.co.ke/vybezradio',
+      country: 'Kenya',
+      language: 'en',
+      genre: 'Reggae',
+      bitrate: 128,
+      favicon: 'https://www.vybezradio.co.ke/img/logo.png',
+    ),
+    RadioStation(
+      name: 'Radio Maisha',
+      url: 'https://stream.standardmedia.co.ke/radiomaisha',
+      country: 'Kenya',
+      language: 'sw',
+      genre: 'News, Entertainment',
+      bitrate: 128,
+      favicon: 'https://www.radiomaisha.co.ke/img/logo.png',
+    ),
+    RadioStation(
+      name: 'Milele FM',
+      url: 'http://41.203.220.138:8000/milele',
+      country: 'Kenya',
+      language: 'sw',
+      genre: 'Entertainment',
+      bitrate: 128,
+      favicon: 'https://www.milelefm.co.ke/wp-content/uploads/2018/07/milele-logo.png',
+    ),
+    RadioStation(
+      name: 'Radio 47',
+      url: 'http://41.203.220.138:8000/radio47',
+      country: 'Kenya',
+      language: 'sw',
+      genre: 'News, Talk',
+      bitrate: 128,
+      favicon: 'https://radio47.co.ke/wp-content/uploads/2023/03/Radio47-Logo.png',
+    ),
+    RadioStation(
+      name: 'Sound City Kenya',
+      url: 'http://41.203.220.138:8000/soundcity',
+      country: 'Kenya',
+      language: 'en',
+      genre: 'Music, Urban',
+      bitrate: 128,
+      favicon: 'https://soundcity.co.ke/wp-content/uploads/2021/05/soundcity-logo.png',
+    ),
+    RadioStation(
+      name: 'Muuga FM',
+      url: 'https://rms.co.ke/muugafm',
+      country: 'Kenya',
+      language: 'meru',
+      genre: 'Vernacular',
+      bitrate: 128,
+      favicon: 'https://rms.co.ke/wp-content/uploads/2018/04/muuga-fm.png',
+    ),
+    RadioStation(
+      name: 'Chamgei FM',
+      url: 'https://rms.co.ke/chamgeifm',
+      country: 'Kenya',
+      language: 'kalenjin',
+      genre: 'Vernacular',
+      bitrate: 128,
+      favicon: 'https://rms.co.ke/wp-content/uploads/2018/04/chamgei-fm.png',
+    ),
+    RadioStation(
+      name: 'Egesa FM',
+      url: 'https://rms.co.ke/egesafm',
+      country: 'Kenya',
+      language: 'gusii',
+      genre: 'Vernacular',
+      bitrate: 128,
+      favicon: 'https://rms.co.ke/wp-content/uploads/2018/04/egesa-fm.png',
+    ),
+    RadioStation(
+      name: 'Mulembe FM',
+      url: 'https://rms.co.ke/mulembefm',
+      country: 'Kenya',
+      language: 'luhya',
+      genre: 'Vernacular',
+      bitrate: 128,
+      favicon: 'https://rms.co.ke/wp-content/uploads/2018/04/mulembe-fm.png',
+    ),
+    RadioStation(
+      name: 'Wimwaro FM',
+      url: 'https://rms.co.ke/wimwarofm',
+      country: 'Kenya',
+      language: 'embu',
+      genre: 'Vernacular',
+      bitrate: 128,
+      favicon: 'https://rms.co.ke/wp-content/uploads/2018/04/wimwaro-fm.png',
+    ),
+    RadioStation(
+      name: 'Musyi FM',
+      url: 'https://rms.co.ke/musyifm',
+      country: 'Kenya',
+      language: 'kamba',
+      genre: 'Vernacular',
+      bitrate: 128,
+      favicon: 'https://rms.co.ke/wp-content/uploads/2018/04/musyi-fm.png',
+    ),
+    RadioStation(
+      name: 'Bahari FM',
+      url: 'https://rms.co.ke/baharifm',
+      country: 'Kenya',
+      language: 'sw',
+      genre: 'Coast',
+      bitrate: 128,
+      favicon: 'https://rms.co.ke/wp-content/uploads/2018/04/bahari-fm.png',
+    ),
+    RadioStation(
+      name: 'Ghetto Radio 89.5',
+      url: 'http://41.215.166.226:8000/ghetto',
+      country: 'Kenya',
+      language: 'sw, sheng',
+      genre: 'Reggae, Urban',
+      bitrate: 128,
+      favicon: 'https://ghettoradio.co.ke/wp-content/uploads/2018/05/ghetto-logo.png',
+    ),
+    RadioStation(
+      name: 'Family Radio 316',
+      url: 'https://stream.radio316.co.ke/stream',
+      country: 'Kenya',
+      language: 'en',
+      genre: 'Christian, Gospel',
+      bitrate: 128,
+      favicon: 'https://radio316.co.ke/wp-content/uploads/2018/05/radio316-logo.png',
+    ),
+    RadioStation(
+      name: 'Hope FM',
+      url: 'http://41.215.166.226:8000/hopefm',
+      country: 'Kenya',
+      language: 'en, sw',
+      genre: 'Christian',
+      bitrate: 128,
+      favicon: 'https://hopefm.co.ke/wp-content/uploads/2018/05/hopefm-logo.png',
+    ),
+    RadioStation(
+      name: 'Kass FM',
+      url: 'http://41.215.166.226:8000/kassfm',
+      country: 'Kenya',
+      language: 'kalenjin',
+      genre: 'Vernacular',
+      bitrate: 128,
+      favicon: 'https://kassfm.co.ke/wp-content/uploads/2018/05/kassfm-logo.png',
+    ),
+    RadioStation(
+      name: 'Radio Taifa',
+      url: 'http://41.215.166.226:8000/taifa',
+      country: 'Kenya',
+      language: 'sw',
+      genre: 'National',
+      bitrate: 128,
+      favicon: 'https://www.kbc.co.ke/wp-content/uploads/2018/05/kbc-logo.png',
+    ),
+    RadioStation(
+      name: 'Coro FM',
+      url: 'http://41.215.166.226:8000/coro',
+      country: 'Kenya',
+      language: 'ki',
+      genre: 'Vernacular',
+      bitrate: 128,
+      favicon: 'https://www.kbc.co.ke/wp-content/uploads/2018/05/coro-logo.png',
+    ),
+    RadioStation(
+      name: 'English Service (KBC)',
+      url: 'http://41.215.166.226:8000/english',
+      country: 'Kenya',
+      language: 'en',
+      genre: 'National',
+      bitrate: 128,
+      favicon: 'https://www.kbc.co.ke/wp-content/uploads/2018/05/kbc-logo.png',
+    ),
+    RadioStation(
+      name: 'X FM Kenya',
+      url: 'https://stream.radiojambo.co.ke/xfm',
+      country: 'Kenya',
+      language: 'en',
+      genre: 'Rock',
+      bitrate: 128,
+      favicon: 'https://xfm.co.ke/static/images/logo.png',
+    ),
+    RadioStation(
+      name: 'East FM',
+      url: 'https://stream.radiojambo.co.ke/eastfm',
+      country: 'Kenya',
+      language: 'hi',
+      genre: 'Asian, Music',
+      bitrate: 128,
+      favicon: 'https://eastfm.co.ke/static/images/logo.png',
+    ),
+  ];
+
+  static final List<RadioStation> _staticUgandaStations = [
+    RadioStation(
+      name: 'Capital FM Uganda',
+      url: 'https://stream.capitalradio.co.ug/capitalfm',
+      country: 'Uganda',
+      language: 'en',
+      genre: 'Top 40, Pop',
+      bitrate: 128,
+      favicon: 'https://capitalradio.co.ug/wp-content/uploads/2018/05/capital-logo.png',
+    ),
+    RadioStation(
+      name: 'CBS Radio Buganda',
+      url: 'http://41.220.128.140:8000/cbs888',
+      country: 'Uganda',
+      language: 'lg',
+      genre: 'Vernacular, News',
+      bitrate: 128,
+      favicon: 'https://cbsradio.co.ug/wp-content/uploads/2018/05/cbs-logo.png',
+    ),
+    RadioStation(
+      name: 'Galaxy FM',
+      url: 'https://stream.galaxyfm.co.ug/stream',
+      country: 'Uganda',
+      language: 'en, lg',
+      genre: 'Urban, Entertainment',
+      bitrate: 128,
+      favicon: 'https://galaxyfm.co.ug/wp-content/uploads/2018/05/galaxy-logo.png',
+    ),
+    RadioStation(
+      name: 'Radio Simba',
+      url: 'http://41.220.128.140:8000/simba',
+      country: 'Uganda',
+      language: 'lg',
+      genre: 'Entertainment, Comedy',
+      bitrate: 128,
+      favicon: 'https://radiosimba.ug/wp-content/uploads/2018/05/simba-logo.png',
+    ),
+    RadioStation(
+      name: 'Sanyu FM',
+      url: 'https://stream.sanyufm.com/sanyufm',
+      country: 'Uganda',
+      language: 'en',
+      genre: 'Adult Contemporary',
+      bitrate: 128,
+      favicon: 'https://sanyufm.com/wp-content/uploads/2018/05/sanyu-logo.png',
+    ),
+  ];
+
+  static final List<RadioStation> _staticRwandaStations = [
+    RadioStation(
+      name: 'Radio Rwanda',
+      url: 'https://stream.rba.co.rw/radiorwanda',
+      country: 'Rwanda',
+      language: 'rw',
+      genre: 'National, News',
+      bitrate: 128,
+      favicon: 'https://rba.co.rw/img/logo_radio_rwanda.png',
+    ),
+    RadioStation(
+      name: 'Flash FM Rwanda',
+      url: 'http://41.216.115.165:8000/flashfm',
+      country: 'Rwanda',
+      language: 'rw, fr, en',
+      genre: 'Talk, Music',
+      bitrate: 128,
+      favicon: 'https://flash.rw/wp-content/uploads/2018/05/flash-logo.png',
+    ),
+    RadioStation(
+      name: 'Kiss FM Rwanda',
+      url: 'https://stream.kissfm.rw/kissfm',
+      country: 'Rwanda',
+      language: 'rw, en',
+      genre: 'Top 40, Urban',
+      bitrate: 128,
+      favicon: 'https://kissfm.rw/wp-content/uploads/2018/05/kiss-logo.png',
+    ),
+    RadioStation(
+      name: 'KT Radio',
+      url: 'http://41.216.115.165:8000/ktradio',
+      country: 'Rwanda',
+      language: 'rw, en',
+      genre: 'News, Talk',
+      bitrate: 128,
+      favicon: 'https://ktradio.rw/wp-content/uploads/2018/05/kt-logo.png',
+    ),
   ];
 
   static List<RadioStation> getStaticTanzaniaStations() {
     return List.unmodifiable(_staticTanzaniaStations);
   }
 
+  static List<RadioStation> getStaticKenyaStations() {
+    return List.unmodifiable(_staticKenyaStations);
+  }
+
   Future<List<RadioStation>> searchStations({
     String? name,
     String? country,
+    String? countrycode,
     String? language,
     String? tag,
     int? bitrateMin,
@@ -177,6 +911,7 @@ class RadioService {
     final queryParams = <String, String>{};
     if (name != null) queryParams['name'] = name;
     if (country != null) queryParams['country'] = country;
+    if (countrycode != null) queryParams['countrycode'] = countrycode;
     if (language != null) queryParams['language'] = language;
     if (tag != null) queryParams['tag'] = tag;
     if (bitrateMin != null) queryParams['bitrateMin'] = bitrateMin.toString();
@@ -371,8 +1106,110 @@ class RadioService {
     return searchStations(lat: lat, lon: lon, radius: radius, limit: limit, order: 'distance', reverse: false);
   }
 
-  Future<List<RadioStation>> getTanzaniaStations({int limit = 100, int? bitrateMin}) async {
-    return searchStations(country: 'Tanzania', limit: limit, order: 'votes', reverse: true, bitrateMin: bitrateMin);
+  Future<List<RadioStation>> getKenyaStations({int limit = 250, int? bitrateMin}) async {
+    try {
+      final results = await Future.wait([
+        searchStations(country: 'Kenya', limit: limit, order: 'clickcount', reverse: true, bitrateMin: bitrateMin),
+        searchStations(countrycode: 'KE', limit: limit, order: 'votes', reverse: true, bitrateMin: bitrateMin),
+      ]);
+
+      final List<RadioStation> allStations = [...results[0], ...results[1]];
+      final Map<String, RadioStation> uniqueStations = {};
+      
+      for (final s in _staticKenyaStations) {
+        uniqueStations[s.url] = s;
+      }
+      
+      for (final s in allStations) {
+        if (!uniqueStations.containsKey(s.url)) {
+          uniqueStations[s.url] = s;
+        }
+      }
+      
+      return uniqueStations.values.take(limit).toList();
+    } catch (e) {
+      debugPrint('Kenya search failed: $e');
+      return getStaticKenyaStations();
+    }
+  }
+
+  Future<List<RadioStation>> getTanzaniaStations({int limit = 250, int? bitrateMin}) async {
+    try {
+      // Perform two searches: one by country name and one by country code to maximize results
+      final results = await Future.wait([
+        searchStations(country: 'Tanzania', limit: limit, order: 'clickcount', reverse: true, bitrateMin: bitrateMin),
+        searchStations(countrycode: 'TZ', limit: limit, order: 'votes', reverse: true, bitrateMin: bitrateMin),
+      ]);
+
+      final List<RadioStation> allStations = [...results[0], ...results[1]];
+      
+      // De-duplicate stations by URL or UUID
+      final Map<String, RadioStation> uniqueStations = {};
+      
+      // Add static stations first to ensure they are present and prioritized
+      for (final s in _staticTanzaniaStations) {
+        uniqueStations[s.url] = s;
+      }
+      
+      for (final s in allStations) {
+        if (!uniqueStations.containsKey(s.url)) {
+          uniqueStations[s.url] = s;
+        }
+      }
+      
+      final sortedList = uniqueStations.values.toList();
+      // Sort by votes/clicks if possible, but keep unique
+      return sortedList.take(limit).toList();
+    } catch (e) {
+      debugPrint('Search failed, using static list: $e');
+      return getStaticTanzaniaStations();
+    }
+  }
+
+  Future<List<RadioStation>> getUgandaStations({int limit = 250, int? bitrateMin}) async {
+    try {
+      final results = await Future.wait([
+        searchStations(country: 'Uganda', limit: limit, order: 'clickcount', reverse: true, bitrateMin: bitrateMin),
+        searchStations(countrycode: 'UG', limit: limit, order: 'votes', reverse: true, bitrateMin: bitrateMin),
+      ]);
+      final List<RadioStation> allStations = [...results[0], ...results[1]];
+      final Map<String, RadioStation> uniqueStations = {};
+      for (final s in _staticUgandaStations) {
+        uniqueStations[s.url] = s;
+      }
+      for (final s in allStations) {
+        if (!uniqueStations.containsKey(s.url)) {
+          uniqueStations[s.url] = s;
+        }
+      }
+      return uniqueStations.values.take(limit).toList();
+    } catch (e) {
+      debugPrint('Uganda search failed: $e');
+      return _staticUgandaStations;
+    }
+  }
+
+  Future<List<RadioStation>> getRwandaStations({int limit = 250, int? bitrateMin}) async {
+    try {
+      final results = await Future.wait([
+        searchStations(country: 'Rwanda', limit: limit, order: 'clickcount', reverse: true, bitrateMin: bitrateMin),
+        searchStations(countrycode: 'RW', limit: limit, order: 'votes', reverse: true, bitrateMin: bitrateMin),
+      ]);
+      final List<RadioStation> allStations = [...results[0], ...results[1]];
+      final Map<String, RadioStation> uniqueStations = {};
+      for (final s in _staticRwandaStations) {
+        uniqueStations[s.url] = s;
+      }
+      for (final s in allStations) {
+        if (!uniqueStations.containsKey(s.url)) {
+          uniqueStations[s.url] = s;
+        }
+      }
+      return uniqueStations.values.take(limit).toList();
+    } catch (e) {
+      debugPrint('Rwanda search failed: $e');
+      return _staticRwandaStations;
+    }
   }
 
   Future<List<RadioStation>> getNearbyStations({required double lat, required double lon, int limit = 50}) async {

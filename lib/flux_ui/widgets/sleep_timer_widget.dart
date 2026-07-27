@@ -3,12 +3,10 @@ import '../../flux_engine/radio_engine.dart';
 
 class SleepTimerWidget extends StatefulWidget {
   final RadioEngine engine;
-  final bool isDark;
 
   const SleepTimerWidget({
     super.key,
     required this.engine,
-    required this.isDark,
   });
 
   @override
@@ -26,16 +24,20 @@ class _SleepTimerWidgetState extends State<SleepTimerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = theme.textTheme.bodyLarge?.color ?? (isDark ? Colors.white : Colors.black);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: widget.isDark
+        color: isDark
             ? Colors.white.withValues(alpha: 0.05)
             : Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.blue.withValues(alpha: 0.3),
+          color: theme.primaryColor.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -48,7 +50,7 @@ class _SleepTimerWidgetState extends State<SleepTimerWidget> {
               Text(
                 'Sleep Timer',
                 style: TextStyle(
-                  color: widget.isDark ? Colors.white : Colors.black87,
+                  color: textColor,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -58,13 +60,13 @@ class _SleepTimerWidgetState extends State<SleepTimerWidget> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.2),
+                    color: theme.primaryColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     _formatDuration(widget.engine.sleepRemainingTime),
-                    style: const TextStyle(
-                      color: Colors.blue,
+                    style: TextStyle(
+                      color: theme.primaryColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -88,13 +90,13 @@ class _SleepTimerWidgetState extends State<SleepTimerWidget> {
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? Colors.blue.withValues(alpha: 0.3)
-                        : widget.isDark
+                        ? theme.primaryColor.withValues(alpha: 0.3)
+                        : isDark
                             ? Colors.white.withValues(alpha: 0.05)
                             : Colors.black.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isSelected ? Colors.blue : Colors.transparent,
+                      color: isSelected ? theme.primaryColor : Colors.transparent,
                       width: 2,
                     ),
                   ),
@@ -102,7 +104,7 @@ class _SleepTimerWidgetState extends State<SleepTimerWidget> {
                     '${minutes}m',
                     style: TextStyle(
                       color:
-                          isSelected ? Colors.blue : Colors.red.withValues(alpha: 0.7),
+                          isSelected ? theme.primaryColor : textColor.withValues(alpha: 0.7),
                       fontWeight:
                           isSelected ? FontWeight.bold : FontWeight.w500,
                       fontSize: 12,
@@ -116,21 +118,20 @@ class _SleepTimerWidgetState extends State<SleepTimerWidget> {
           // Custom timer input
           TextField(
             keyboardType: TextInputType.number,
-            style: TextStyle(color: widget.isDark ? Colors.white : Colors.black),
+            style: TextStyle(color: textColor),
             decoration: InputDecoration(
               hintText: 'Custom minutes...',
               hintStyle: TextStyle(
-                color:
-                    widget.isDark ? Colors.grey[500] : Colors.grey[400],
+                color: isDark ? Colors.grey[500] : Colors.grey[400],
               ),
               filled: true,
-              fillColor: widget.isDark
+              fillColor: isDark
                   ? Colors.white.withValues(alpha: 0.05)
                   : Colors.black.withValues(alpha: 0.03),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: Colors.blue.withValues(alpha: 0.3),
+                  color: theme.primaryColor.withValues(alpha: 0.3),
                 ),
               ),
               contentPadding: const EdgeInsets.symmetric(
@@ -152,7 +153,7 @@ class _SleepTimerWidgetState extends State<SleepTimerWidget> {
                   icon: const Icon(Icons.timer),
                   label: const Text('Start'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: theme.primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
@@ -163,7 +164,7 @@ class _SleepTimerWidgetState extends State<SleepTimerWidget> {
                       SnackBar(
                         content: Text(
                             'Sleep timer set for $_selectedMinutes minutes'),
-                        backgroundColor: Colors.blue,
+                        backgroundColor: theme.primaryColor,
                       ),
                     );
                   },

@@ -30,25 +30,20 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Consumer<RadioEngine>(
       builder: (context, engine, child) {
         return Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF1A1A2E), Color(0xFF0A0A0A)],
-            ),
-          ),
+          color: theme.scaffoldBackgroundColor,
           child: SafeArea(
             child: Column(
               children: [
-                const Padding(
-                  padding: EdgeInsets.all(16),
+                Padding(
+                  padding: const EdgeInsets.all(16),
                   child: Text(
                     'Favorites',
                     style: TextStyle(
-                      color: Colors.red,
+                      color: theme.primaryColor,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -56,10 +51,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ),
                 Expanded(
                   child: _favorites.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Text(
                             'No favorites yet',
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6)),
                           ),
                         )
                       : ListView.builder(
@@ -67,7 +62,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           itemBuilder: (context, index) {
                             final favorite = _favorites[index];
                             return Card(
-                              color: Colors.white.withValues(alpha: 0.05),
+                              color: theme.cardColor,
                               margin: const EdgeInsets.symmetric(
                                 horizontal: 16,
                                 vertical: 4,
@@ -79,37 +74,37 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                           favorite.favicon,
                                         ),
                                       )
-                                    : const CircleAvatar(
-                                        backgroundColor: Colors.red,
+                                    : CircleAvatar(
+                                        backgroundColor: theme.primaryColor,
                                         child: Icon(
                                           Icons.favorite,
-                                          color: Colors.black,
+                                          color: theme.colorScheme.onPrimary,
                                         ),
                                       ),
                                 title: Text(
                                   favorite.name,
-                                  style: const TextStyle(color: Colors.white),
+                                  style: TextStyle(color: theme.textTheme.bodyLarge?.color),
                                 ),
                                 subtitle: Text(
                                   '${favorite.country} • ${favorite.genre}',
-                                  style: const TextStyle(color: Colors.grey),
+                                  style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6)),
                                 ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
-                                      icon: const Icon(
+                                      icon: Icon(
                                         Icons.play_arrow,
-                                        color: Colors.red,
+                                        color: theme.primaryColor,
                                       ),
                                       onPressed: () => engine.playStation(
                                         favorite.toRadioStation(),
                                       ),
                                     ),
                                     IconButton(
-                                      icon: const Icon(
+                                      icon: Icon(
                                         Icons.delete,
-                                        color: Colors.red,
+                                        color: theme.colorScheme.error,
                                       ),
                                       onPressed: () async {
                                         await _storage.removeFavorite(

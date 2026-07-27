@@ -5,12 +5,13 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF0A0A0A), Color(0xFF1A1A2E)],
+          colors: [theme.scaffoldBackgroundColor, theme.cardColor],
         ),
       ),
       child: SafeArea(
@@ -22,11 +23,11 @@ class SplashScreen extends StatelessWidget {
                 width: 140,
                 height: 140,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withValues(alpha: 0.25),
+                      color: theme.primaryColor.withValues(alpha: 0.25),
                       blurRadius: 20,
                       spreadRadius: 4,
                     ),
@@ -38,22 +39,22 @@ class SplashScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              const Text(
+              Text(
                 'Flux Radio',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: theme.textTheme.titleLarge?.color,
                   fontSize: 34,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.1,
                 ),
               ),
               const SizedBox(height: 12),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 32),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Text(
                   'Global AM/FM, podcasts, and Tanzania live radio in one tap.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                  style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7), fontSize: 16),
                 ),
               ),
             ],
