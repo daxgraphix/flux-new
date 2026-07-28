@@ -140,4 +140,38 @@ class DownloadService extends ChangeNotifier {
       debugPrint('Error clearing all downloads: $e');
     }
   }
+
+  Future<int> getTotalDownloadSize() async {
+    try {
+      final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
+      final downloadsDir = Directory(p.join(dir.path, 'FluxRadioDownloads'));
+      if (!await downloadsDir.exists()) return 0;
+      
+      int totalBytes = 0;
+      await for (final entity in downloadsDir.list(recursive: false)) {
+        if (entity is File) {
+          totalBytes += await entity.length();
+        }
+      }
+      return totalBytes;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  Future<int> getDownloadCount() async {
+    try {
+      final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
+      final downloadsDir = Directory(p.join(dir.path, 'FluxRadioDownloads'));
+      if (!await downloadsDir.exists()) return 0;
+      
+      int count = 0;
+      await for (final entity in downloadsDir.list(recursive: false)) {
+        if (entity is File) count++;
+      }
+      return count;
+    } catch (e) {
+      return 0;
+    }
+  }
 }

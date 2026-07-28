@@ -46,6 +46,7 @@ class StationProvider extends ChangeNotifier {
       ];
 
   Future<void> initialize() async {
+    await _podcastService.init();
     await _loadCountriesGenresAndLanguages();
     await loadTopStations();
   }
@@ -302,11 +303,16 @@ class StationProvider extends ChangeNotifier {
     try {
       var episodes = await _podcastService.fetchEpisodes(rssUrl);
       
-      // Check for downloads
+      // Check for downloads and progress
       for (int i = 0; i < episodes.length; i++) {
         final downloaded = await RadioStorage().getDownloadedEpisode(episodes[i].id);
-        if (downloaded != null) {
-          episodes[i] = episodes[i].copyWith(downloadPath: downloaded.downloadPath);
+        final position = await RadioStorage().getEpisodePosition(episodes[i].id);
+        
+        if (downloaded != null || position > 0) {
+          episodes[i] = episodes[i].copyWith(
+            downloadPath: downloaded?.downloadPath,
+            lastPosition: position,
+          );
         }
       }
       _episodes = episodes;

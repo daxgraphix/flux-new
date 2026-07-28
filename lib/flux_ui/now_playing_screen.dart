@@ -172,9 +172,17 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                 onDoubleTap: _toggleFullscreen,
                 onVerticalDragStart: (d) => _onVerticalDragStart(d, constraints),
                 onVerticalDragUpdate: (d) => _onVerticalDragUpdate(d, constraints),
-                onVerticalDragEnd: _onVerticalDragEnd,
+                onVerticalDragEnd: (details) {
+                  _onVerticalDragEnd(details);
+                  // Dismiss on swipe down
+                  if (details.primaryVelocity != null && details.primaryVelocity! > 300) {
+                    Navigator.maybePop(context);
+                  }
+                },
                 onHorizontalDragEnd: (details) {
-                  if (details.primaryVelocity != null && details.primaryVelocity! > 500) {
+                  // Keep horizontal for potential future skip gestures, 
+                  // but let's make it more sensitive for back if needed.
+                  if (details.primaryVelocity != null && details.primaryVelocity! > 800) {
                     Navigator.maybePop(context);
                   }
                 },
@@ -208,8 +216,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                                       const SizedBox(height: 16),
                                       if (engine.errorMessage != null)
                                         _buildErrorMessage(engine, theme),
-                                      if (station != null && engine.errorMessage == null)
-                                        _buildSpectrumVisualizer(station, engine),
+                                      _buildSpectrumVisualizer(station, episode, engine),
                                       const SizedBox(height: 20),
                                       _buildProgressBar(engine, primaryColor, secondaryTextColor),
                                       const SizedBox(height: 24),
@@ -310,63 +317,47 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
       child: AnimatedBuilder(
         animation: Listenable.merge([_pulseAnim, _rotationController]),
         builder: (context, child) {
-          return Transform.rotate(
-            angle: _rotationController.value * 2 * math.pi,
-            child: Container(
-              width: size * _pulseAnim.value,
-              height: size * _pulseAnim.value,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [theme.colorScheme.surfaceBright, backgroundColor],
-                  stops: const [0.85, 1.0],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: primaryColor.withValues(alpha: engine.isPlaying ? 0.25 : 0.05),
-                    blurRadius: 60,
-                    spreadRadius: 10,
-                  ),
-                ],
+          return Container(
+            width: size * _pulseAnim.value,
+            height: size * _pulseAnim.value,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [theme.colorScheme.surfaceBright, backgroundColor],
+                stops: const [0.85, 1.0],
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Stack(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: primaryColor.withValues(alpha: 0.3), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: primaryColor.withValues(alpha: engine.isPlaying ? 0.3 : 0.05),
+                  blurRadius: 80,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Transform.rotate(
+                angle: _rotationController.value * 2 * math.pi,
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: primaryColor.withValues(alpha: 0.3), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.shadow.withValues(alpha: 0.1),
+                        blurRadius: 20,
+                        spreadRadius: 2,
                       ),
-                      child: ClipOval(
-                        child: FluxImage(
-                          imageUrl: imageUrl,
-                          fit: BoxFit.cover,
-                          placeholder: _buildFallbackArtwork(primaryColor, theme, station != null),
-                          errorWidget: _buildFallbackArtwork(primaryColor, theme, station != null),
-                        ),
-                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: FluxImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: _buildFallbackArtwork(primaryColor, theme, station != null),
+                      errorWidget: _buildFallbackArtwork(primaryColor, theme, station != null),
                     ),
-                    // Vinyl reflection
-                    Center(
-                      child: Container(
-                        width: size * 0.2,
-                        height: size * 0.2,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface.withValues(alpha: 0.8),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.1), width: 1),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            station != null ? Icons.radio_rounded : Icons.podcasts_rounded,
-                            color: primaryColor,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -462,14 +453,16 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     );
   }
 
-  Widget _buildSpectrumVisualizer(RadioStation station, RadioEngine engine) {
+  Widget _buildSpectrumVisualizer(RadioStation? station, Episode? episode, RadioEngine engine) {
+    if (engine.errorMessage != null) return const SizedBox.shrink();
+    
     return ShaderBuilder(
       (context, shader, child) {
         return CustomPaint(
           size: const Size(double.infinity, 80),
           painter: SpectrumPainter(
             shader: shader,
-            currentFreq: station.frequency,
+            currentFreq: station?.frequency ?? 98.0,
             isPlaying: engine.isPlaying,
             time: _waveController.value,
           ),
@@ -488,7 +481,10 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
       return Container(
         height: 4,
         width: double.infinity,
-        decoration: BoxDecoration(color: secondaryTextColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(2)),
+        decoration: BoxDecoration(
+          color: secondaryTextColor.withValues(alpha: 0.1), 
+          borderRadius: BorderRadius.circular(2)
+        ),
         child: FractionallySizedBox(
           alignment: Alignment.centerLeft,
           widthFactor: engine.isPlaying ? 1.0 : 0.0,
@@ -507,11 +503,12 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
         SliderTheme(
           data: SliderThemeData(
             trackHeight: 4,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
             thumbColor: primaryColor,
             activeTrackColor: primaryColor,
-            inactiveTrackColor: secondaryTextColor.withValues(alpha: 0.1),
-            overlayColor: primaryColor.withValues(alpha: 0.2),
+            inactiveTrackColor: secondaryTextColor.withValues(alpha: 0.15),
+            overlayColor: primaryColor.withValues(alpha: 0.15),
+            trackShape: const RoundedRectSliderTrackShape(),
           ),
           child: Slider(
             value: position.inSeconds.clamp(0, duration.inSeconds).toDouble(),
@@ -543,18 +540,25 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
         if (isPodcast)
           _ControlBtn(
             icon: Icons.replay_10_rounded,
-            size: 30,
+            size: 32,
             color: textColor.withValues(alpha: 0.7),
             onTap: () => engine.seekBackward(seconds: 10),
           )
         else
           _ControlBtn(
             icon: Icons.skip_previous_rounded,
-            size: 36,
+            size: 38,
             color: textColor.withValues(alpha: 0.7),
             onTap: () => engine.skipPrevious(),
           ),
-        const SizedBox(width: 32),
+        const SizedBox(width: 20),
+        _ControlBtn(
+          icon: Icons.stop_rounded,
+          size: 32,
+          color: textColor.withValues(alpha: 0.7),
+          onTap: () => engine.stop(),
+        ),
+        const SizedBox(width: 20),
         GestureDetector(
           onTap: () {
             if (engine.isLoading) return;
@@ -567,13 +571,17 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
             }
           },
           child: Container(
-            width: 84,
-            height: 84,
+            width: 88,
+            height: 88,
             decoration: BoxDecoration(
-              color: engine.isLoading ? primaryColor.withValues(alpha: 0.5) : primaryColor,
+              color: engine.isLoading ? primaryColor.withValues(alpha: 0.6) : primaryColor,
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(color: primaryColor.withValues(alpha: 0.4), blurRadius: 30, offset: const Offset(0, 8)),
+                BoxShadow(
+                  color: primaryColor.withValues(alpha: 0.45),
+                  blurRadius: 35,
+                  offset: const Offset(0, 10),
+                ),
               ],
             ),
             child: engine.isLoading
@@ -587,22 +595,32 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                 : Icon(
                     engine.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                     color: Theme.of(context).colorScheme.onPrimary,
-                    size: 42,
+                    size: 44,
                   ),
           ),
         ),
-        const SizedBox(width: 32),
+        const SizedBox(width: 20),
+        if (isPodcast)
+          _SpeedButton(engine: engine, textColor: textColor)
+        else
+          _ControlBtn(
+            icon: Icons.close_rounded,
+            size: 32,
+            color: textColor.withValues(alpha: 0.7),
+            onTap: () => Navigator.maybePop(context),
+          ),
+        const SizedBox(width: 20),
         if (isPodcast)
           _ControlBtn(
             icon: Icons.forward_30_rounded,
-            size: 30,
+            size: 32,
             color: textColor.withValues(alpha: 0.7),
             onTap: () => engine.seekForward(seconds: 30),
           )
         else
           _ControlBtn(
             icon: Icons.skip_next_rounded,
-            size: 36,
+            size: 38,
             color: textColor.withValues(alpha: 0.7),
             onTap: () => engine.skipNext(),
           ),
@@ -622,10 +640,24 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
         children: [
           _buildFavBtn(engine, primaryColor, textColor),
           _buildRecordBtn(engine, primaryColor, textColor),
+          _buildSleepTimerBtn(engine, textColor),
           _buildEqBtn(engine, textColor),
           _buildShareBtn(engine, textColor),
         ],
       ),
+    );
+  }
+
+  Widget _buildSleepTimerBtn(RadioEngine engine, Color textColor) {
+    final remaining = engine.sleepTimerDuration;
+    final hasTimer = remaining != null && remaining.inSeconds > 0;
+    
+    return IconButton(
+      icon: Icon(
+        hasTimer ? Icons.hourglass_full_rounded : Icons.hourglass_empty_rounded,
+        color: hasTimer ? Colors.amber : textColor.withValues(alpha: 0.7),
+      ),
+      onPressed: () => _showSleepTimerSheet(engine),
     );
   }
 
@@ -785,6 +817,106 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
       },
     );
   }
+
+  void _showSleepTimerSheet(RadioEngine engine) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        final isWide = MediaQuery.of(context).size.width > 600;
+        final textColor = Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
+        final primaryColor = Theme.of(context).primaryColor;
+        
+        return Center(
+          child: SizedBox(
+            width: isWide ? 400 : double.infinity,
+            child: _GlassSheetWrapper(
+              theme: Theme.of(context),
+              child: _SleepTimerSheet(
+                engine: engine,
+                textColor: textColor,
+                primaryColor: primaryColor,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SleepTimerSheet extends StatelessWidget {
+  final RadioEngine engine;
+  final Color textColor;
+  final Color primaryColor;
+
+  const _SleepTimerSheet({
+    required this.engine,
+    required this.textColor,
+    required this.primaryColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final remaining = engine.sleepTimerDuration;
+    final options = [
+      const Duration(minutes: 5),
+      const Duration(minutes: 15),
+      const Duration(minutes: 30),
+      const Duration(minutes: 45),
+      const Duration(hours: 1),
+      const Duration(hours: 2),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 24), decoration: BoxDecoration(color: textColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(2))),
+          Text('SLEEP TIMER', style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 3)),
+          const SizedBox(height: 16),
+          if (remaining != null && remaining.inSeconds > 0)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                'Remaining: ${remaining.inMinutes} min',
+                style: TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            alignment: WrapAlignment.center,
+            children: [
+              for (final opt in options)
+                ChoiceChip(
+                  label: Text(opt.inHours > 0 ? '${opt.inHours}h' : '${opt.inMinutes}m'),
+                  selected: remaining == opt,
+                  onSelected: (_) {
+                    engine.setSleepTimer(opt);
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                  selectedColor: primaryColor,
+                  labelStyle: TextStyle(color: remaining == opt ? Colors.white : textColor),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () {
+              engine.cancelSleepTimer();
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: Text('CANCEL TIMER', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+          ),
+          const SizedBox(height: 8),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('DONE', style: TextStyle(color: textColor, fontWeight: FontWeight.bold, letterSpacing: 1.5))),
+        ],
+      ),
+    );
+  }
 }
 
 class _GlassSheetWrapper extends StatelessWidget {
@@ -857,6 +989,45 @@ class _ControlBtn extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         child: Icon(icon, color: color, size: size),
+      ),
+    );
+  }
+}
+
+class _SpeedButton extends StatelessWidget {
+  final RadioEngine engine;
+  final Color textColor;
+
+  const _SpeedButton({required this.engine, required this.textColor});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: () {
+        final speeds = [1.0, 1.25, 1.5, 2.0, 0.75];
+        final currentSpeed = engine.speed;
+        final nextIndex = (speeds.indexOf(currentSpeed) + 1) % speeds.length;
+        engine.setPlaybackSpeed(speeds[nextIndex]);
+      },
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            '${engine.speed.toStringAsFixed(engine.speed == 1.0 ? 0 : 2)}x',
+            style: TextStyle(
+              color: textColor.withValues(alpha: 0.7),
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
       ),
     );
   }

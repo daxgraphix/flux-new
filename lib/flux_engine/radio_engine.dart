@@ -17,6 +17,7 @@ import 'recording_service.dart';
 import 'alarm_service.dart';
 import 'station_provider.dart';
 import 'download_service.dart';
+import 'podcast_service.dart';
 
 enum SearchType { station, podcast }
 
@@ -26,6 +27,7 @@ class RadioEngine extends ChangeNotifier {
   final AlarmService _alarmService;
   final StationProvider _stationProvider;
   final DownloadService _downloadService;
+  final PodcastService _podcastService = PodcastService();
   AudioPlayer get _player => _audioHandler.player;
   final RadioRepository _repository = RadioRepository();
 
@@ -45,6 +47,8 @@ class RadioEngine extends ChangeNotifier {
   List<RadioStation> _recentStations = [];
   List<FavoriteStation> _favorites = [];
   List<Episode> _downloadedEpisodes = [];
+  List<Episode> _inProgressEpisodes = [];
+  List<Episode> _bookmarkedEpisodes = [];
   List<String> _savedRecordings = [];
   final List<String> _recentSearches = [];
   bool _autoPlay = true;
@@ -66,6 +70,7 @@ class RadioEngine extends ChangeNotifier {
   SearchType _searchType = SearchType.station;
   Timer? _sleepTimer;
   Duration? _sleepTimerDuration;
+  Timer? _searchDebounce;
 
   AudioPlayer get player => _player;
   Duration get position => _position;
@@ -86,6 +91,8 @@ class RadioEngine extends ChangeNotifier {
   List<FavoriteStation> get favorites => List.unmodifiable(_favorites);
   List<RadioStation> get favoriteStations => _favorites.map((f) => f.toRadioStation()).toList();
   List<Episode> get downloadedEpisodes => List.unmodifiable(_downloadedEpisodes);
+  List<Episode> get inProgressEpisodes => List.unmodifiable(_inProgressEpisodes);
+  List<Episode> get bookmarkedEpisodes => List.unmodifiable(_bookmarkedEpisodes);
   List<String> get savedRecordings => List.unmodifiable(_savedRecordings);
   List<String> get recentSearches => List.unmodifiable(_recentSearches);
   bool get autoPlay => _autoPlay;
@@ -116,6 +123,27 @@ class RadioEngine extends ChangeNotifier {
   // Download states delegation
   double getDownloadProgress(String id) => _downloadService.getDownloadProgress(id);
   bool isDownloading(String id) => _downloadService.isDownloading(id);
+  Future<int> getDownloadCount() => _downloadService.getDownloadCount();
+  Future<int> getTotalDownloadSize() => _downloadService.getTotalDownloadSize();
+
+  // Analytics
+  Future<void> recordEpisodePlay(String episodeId, {String? podcastId}) async {
+    await RadioStorage().recordEpisodePlay(episodeId, podcastId: podcastId);
+  }
+
+  Future<int> getEpisodePlayCount(String episodeId) => RadioStorage().getEpisodePlayCount(episodeId);
+
+  Future<Map<String, int>> getPodcastPlayCounts() => RadioStorage().getPodcastPlayCounts();
+
+  // Bookmarks
+  Future<void> toggleBookmark(Episode episode) async {
+    await RadioStorage().toggleBookmark(episode);
+    notifyListeners();
+  }
+
+  Future<List<Episode>> getBookmarkedEpisodes() => RadioStorage().getBookmarkedEpisodes();
+
+  Future<bool> isBookmarked(String id) => RadioStorage().isBookmarked(id);
 
   RadioEngine(this._audioHandler, this._recordingService, this._alarmService, this._stationProvider, this._downloadService) {
     _recordingService.addListener(notifyListeners);
@@ -136,7 +164,9 @@ class RadioEngine extends ChangeNotifier {
     await _stationProvider.initialize();
     await loadRecentStations();
     await loadFavorites();
+    await loadBookmarks();
     await loadDownloadedEpisodes();
+    await loadInProgressEpisodes();
     await _alarmService.initialize();
     await _configureAudioSession();
     await loadSavedRecordings();
@@ -208,6 +238,14 @@ class RadioEngine extends ChangeNotifier {
     });
     _mediaItemSubscription = _audioHandler.mediaItem.listen((item) {
        // Sync with background media item if needed
+    });
+    
+    // Sync playback speed from audio handler (e.g. if changed via notification/system)
+    _audioHandler.playbackState.listen((state) {
+      if (state.speed != _speed) {
+        _speed = state.speed;
+        notifyListeners();
+      }
     });
   }
 
@@ -408,7 +446,7 @@ class RadioEngine extends ChangeNotifier {
 
     _speed = await RadioStorage().getSettings<double>('speed', defaultValue: 1.0) ?? 1.0;
     _pitch = await RadioStorage().getSettings<double>('pitch', defaultValue: 1.0) ?? 1.0;
-    await _player.setSpeed(_speed);
+    await _audioHandler.setSpeed(_speed);
     await _player.setPitch(_pitch);
     
     notifyListeners();
@@ -458,11 +496,22 @@ class RadioEngine extends ChangeNotifier {
   }
 
   Future<void> search(String query) async {
-    if (_searchType == SearchType.station) {
-      await searchStations(query);
-    } else {
-      await searchPodcasts(query);
+    _searchDebounce?.cancel();
+    if (query.isEmpty) {
+      if (_searchType == SearchType.station) {
+        await loadTopStations();
+      }
+      return;
     }
+
+    _searchDebounce = Timer(const Duration(milliseconds: 500), () async {
+      if (_searchType == SearchType.station) {
+        await searchStations(query);
+      } else {
+        await searchPodcasts(query);
+      }
+      saveRecentSearch(query);
+    });
   }
 
   Future<void> searchStations(String? query, {String? tag, int limit = 100}) async {
@@ -508,7 +557,7 @@ class RadioEngine extends ChangeNotifier {
 
   void setPlaybackSpeed(double value) {
     _speed = value;
-    _player.setSpeed(value);
+    _audioHandler.setSpeed(value);
     RadioStorage().saveSettings('speed', value);
     notifyListeners();
   }
@@ -536,7 +585,7 @@ class RadioEngine extends ChangeNotifier {
     // _audioHandler.bassBoost.setEnabled(false);
     // _audioHandler.bassBoost.setStrength(0);
     _speed = 1.0;
-    _player.setSpeed(1.0);
+    _audioHandler.setSpeed(1.0);
     _pitch = 1.0;
     _player.setPitch(1.0);
     RadioStorage().saveEqualizer(_equalizerBands, _loudnessGain, bass: 0.0, speed: 1.0, pitch: 1.0);
@@ -572,6 +621,23 @@ class RadioEngine extends ChangeNotifier {
   Future<void> clearFavorites() async {
     await RadioStorage().clearFavorites();
     await loadFavorites();
+  }
+
+  Future<void> loadBookmarks() async {
+    _bookmarkedEpisodes = await RadioStorage().getBookmarkedEpisodes();
+    notifyListeners();
+  }
+
+  Future<void> clearBookmarks() async {
+    await RadioStorage().clearBookmarks();
+    await loadBookmarks();
+  }
+
+  Future<void> clearFavoritesAndBookmarks() async {
+    await RadioStorage().clearFavorites();
+    await RadioStorage().clearBookmarks();
+    await loadFavorites();
+    await loadBookmarks();
   }
 
   Future<void> addToFavorites(RadioStation station) async {
@@ -776,8 +842,20 @@ class RadioEngine extends ChangeNotifier {
     await _stationProvider.loadTrendingPodcasts();
   }
 
-  Future<void> loadEpisodes(String rssUrl) async {
+  Future<void> loadEpisodes(Podcast podcast) async {
+    String rssUrl = podcast.rss;
+    if (rssUrl.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+      rssUrl = await _podcastService.lookupPodcastRss(podcast.id) ?? '';
+      _isLoading = false;
+    }
     await _stationProvider.loadEpisodes(rssUrl);
+  }
+
+  Future<void> loadInProgressEpisodes() async {
+    _inProgressEpisodes = await RadioStorage().getInProgressEpisodes();
+    notifyListeners();
   }
 
   Future<void> playEpisode(Episode episode) async {
@@ -796,6 +874,7 @@ class RadioEngine extends ChangeNotifier {
       }
 
       await RadioStorage().saveLastPlayed('episode', episode.toJson());
+      RadioStorage().recordEpisodePlay(episode.id);
 
       final source = episode.downloadPath != null 
           ? episode.downloadPath! 
@@ -880,6 +959,15 @@ class RadioEngine extends ChangeNotifier {
     await _downloadService.clearAllDownloads();
     await RadioStorage().clearAllDownloadedEpisodes();
     await loadDownloadedEpisodes();
+  }
+
+  Future<void> deletePlayedEpisodes() async {
+    final episodes = await RadioStorage().getDownloadedEpisodes();
+    for (final episode in episodes) {
+      if (episode.lastPosition > 0 && episode.duration > 0 && episode.lastPosition >= episode.duration) {
+        await deleteDownloadedEpisode(episode);
+      }
+    }
   }
 
   Future<void> setVolume(double value) async {

@@ -136,6 +136,8 @@ class RadioStorage {
   Box<Episode>? _downloadsBox;
   Box<Episode>? _progressBox;
   Box<dynamic>? _settingsBox;
+  Box<Map>? _analyticsBox;
+  Box<Episode>? _bookmarksBox;
   bool _initialized = false;
   
   // Error reporting
@@ -162,6 +164,8 @@ class RadioStorage {
       _downloadsBox = await _openSafeBox<Episode>('downloads');
       _progressBox = await _openSafeBox<Episode>('episode_progress');
       _settingsBox = await _openSafeBox('settings');
+      _analyticsBox = await _openSafeBox<Map>('analytics');
+      _bookmarksBox = await _openSafeBox<Episode>('bookmarks');
       _initialized = true;
     } catch (e) {
       debugPrint('RadioStorage critical failure: $e');
@@ -259,6 +263,11 @@ class RadioStorage {
   Future<void> clearFavorites() async {
     if (!_initialized) await init();
     await _favoritesBox?.clear();
+  }
+
+  Future<void> clearBookmarks() async {
+    if (!_initialized) await init();
+    await _bookmarksBox?.clear();
   }
 
   Future<List<FavoriteStation>> getFavorites() async {
@@ -441,6 +450,14 @@ class RadioStorage {
     return _downloadsBox?.values.toList() ?? [];
   }
 
+  Future<List<Episode>> getInProgressEpisodes() async {
+    if (!_initialized) await init();
+    final episodes = _progressBox?.values.toList() ?? [];
+    // Sort by last modified/played would be better, but we don't have that field yet.
+    // For now just return those with progress > 0.
+    return episodes.where((e) => e.lastPosition > 0).toList();
+  }
+
   Future<Episode?> getDownloadedEpisode(String id) async {
     if (!_initialized) await init();
     return _downloadsBox?.get(id);
@@ -522,6 +539,65 @@ class RadioStorage {
       'speed': _settingsBox?.get('eq_speed') as double?,
       'pitch': _settingsBox?.get('eq_pitch') as double?,
     };
+  }
+
+  Future<void> recordEpisodePlay(String episodeId, {String? podcastId}) async {
+    if (!_initialized) await init();
+    final key = 'ep_$episodeId';
+    final current = _analyticsBox?.get(key) ?? {};
+    final playCount = (current['play_count'] as int? ?? 0) + 1;
+    current['play_count'] = playCount;
+    current['last_played'] = DateTime.now().millisecondsSinceEpoch;
+    current['podcast_id'] = podcastId;
+    await _analyticsBox?.put(key, current);
+  }
+
+  Future<int> getEpisodePlayCount(String episodeId) async {
+    if (!_initialized) await init();
+    final current = _analyticsBox?.get('ep_$episodeId');
+    return current?['play_count'] as int? ?? 0;
+  }
+
+  Future<Map<String, int>> getPodcastPlayCounts() async {
+    if (!_initialized) await init();
+    final counts = <String, int>{};
+    for (final key in _analyticsBox?.keys ?? []) {
+      final strKey = key as String;
+      if (strKey.startsWith('ep_')) {
+        final data = _analyticsBox?.get(key);
+        final podcastId = data?['podcast_id'] as String?;
+        final playCount = data?['play_count'] as int? ?? 0;
+        if (podcastId != null) {
+          counts[podcastId] = (counts[podcastId] ?? 0) + playCount;
+        }
+      }
+    }
+    return counts;
+  }
+
+  Future<void> toggleBookmark(Episode episode) async {
+    if (!_initialized) await init();
+    final existing = await getBookmarkedEpisode(episode.id);
+    if (existing != null) {
+      await _bookmarksBox?.delete(episode.id);
+    } else {
+      await _bookmarksBox?.put(episode.id, episode);
+    }
+  }
+
+  Future<Episode?> getBookmarkedEpisode(String id) async {
+    if (!_initialized) await init();
+    return _bookmarksBox?.get(id);
+  }
+
+  Future<List<Episode>> getBookmarkedEpisodes() async {
+    if (!_initialized) await init();
+    return _bookmarksBox?.values.toList() ?? [];
+  }
+
+  Future<bool> isBookmarked(String id) async {
+    if (!_initialized) await init();
+    return _bookmarksBox?.containsKey(id) ?? false;
   }
 }
 

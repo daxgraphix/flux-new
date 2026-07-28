@@ -106,6 +106,7 @@ flutter_launcher_icons:
 assets:
   - assets/shaders/
   - assets/images/
+  - assets/data/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

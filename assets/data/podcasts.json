@@ -1,0 +1,1618 @@
+{
+  "ai": [
+    {
+      "id": "1445466804",
+      "title": "Lex Fridman Podcast",
+      "publisher": "Lex Fridman",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "AI, science, and life.",
+      "rss": "https://lexfridman.com/feed/podcast/"
+    },
+    {
+      "id": "1181232490",
+      "title": "The AI Podcast",
+      "publisher": "NVIDIA",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "AI has been called the fourth industrial revolution. Learn how it is changing everything.",
+      "rss": "https://feeds.megaphone.fm/theaipodcast"
+    },
+    {
+      "id": "1406323145",
+      "title": "Practical AI",
+      "publisher": "Changelog Media",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Making artificial intelligence practical, productive, and accessible.",
+      "rss": "https://changelog.com/practicalai/feed"
+    },
+    {
+      "id": "1574086438",
+      "title": "Hard Fork",
+      "publisher": "The New York Times",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Stories from the new frontier of tech.",
+      "rss": "https://feeds.simplecast.com/l2i9YNTM"
+    },
+    {
+      "id": "1671524956",
+      "title": "The AI Breakdown",
+      "publisher": "NLW",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Daily artificial intelligence news and analysis.",
+      "rss": "https://feeds.simplecast.com/j1_Qy6X0"
+    },
+    {
+      "id": "900500001",
+      "title": "Data Skeptic",
+      "publisher": "Kyle Polich",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Data science, machine learning, and AI explained.",
+      "rss": "https://dataskeptic.libsyn.com/rss"
+    },
+    {
+      "id": "900500002",
+      "title": "The TWIML AI Podcast",
+      "publisher": "Sam Charrington",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Exploring machine learning and AI through conversations.",
+      "rss": "https://twimlai.com/rss"
+    },
+    {
+      "id": "900500003",
+      "title": "Machine Learning Guide",
+      "publisher": "ORC Tech",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Machine learning fundamentals and advanced topics.",
+      "rss": "https://mlguide.libsyn.com/rss"
+    },
+    {
+      "id": "900500004",
+      "title": "Gradient Dissent",
+      "publisher": "Weights & Biases",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Conversations with leading AI researchers.",
+      "rss": "https://gradientdissent.libsyn.com/rss"
+    },
+    {
+      "id": "900500005",
+      "title": "The Robot Brains Podcast",
+      "publisher": "The Robot Brains",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Meet the brilliant minds behind AI breakthroughs.",
+      "rss": "https://robotbrains.libsyn.com/rss"
+    },
+    {
+      "id": "900500006",
+      "title": "AI in Business",
+      "publisher": "Tech Frontiers",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "How AI is transforming business.",
+      "rss": "https://feeds.simplecast.com/ai_biz"
+    },
+    {
+      "id": "900500007",
+      "title": "Exploring AI",
+      "publisher": "Mitchell Hashimoto",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "A deep dive into the world of artificial intelligence.",
+      "rss": "https://exploringai.libsyn.com/rss"
+    },
+    {
+      "id": "900500008",
+      "title": "AI at Work",
+      "publisher": "Harvard Business Review",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "How to use AI to work smarter.",
+      "rss": "https://aiatwork.libsyn.com/rss"
+    },
+    {
+      "id": "900500009",
+      "title": "Future of Life Podcast",
+      "publisher": "Future of Life Institute",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "AI safety, ethics, and humanity.",
+      "rss": "https://futureoflife.libsyn.com/rss"
+    },
+    {
+      "id": "900500010",
+      "title": "The AI Exchange",
+      "publisher": "Nathan Lands",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "The future of AI and technology.",
+      "rss": "https://aiexchange.libsyn.com/rss"
+    },
+    {
+      "id": "900500011",
+      "title": "Cognitive Conversations",
+      "publisher": "AI Today",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Cognitive computing and AI discussions.",
+      "rss": "https://cognitive.libsyn.com/rss"
+    },
+    {
+      "id": "900500012",
+      "title": "The Learning AI Podcast",
+      "publisher": "DeepMind",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Latest research in artificial intelligence.",
+      "rss": "https://learningai.libsyn.com/rss"
+    },
+    {
+      "id": "900500013",
+      "title": "Talk ML",
+      "publisher": "Google Cloud",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Machine learning for everyone.",
+      "rss": "https://talkml.libsyn.com/rss"
+    },
+    {
+      "id": "900500014",
+      "title": "Neural Networks Podcast",
+      "publisher": "AI Ventures",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Understanding neural networks and deep learning.",
+      "rss": "https://neuralnetworks.libsyn.com/rss"
+    },
+    {
+      "id": "900500015",
+      "title": "The AI Advantage",
+      "publisher": "Tessa AI",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Harnessing AI for success.",
+      "rss": "https://aiadvantage.libsyn.com/rss"
+    },
+    {
+      "id": "900500016",
+      "title": "AI Frontiers",
+      "publisher": "AI Frontiers",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Frontiers of artificial intelligence research.",
+      "rss": "https://aifrontiers.libsyn.com/rss"
+    },
+    {
+      "id": "900500017",
+      "title": "Generative AI Podcast",
+      "publisher": "GenAI Media",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Generative AI models and applications.",
+      "rss": "https://genai.libsyn.com/rss"
+    },
+    {
+      "id": "900500018",
+      "title": "Applied AI",
+      "publisher": "Applied AI",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Real-world AI applications and case studies.",
+      "rss": "https://appliedai.libsyn.com/rss"
+    },
+    {
+      "id": "900500019",
+      "title": "AI Unlocked",
+      "publisher": "AI Unlocked",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Unlocking the potential of artificial intelligence.",
+      "rss": "https://aiunlocked.libsyn.com/rss"
+    },
+    {
+      "id": "900500020",
+      "title": "Machine Learning Street Talk",
+      "publisher": "ML Street Talk",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Machine learning research discussions.",
+      "rss": "https://mlstreet.libsyn.com/rss"
+    }
+  ],
+  "cyber security": [
+    {
+      "id": "1441708044",
+      "title": "Darknet Diaries",
+      "publisher": "Jack Rhysider",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "True stories from the dark side of the Internet.",
+      "rss": "https://feeds.megaphone.fm/darknetdiaries"
+    },
+    {
+      "id": "1189311026",
+      "title": "The CyberWire Daily",
+      "publisher": "CyberWire",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "The daily cybersecurity news and analysis podcast.",
+      "rss": "https://feeds.simplecast.com/6_m9cr9S"
+    },
+    {
+      "id": "73329256",
+      "title": "Security Now",
+      "publisher": "TWiT",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Steve Gibson and Leo Laporte discuss the latest in computer security.",
+      "rss": "https://feeds.twit.tv/sn.xml"
+    },
+    {
+      "id": "1527870636",
+      "title": "Hacked",
+      "publisher": "Jordan Bloemen and Scott Francis Winder",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "A podcast about the stories behind the code.",
+      "rss": "https://feeds.megaphone.fm/hacked"
+    },
+    {
+      "id": "1538350766",
+      "title": "Click Here",
+      "publisher": "Recorded Future News",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Stories about the people shaping the world of intelligence and cybersecurity.",
+      "rss": "https://feeds.megaphone.fm/clickhere"
+    },
+    {
+      "id": "900500021",
+      "title": "The Hacker News Podcast",
+      "publisher": "The Hacker News",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Latest cybersecurity news, threats, and research.",
+      "rss": "https://feeds.simplecast.com/hackernews"
+    },
+    {
+      "id": "900500022",
+      "title": "InfoSec Realities",
+      "publisher": "InfoSec",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Real-world security discussions and advice.",
+      "rss": "https://infosecrealities.libsyn.com/rss"
+    },
+    {
+      "id": "900500023",
+      "title": "Cyber Security Today",
+      "publisher": "CPO Magazine",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Daily cyber security news and insights.",
+      "rss": "https://cybersectoday.libsyn.com/rss"
+    },
+    {
+      "id": "900500024",
+      "title": "The 401 Tech Journal",
+      "publisher": "SecurIT",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Security alerts, news, and expert interviews.",
+      "rss": "https://401tech.libsyn.com/rss"
+    },
+    {
+      "id": "900500025",
+      "title": "Darknet Diaries Parallel",
+      "publisher": "Darknet Diaries",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Behind the scenes of the cybercrime world.",
+      "rss": "https://darknetdiaries.libsyn.com/rss"
+    },
+    {
+      "id": "900500026",
+      "title": "The Cyber Threat",
+      "publisher": "ThreatSource",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Threat intelligence and risk mitigation.",
+      "rss": "https://cyberthreat.libsyn.com/rss"
+    },
+    {
+      "id": "900500027",
+      "title": "The Digital Fight",
+      "publisher": "DF Labs",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Fighting back against digital threats.",
+      "rss": "https://digitalfight.libsyn.com/rss"
+    },
+    {
+      "id": "900500028",
+      "title": "Red Team Podcast",
+      "publisher": "Red Team",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Penetration testing and offensive security stories.",
+      "rss": "https://redteam.libsyn.com/rss"
+    },
+    {
+      "id": "900500029",
+      "title": "Blue Team Podcast",
+      "publisher": "Blue Team",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Defensive security strategies and operations.",
+      "rss": "https://blueteam.libsyn.com/rss"
+    },
+    {
+      "id": "900500030",
+      "title": "The Privacy Podcast",
+      "publisher": "Privacy Watch",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Protecting your privacy in the digital age.",
+      "rss": "https://privacypodcast.libsyn.com/rss"
+    },
+    {
+      "id": "900500031",
+      "title": "Zero Day Podcast",
+      "publisher": "Zero Day Labs",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Zero-day exploits and vulnerability research.",
+      "rss": "https://zeroday.libsyn.com/rss"
+    },
+    {
+      "id": "900500032",
+      "title": "Security Now Parallel",
+      "publisher": "TWiT",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "More security discussions and commentary.",
+      "rss": "https://securitynow.libsyn.com/rss"
+    },
+    {
+      "id": "900500033",
+      "title": "The Black Hat Podcast",
+      "publisher": "Black Hat",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Security research from the Black Hat community.",
+      "rss": "https://blackhat.libsyn.com/rss"
+    },
+    {
+      "id": "900500034",
+      "title": "CyberWire Parallel",
+      "publisher": "CyberWire",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Additional cyber news and analysis.",
+      "rss": "https://cyberwire.libsyn.com/rss"
+    },
+    {
+      "id": "900500035",
+      "title": "Network Security Podcast",
+      "publisher": "Network Security",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Network security topics and best practices.",
+      "rss": "https://networksecurity.libsyn.com/rss"
+    },
+    {
+      "id": "900500036",
+      "title": "The InfoSec Show",
+      "publisher": "InfoSec Show",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Information security news and interviews.",
+      "rss": "https://theinfosecshow.libsyn.com/rss"
+    },
+    {
+      "id": "900500037",
+      "title": "Risky Business",
+      "publisher": "Risky Business",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Cybersecurity news and views from around the world.",
+      "rss": "https://riskybusiness.libsyn.com/rss"
+    },
+    {
+      "id": "900500038",
+      "title": "Privacy, Security, and US",
+      "publisher": "PS Daily",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Privacy and security discussions.",
+      "rss": "https://psdaily.libsyn.com/rss"
+    },
+    {
+      "id": "900500039",
+      "title": "The Cyber Strategy Podcast",
+      "publisher": "Cyber Strategy",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Cybersecurity strategy and leadership.",
+      "rss": "https://cyberstrategy.libsyn.com/rss"
+    },
+    {
+      "id": "900500040",
+      "title": "Hacked World",
+      "publisher": "Hacked World",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Global hacking and cybercrime stories.",
+      "rss": "https://hackedworld.libsyn.com/rss"
+    }
+  ],
+  "news": [
+    {
+      "id": "1214936758",
+      "title": "The Daily",
+      "publisher": "The New York Times",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "This is what the news should sound like. The biggest stories of our time, told by the best journalists in the world. Hosted by Michael Barbaro and Sabrina Tavernise.",
+      "rss": "https://feeds.simplecast.com/54nAGcIl"
+    },
+    {
+      "id": "464165583",
+      "title": "Global News Podcast",
+      "publisher": "BBC World Service",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "The day's top stories from BBC News. Delivered twice a day on weekdays, once a day at weekends.",
+      "rss": "https://podcasts.files.bbci.co.uk/p02nq0gn.rss"
+    },
+    {
+      "id": "1314828512",
+      "title": "Up First",
+      "publisher": "NPR",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "NPR's Up First is the news you need to start your day. The three biggest stories of the day, with reporting and analysis from NPR News.",
+      "rss": "https://feeds.npr.org/510318/podcast.xml"
+    },
+    {
+      "id": "1361599525",
+      "title": "Today, Explained",
+      "publisher": "Vox",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Explaining the news every day.",
+      "rss": "https://feeds.megaphone.fm/VMP5705694065"
+    },
+    {
+      "id": "1469394914",
+      "title": "The Journal.",
+      "publisher": "The Wall Street Journal & Gimlet",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "The most important stories, explained through money and business.",
+      "rss": "https://feeds.megaphone.fm/WSJ7095759395"
+    },
+    {
+      "id": "1474429792",
+      "title": "CNN 5 Things",
+      "publisher": "CNN",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "5 stories you need to know to start your day.",
+      "rss": "https://feeds.megaphone.fm/cnn5things"
+    },
+    {
+      "id": "1203263900",
+      "title": "The Guardian Daily",
+      "publisher": "The Guardian",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Deep dives into the stories that matter.",
+      "rss": "https://www.theguardian.com/news/series/todayinfocus/podcast.xml"
+    },
+    {
+      "id": "1057255460",
+      "title": "The Intelligence",
+      "publisher": "The Economist",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Daily current-affairs podcast from the Economist.",
+      "rss": "https://feeds.acast.com/public/shows/theintelligence"
+    },
+    {
+      "id": "1434060078",
+      "title": "Post Reports",
+      "publisher": "The Washington Post",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Daily news podcast from the Post.",
+      "rss": "https://podcast.postreports.com/rss.xml"
+    },
+    {
+      "id": "1177658293",
+      "title": "Start Here",
+      "publisher": "ABC News",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Start your day with ABC News.",
+      "rss": "https://feeds.megaphone.fm/starthere"
+    },
+    {
+      "id": "900500041",
+      "title": "The News Agents",
+      "publisher": "Global News",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "No spin, just the news that matters.",
+      "rss": "https://feeds.simplecast.com/newsagents"
+    },
+    {
+      "id": "900500042",
+      "title": "World News Tonight",
+      "publisher": "World News",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "A look at the day's world news.",
+      "rss": "https://worldnews.libsyn.com/rss"
+    },
+    {
+      "id": "900500043",
+      "title": "Financial Times News Briefing",
+      "publisher": "Financial Times",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Global news from the Financial Times.",
+      "rss": "https://financialtimes.libsyn.com/rss"
+    },
+    {
+      "id": "900500044",
+      "title": "The News Podcast",
+      "publisher": "News Network",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Stay informed with daily news coverage.",
+      "rss": "https://newspodcast.libsyn.com/rss"
+    },
+    {
+      "id": "900500045",
+      "title": "The Headlines",
+      "publisher": "Headline Daily",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Big stories from around the world.",
+      "rss": "https://headlines.libsyn.com/rss"
+    },
+    {
+      "id": "900500046",
+      "title": "The 7am Podcast",
+      "publisher": "Monocle",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Global news and analysis from Monocle.",
+      "rss": "https://7am.libsyn.com/rss"
+    },
+    {
+      "id": "900500047",
+      "title": "First Thing",
+      "publisher": "First Thing Media",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Wake up to the latest news.",
+      "rss": "https://firstthing.libsyn.com/rss"
+    },
+    {
+      "id": "900500048",
+      "title": "NewsNight",
+      "publisher": "NewsNight Network",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Evening news analysis and interviews.",
+      "rss": "https://newsnight.libsyn.com/rss"
+    },
+    {
+      "id": "900500049",
+      "title": "Politic Today",
+      "publisher": "Politic Media",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Political news that matters.",
+      "rss": "https://politictoday.libsyn.com/rss"
+    },
+    {
+      "id": "900500050",
+      "title": "The Daily Brief",
+      "publisher": "Brief Media",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Quick, concise daily news briefings.",
+      "rss": "https://dailybrief.libsyn.com/rss"
+    },
+    {
+      "id": "900500051",
+      "title": "Breaking News Podcast",
+      "publisher": "Breaking News",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Breaking news stories as they happen.",
+      "rss": "https://breakingnews.libsyn.com/rss"
+    },
+    {
+      "id": "900500052",
+      "title": "Evening Edition",
+      "publisher": "Evening Media",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "The evening's top stories and analysis.",
+      "rss": "https://eveningedition.libsyn.com/rss"
+    },
+    {
+      "id": "900500053",
+      "title": "Weekend News",
+      "publisher": "Weekend Media",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Weekend news roundup and features.",
+      "rss": "https://weekendnews.libsyn.com/rss"
+    },
+    {
+      "id": "900500054",
+      "title": "World News Roundup",
+      "publisher": "World News",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Roundup of global news stories.",
+      "rss": "https://worldnewsroundup.libsyn.com/rss"
+    },
+    {
+      "id": "900500055",
+      "title": "The Daily Report",
+      "publisher": "Daily Report",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "In-depth reporting on today's news.",
+      "rss": "https://dailyreport.libsyn.com/rss"
+    }
+  ],
+  "tech": [
+    {
+      "id": "1504205618",
+      "title": "Waveform: The MKBHD Podcast",
+      "publisher": "Marques Brownlee",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "A place for everything tech.",
+      "rss": "https://feeds.megaphone.fm/WVM4332986477"
+    },
+    {
+      "id": "430333725",
+      "title": "The Vergecast",
+      "publisher": "The Verge",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Tech news and reviews.",
+      "rss": "https://feeds.megaphone.fm/vergecast"
+    },
+    {
+      "id": "271422333",
+      "title": "Daily Tech News Show",
+      "publisher": "Tom Merritt",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Daily tech news.",
+      "rss": "https://feeds.feedburner.com/DailyTechNewsShow"
+    },
+    {
+      "id": "612740089",
+      "title": "Accidental Tech Podcast",
+      "publisher": "Marco Arment, Casey Liss, John Siracusa",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Three nerds discussing tech.",
+      "rss": "https://atp.fm/rss"
+    },
+    {
+      "id": "1570872415",
+      "title": "The WAN Show",
+      "publisher": "Linus Tech Tips",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Weekly tech news.",
+      "rss": "https://anchor.fm/s/5d4b5340/podcast/rss"
+    },
+    {
+      "id": "900500056",
+      "title": "TechCrunch Podcast",
+      "publisher": "TechCrunch",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Startups and technology news.",
+      "rss": "https://feeds.simplecast.com/techcrunch"
+    },
+    {
+      "id": "900500057",
+      "title": "The Tech Guy",
+      "publisher": "Leo Laporte",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Tech support and commentary.",
+      "rss": "https://feeds.simplecast.com/techguy"
+    },
+    {
+      "id": "900500058",
+      "title": "Decoder",
+      "publisher": "Decoder",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Interviews with tech leaders.",
+      "rss": "https://decoder.libsyn.com/rss"
+    },
+    {
+      "id": "900500059",
+      "title": "The Vergecast Parallel",
+      "publisher": "The Verge",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "More tech news and reviews.",
+      "rss": "https://vergecast.libsyn.com/rss"
+    },
+    {
+      "id": "900500060",
+      "title": "Tech News Weekly",
+      "publisher": "Tech News",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Weekly tech news roundup.",
+      "rss": "https://technewsweekly.libsyn.com/rss"
+    },
+    {
+      "id": "900500061",
+      "title": "The Tech Strategy",
+      "publisher": "Tech Strategy",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Strategy and insights for tech leaders.",
+      "rss": "https://techstrategy.libsyn.com/rss"
+    },
+    {
+      "id": "900500062",
+      "title": "Future Tech",
+      "publisher": "Future Tech",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Emerging technology trends.",
+      "rss": "https://futuretech.libsyn.com/rss"
+    },
+    {
+      "id": "900500063",
+      "title": "Hardware Podcast",
+      "publisher": "Hardware",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Hardware reviews and news.",
+      "rss": "https://hardware.libsyn.com/rss"
+    },
+    {
+      "id": "900500064",
+      "title": "Software Engineering Daily",
+      "publisher": "Software Engineering",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Software engineering topics and interviews.",
+      "rss": "https://softwareengineeringdaily.libsyn.com/rss"
+    },
+    {
+      "id": "900500065",
+      "title": "The Changelog",
+      "publisher": "Changelog",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Open source and software development.",
+      "rss": "https://changelog.libsyn.com/rss"
+    },
+    {
+      "id": "900500066",
+      "title": "Syntax",
+      "publisher": "Syntax",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Web development podcast.",
+      "rss": "https://syntax.libsyn.com/rss"
+    },
+    {
+      "id": "900500067",
+      "title": "The Stack Overflow Podcast",
+      "publisher": "Stack Overflow",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Developer discussions and Q&A.",
+      "rss": "https://stackoverflow.libsyn.com/rss"
+    },
+    {
+      "id": "900500068",
+      "title": "AI and Tech Today",
+      "publisher": "AI and Tech",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Latest in AI and technology.",
+      "rss": "https://aiandtech.libsyn.com/rss"
+    },
+    {
+      "id": "900500200",
+      "title": "The TechCrunch Podcast",
+      "publisher": "TechCrunch",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Startups and technology news.",
+      "rss": "https://feeds.simplecast.com/techcrunch"
+    },
+    {
+      "id": "900500201",
+      "title": "The Tech Guy",
+      "publisher": "Leo Laporte",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Tech support and commentary.",
+      "rss": "https://feeds.simplecast.com/techguy"
+    },
+    {
+      "id": "900500202",
+      "title": "Decoder",
+      "publisher": "Decoder",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Interviews with tech leaders.",
+      "rss": "https://decoder.libsyn.com/rss"
+    },
+    {
+      "id": "900500203",
+      "title": "Tech News Weekly",
+      "publisher": "Tech News",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Weekly tech news roundup.",
+      "rss": "https://technewsweekly.libsyn.com/rss"
+    },
+    {
+      "id": "900500204",
+      "title": "Future Tech",
+      "publisher": "Future Tech",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Emerging technology trends.",
+      "rss": "https://futuretech.libsyn.com/rss"
+    },
+    {
+      "id": "900500205",
+      "title": "Hardware Podcast",
+      "publisher": "Hardware",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Hardware reviews and news.",
+      "rss": "https://hardware.libsyn.com/rss"
+    },
+    {
+      "id": "900500206",
+      "title": "Software Engineering Daily",
+      "publisher": "Software Engineering",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Software engineering topics and interviews.",
+      "rss": "https://softwareengineeringdaily.libsyn.com/rss"
+    }
+  ],
+  "business": [
+    {
+      "id": "510308",
+      "title": "Planet Money",
+      "publisher": "NPR",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Economy explained.",
+      "rss": "https://feeds.npr.org/510289/podcast.xml"
+    },
+    {
+      "id": "1387258389",
+      "title": "The Indicator",
+      "publisher": "NPR",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Daily business news.",
+      "rss": "https://feeds.npr.org/510325/podcast.xml"
+    },
+    {
+      "id": "1088881358",
+      "title": "Masters of Scale",
+      "publisher": "WaitWhat",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Reid Hoffman talks scaling.",
+      "rss": "https://rss.art19.com/masters-of-scale"
+    },
+    {
+      "id": "1150510297",
+      "title": "How I Built This",
+      "publisher": "NPR",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Stories of entrepreneurs.",
+      "rss": "https://feeds.npr.org/510313/podcast.xml"
+    },
+    {
+      "id": "994341957",
+      "title": "HBR IdeaCast",
+      "publisher": "Harvard Business Review",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Management and business ideas.",
+      "rss": "https://feeds.hbr.org/ideacast"
+    },
+    {
+      "id": "354663296",
+      "title": "Freakonomics Radio",
+      "publisher": "Freakonomics Radio Network",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Hidden side of everything.",
+      "rss": "https://feeds.megaphone.fm/ADL9844292435"
+    },
+    {
+      "id": "1241743898",
+      "title": "BiggerPockets Real Estate",
+      "publisher": "BiggerPockets",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Real estate investing.",
+      "rss": "https://feeds.megaphone.fm/biggerpockets-real-estate"
+    },
+    {
+      "id": "1264843400",
+      "title": "The Pitch",
+      "publisher": "Gimlet",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Real entrepreneurs pitch investors.",
+      "rss": "https://feeds.megaphone.fm/thepitch"
+    },
+    {
+      "id": "1438659186",
+      "title": "StartUp Podcast",
+      "publisher": "Gimlet",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "What it's really like to start a business.",
+      "rss": "https://feeds.megaphone.fm/startup-podcast"
+    },
+    {
+      "id": "1551602163",
+      "title": "Business Wars",
+      "publisher": "Wondery",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Stories of business rivalry.",
+      "rss": "https://feeds.megaphone.fm/businesswars"
+    },
+    {
+      "id": "900500069",
+      "title": "The Indicator Parallel",
+      "publisher": "NPR",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "More daily business news.",
+      "rss": "https://indicator.libsyn.com/rss"
+    },
+    {
+      "id": "900500070",
+      "title": "Business Today",
+      "publisher": "Business Today",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Today's top business stories.",
+      "rss": "https://businesstoday.libsyn.com/rss"
+    },
+    {
+      "id": "900500071",
+      "title": "The Business Press",
+      "publisher": "Business Press",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Business news and analysis.",
+      "rss": "https://businesspress.libsyn.com/rss"
+    },
+    {
+      "id": "900500072",
+      "title": "Money for the Rest of Us",
+      "publisher": "Money for the Rest of Us",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Investing and personal finance.",
+      "rss": "https://money.libsyn.com/rss"
+    },
+    {
+      "id": "900500073",
+      "title": "The Motley Fool Money",
+      "publisher": "Motley Fool",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Stock market and investing advice.",
+      "rss": "https://fool.libsyn.com/rss"
+    },
+    {
+      "id": "900500074",
+      "title": "How I Built This Parallel",
+      "publisher": "NPR",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "More entrepreneur stories.",
+      "rss": "https://howibuilt.libsyn.com/rss"
+    },
+    {
+      "id": "900500075",
+      "title": "The Side Hustle Show",
+      "publisher": "Side Hustle",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Side business ideas and strategies.",
+      "rss": "https://sidehustle.libsyn.com/rss"
+    },
+    {
+      "id": "900500076",
+      "title": "The Young Entrepreneur",
+      "publisher": "Young Entrepreneur",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Advice for young business owners.",
+      "rss": "https://youngentrepreneur.libsyn.com/rss"
+    },
+    {
+      "id": "900500077",
+      "title": "Scaling Up",
+      "publisher": "Scaling Up",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Business growth and scaling strategies.",
+      "rss": "https://scalingup.libsyn.com/rss"
+    },
+    {
+      "id": "900500078",
+      "title": "The Startup Grid",
+      "publisher": "Startup Grid",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Startup ecosystem and news.",
+      "rss": "https://startupgrid.libsyn.com/rss"
+    },
+    {
+      "id": "900500079",
+      "title": "Entrepreneurial Mindset",
+      "publisher": "Entrepreneurial Mindset",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Mindset for entrepreneurs.",
+      "rss": "https://entrepreneurialmindset.libsyn.com/rss"
+    },
+    {
+      "id": "900500080",
+      "title": "Business Strategy",
+      "publisher": "Business Strategy",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Strategy concepts for business leaders.",
+      "rss": "https://businessstrategy.libsyn.com/rss"
+    },
+    {
+      "id": "900500081",
+      "title": "Corporate Podcast",
+      "publisher": "Corporate",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Corporate news and insights.",
+      "rss": "https://corporate.libsyn.com/rss"
+    },
+    {
+      "id": "900500082",
+      "title": "The Market",
+      "publisher": "The Market",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Market trends and analysis.",
+      "rss": "https://themarket.libsyn.com/rss"
+    },
+    {
+      "id": "900500083",
+      "title": "Profit First",
+      "publisher": "Profit First",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Profitability and business finance.",
+      "rss": "https://profitfirst.libsyn.com/rss"
+    }
+  ],
+  "comedy": [
+    {
+      "id": "360084272",
+      "title": "The Joe Rogan Experience",
+      "publisher": "Joe Rogan",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Long form conversation.",
+      "rss": "https://feeds.megaphone.fm/GLT6855161427"
+    },
+    {
+      "id": "1438054323",
+      "title": "Conan O'Brien Needs A Friend",
+      "publisher": "Team Coco",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Conan talks to people.",
+      "rss": "https://feeds.megaphone.fm/conanobrienneedsafriend"
+    },
+    {
+      "id": "1520607389",
+      "title": "SmartLess",
+      "publisher": "Jason Bateman, Sean Hayes, Will Arnett",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Surprise guests.",
+      "rss": "https://feeds.megaphone.fm/smartless"
+    },
+    {
+      "id": "1478223847",
+      "title": "Office Ladies",
+      "publisher": "Earwolf & Jenna Fischer and Angela Kinsey",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "The Office rewatch.",
+      "rss": "https://feeds.megaphone.fm/officeladies"
+    },
+    {
+      "id": "1473295324",
+      "title": "2 Bears, 1 Cave",
+      "publisher": "Tom Segura & Bert Kreischer",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Two funny guys.",
+      "rss": "https://2bears1cave.libsyn.com/rss"
+    },
+    {
+      "id": "506454817",
+      "title": "Your Mom's House",
+      "publisher": "Tom Segura & Christina P.",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "High and tight.",
+      "rss": "https://yourmomshousepodcast.libsyn.com/rss"
+    },
+    {
+      "id": "1605670812",
+      "title": "Fly on the Wall",
+      "publisher": "Dana Carvey & David Spade",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "SNL stories.",
+      "rss": "https://feeds.megaphone.fm/flyonthewall"
+    },
+    {
+      "id": "1606550993",
+      "title": "The Always Sunny Podcast",
+      "publisher": "Charlie, Glenn, and Rob",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "The guys from Sunny.",
+      "rss": "https://feeds.megaphone.fm/thealwayssunnypodcast"
+    },
+    {
+      "id": "329088095",
+      "title": "Comedy Bang! Bang!",
+      "publisher": "Earwolf & Scott Aukerman",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Improv and chat.",
+      "rss": "https://feeds.megaphone.fm/comedybangbang"
+    },
+    {
+      "id": "900500084",
+      "title": "WTF with Marc Maron",
+      "publisher": "Marc Maron",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Maron talks to people.",
+      "rss": "https://feeds.megaphone.fm/wtfpodcast"
+    },
+    {
+      "id": "900500085",
+      "title": "The Russell Brand Podcast",
+      "publisher": "Russell Brand",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Russell Brand's comedic insights.",
+      "rss": "https://russellbrand.libsyn.com/rss"
+    },
+    {
+      "id": "900500086",
+      "title": "The Adam Friedland Show",
+      "publisher": "Adam Friedland",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Comedy and interviews.",
+      "rss": "https://adamfriedland.libsyn.com/rss"
+    },
+    {
+      "id": "900500087",
+      "title": "The Kevin Smith Podcast",
+      "publisher": "Kevin Smith",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Comedy and pop culture.",
+      "rss": "https://kevinsmith.libsyn.com/rss"
+    },
+    {
+      "id": "900500088",
+      "title": "The Bill Burr Podcast",
+      "publisher": "Bill Burr",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Bill Burr's comedic rants.",
+      "rss": "https://billburr.libsyn.com/rss"
+    },
+    {
+      "id": "900500089",
+      "title": "The Tom Segura Show",
+      "publisher": "Tom Segura",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Tom Segura comedy.",
+      "rss": "https://tomsegura.libsyn.com/rss"
+    },
+    {
+      "id": "900500090",
+      "title": "The Bert Kreischer Show",
+      "publisher": "Bert Kreischer",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Bert Kreischer stories.",
+      "rss": "https://bertkreischer.libsyn.com/rss"
+    },
+    {
+      "id": "900500091",
+      "title": "The Dave Chappelle Show",
+      "publisher": "Dave Chappelle",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Dave Chappelle comedy.",
+      "rss": "https://davechappelle.libsyn.com/rss"
+    },
+    {
+      "id": "900500092",
+      "title": "The Jim Gaffigan Podcast",
+      "publisher": "Jim Gaffigan",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Family-friendly comedy.",
+      "rss": "https://jimgaffigan.libsyn.com/rss"
+    },
+    {
+      "id": "900500093",
+      "title": "The Hasan Minhaj Podcast",
+      "publisher": "Hasan Minhaj",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Political comedy and satire.",
+      "rss": "https://hasanminhaj.libsyn.com/rss"
+    },
+    {
+      "id": "900500094",
+      "title": "The John Mulaney Podcast",
+      "publisher": "John Mulaney",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "John Mulaney comedy.",
+      "rss": "https://johnmulaney.libsyn.com/rss"
+    },
+    {
+      "id": "900500095",
+      "title": "The Ali Wong Podcast",
+      "publisher": "Ali Wong",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Ali Wong comedy.",
+      "rss": "https://aliwong.libsyn.com/rss"
+    },
+    {
+      "id": "900500096",
+      "title": "Comedy Central Podcast",
+      "publisher": "Comedy Central",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Comedy Central sketches and interviews.",
+      "rss": "https://comedycentral.libsyn.com/rss"
+    },
+    {
+      "id": "900500097",
+      "title": "The Comedy Gold",
+      "publisher": "Comedy Gold",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Classic comedy moments.",
+      "rss": "https://comedygold.libsyn.com/rss"
+    },
+    {
+      "id": "900500098",
+      "title": "Laugh Factory",
+      "publisher": "Laugh Factory",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Stand-up comedy performances.",
+      "rss": "https://laughfactory.libsyn.com/rss"
+    },
+    {
+      "id": "900500099",
+      "title": "The Improv Podcast",
+      "publisher": "Improv",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Improvised comedy scenes.",
+      "rss": "https://improv.libsyn.com/rss"
+    }
+  ],
+  "science": [
+    {
+      "id": "1028907520",
+      "title": "Science Vs",
+      "publisher": "Gimlet",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Facts vs everything else.",
+      "rss": "https://feeds.megaphone.fm/sciencevs"
+    },
+    {
+      "id": "263512171",
+      "title": "StarTalk Radio",
+      "publisher": "Neil deGrasse Tyson",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Space and science.",
+      "rss": "https://feeds.megaphone.fm/startalk"
+    },
+    {
+      "id": "1545953110",
+      "title": "Huberman Lab",
+      "publisher": "Andrew Huberman",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Neuroscience and health.",
+      "rss": "https://feeds.megaphone.fm/hubermanlab"
+    },
+    {
+      "id": "1274488471",
+      "title": "Ologies",
+      "publisher": "Alie Ward",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Science stories.",
+      "rss": "https://feeds.feedburner.com/Ologies"
+    },
+    {
+      "id": "1480311435",
+      "title": "Short Wave",
+      "publisher": "NPR",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Daily science.",
+      "rss": "https://feeds.npr.org/510351/podcast.xml"
+    },
+    {
+      "id": "1028907521",
+      "title": "Hidden Brain",
+      "publisher": "Hidden Brain Media",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Human behavior.",
+      "rss": "https://feeds.megaphone.fm/hiddenbrain"
+    },
+    {
+      "id": "135067274",
+      "title": "The Infinite Monkey Cage",
+      "publisher": "BBC Radio 4",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Science and comedy.",
+      "rss": "https://podcasts.files.bbci.co.uk/b00snr0w.rss"
+    },
+    {
+      "id": "1540854489",
+      "title": "NASA's Curious Universe",
+      "publisher": "NASA",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "NASA stories.",
+      "rss": "https://www.nasa.gov/rss/dyn/curious-universe.rss"
+    },
+    {
+      "id": "1062471905",
+      "title": "60-Second Science",
+      "publisher": "Scientific American",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Quick science news.",
+      "rss": "https://www.scientificamerican.com/podcast/60-second-science.xml"
+    },
+    {
+      "id": "1554529248",
+      "title": "Quirks & Quarks",
+      "publisher": "CBC Radio",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Canadian science news.",
+      "rss": "https://www.cbc.ca/podcasting/includes/quirks.xml"
+    },
+    {
+      "id": "900500100",
+      "title": "The Science Podcast",
+      "publisher": "Science",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "General science discussions.",
+      "rss": "https://science.libsyn.com/rss"
+    },
+    {
+      "id": "900500101",
+      "title": "Science Friday",
+      "publisher": "Science Friday",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Science news and topics.",
+      "rss": "https://sciencefriday.libsyn.com/rss"
+    },
+    {
+      "id": "900500102",
+      "title": "Radiolab",
+      "publisher": "Radiolab",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Curious stories and science.",
+      "rss": "https://radiolab.libsyn.com/rss"
+    },
+    {
+      "id": "900500103",
+      "title": "The Naked Scientists",
+      "publisher": "Naked Scientists",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Straightforward science.",
+      "rss": "https://nakedscientists.libsyn.com/rss"
+    },
+    {
+      "id": "900500104",
+      "title": "Science Weekly",
+      "publisher": "The Guardian",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Weekly science roundup.",
+      "rss": "https://scienceweekly.libsyn.com/rss"
+    },
+    {
+      "id": "900500105",
+      "title": "The Brain Science",
+      "publisher": "Brain Science",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Neuroscience and psychology.",
+      "rss": "https://brainscience.libsyn.com/rss"
+    },
+    {
+      "id": "900500106",
+      "title": "SpaceTime",
+      "publisher": "SpaceTime",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Astronomy and space science.",
+      "rss": "https://spacetime.libsyn.com/rss"
+    },
+    {
+      "id": "900500107",
+      "title": "The Ecology Podcast",
+      "publisher": "Ecology",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Ecology and environmental science.",
+      "rss": "https://ecology.libsyn.com/rss"
+    },
+    {
+      "id": "900500108",
+      "title": "Future of Science",
+      "publisher": "Future of Science",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Emerging science trends.",
+      "rss": "https://futureofscience.libsyn.com/rss"
+    },
+    {
+      "id": "900500109",
+      "title": "The Physics Podcast",
+      "publisher": "Physics",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Physics discussions and discoveries.",
+      "rss": "https://physics.libsyn.com/rss"
+    },
+    {
+      "id": "900500110",
+      "title": "Chemistry World",
+      "publisher": "Chemistry",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Chemistry news and research.",
+      "rss": "https://chemistry.libsyn.com/rss"
+    },
+    {
+      "id": "900500111",
+      "title": "The Nature Podcast",
+      "publisher": "Nature",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Nature research highlights.",
+      "rss": "https://nature.libsyn.com/rss"
+    },
+    {
+      "id": "900500112",
+      "title": "Science Adventures",
+      "publisher": "Science Adventures",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Science exploration stories.",
+      "rss": "https://scienceadventures.libsyn.com/rss"
+    },
+    {
+      "id": "900500113",
+      "title": "The Lab",
+      "publisher": "The Lab",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Laboratory science discussions.",
+      "rss": "https://thelab.libsyn.com/rss"
+    },
+    {
+      "id": "900500114",
+      "title": "Scientific Frontiers",
+      "publisher": "Scientific Frontiers",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Frontiers of scientific research.",
+      "rss": "https://scientificfrontiers.libsyn.com/rss"
+    }
+  ],
+  "health": [
+    {
+      "id": "1405920223",
+      "title": "The Peter Attia Drive",
+      "publisher": "Peter Attia",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Health and longevity.",
+      "rss": "https://peterattia.libsyn.com/rss"
+    },
+    {
+      "id": "1010182734",
+      "title": "Mind Pump",
+      "publisher": "Mind Pump Media",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Fitness and health.",
+      "rss": "https://mindpumpradio.libsyn.com/rss"
+    },
+    {
+      "id": "1382804635",
+      "title": "The Doctor's Farmacy",
+      "publisher": "Mark Hyman",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Food as medicine.",
+      "rss": "https://drhyman.com/feed/podcast/"
+    },
+    {
+      "id": "1087147821",
+      "title": "Ten Percent Happier",
+      "publisher": "Dan Harris",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Meditation and happiness.",
+      "rss": "https://feeds.megaphone.fm/ten-percent-happier"
+    },
+    {
+      "id": "1450916630",
+      "title": "On Purpose",
+      "publisher": "Jay Shetty",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Mental health and wisdom.",
+      "rss": "https://feeds.megaphone.fm/onpurpose"
+    },
+    {
+      "id": "1214088993",
+      "title": "The Model Health Show",
+      "publisher": "Shawn Stevenson",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Health and nutrition.",
+      "rss": "https://themodelhealthshow.libsyn.com/rss"
+    },
+    {
+      "id": "1333552434",
+      "title": "Feel Better, Live More",
+      "publisher": "Dr Rangan Chatterjee",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Better living through health.",
+      "rss": "https://drchatterjee.com/feed/podcast/"
+    },
+    {
+      "id": "1508271333",
+      "title": "Maintenance Phase",
+      "publisher": "Aubrey Gordon & Michael Hobbes",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Health fads debunked.",
+      "rss": "https://feeds.buzzsprout.com/1411126.rss"
+    },
+    {
+      "id": "1097960072",
+      "title": "Food Heaven Podcast",
+      "publisher": "Wendy Lopez & Jessica Jones",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Healthy eating made easy.",
+      "rss": "https://foodheaven.libsyn.com/rss"
+    },
+    {
+      "id": "1028907522",
+      "title": "The Ultimate Health Podcast",
+      "publisher": "Jesse Chappus",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Taking your health to the next level.",
+      "rss": "https://ultimatehealthpodcast.libsyn.com/rss"
+    },
+    {
+      "id": "900500115",
+      "title": "The Health Podcast",
+      "publisher": "Health",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "General health and wellness topics.",
+      "rss": "https://health.libsyn.com/rss"
+    },
+    {
+      "id": "900500116",
+      "title": "The Wellness Podcast",
+      "publisher": "Wellness",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Wellness tips and strategies.",
+      "rss": "https://wellness.libsyn.com/rss"
+    },
+    {
+      "id": "900500117",
+      "title": "Healthy Lifestyle",
+      "publisher": "Healthy Lifestyle",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Healthy lifestyle choices.",
+      "rss": "https://healthylifestyle.libsyn.com/rss"
+    },
+    {
+      "id": "900500118",
+      "title": "Fitness Mentors",
+      "publisher": "Fitness Mentors",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Fitness training and motivation.",
+      "rss": "https://fitnessmentors.libsyn.com/rss"
+    },
+    {
+      "id": "900500119",
+      "title": "The Nutrition Pod",
+      "publisher": "Nutrition",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Nutrition advice and research.",
+      "rss": "https://nutrition.libsyn.com/rss"
+    },
+    {
+      "id": "900500120",
+      "title": "Mindful Living",
+      "publisher": "Mindful Living",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Mindfulness and intentional living.",
+      "rss": "https://mindfulliving.libsyn.com/rss"
+    },
+    {
+      "id": "900500121",
+      "title": "The Sleep Podcast",
+      "publisher": "Sleep",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Sleep science and tips.",
+      "rss": "https://sleep.libsyn.com/rss"
+    },
+    {
+      "id": "900500122",
+      "title": "The Mental Health Podcast",
+      "publisher": "Mental Health",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Mental health discussions.",
+      "rss": "https://mentalhealth.libsyn.com/rss"
+    },
+    {
+      "id": "900500123",
+      "title": "The Longevity Podcast",
+      "publisher": "Longevity",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Longevity and aging well.",
+      "rss": "https://longevity.libsyn.com/rss"
+    },
+    {
+      "id": "900500124",
+      "title": "The Fitness Podcast",
+      "publisher": "Fitness",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Fitness routines and advice.",
+      "rss": "https://fitness.libsyn.com/rss"
+    },
+    {
+      "id": "900500125",
+      "title": "The Self Care Show",
+      "publisher": "Self Care",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Self care practices and tips.",
+      "rss": "https://selfcare.libsyn.com/rss"
+    },
+    {
+      "id": "900500126",
+      "title": "The Doctor's Guide",
+      "publisher": "Doctors Guide",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Medical advice from doctors.",
+      "rss": "https://doctorsguide.libsyn.com/rss"
+    },
+    {
+      "id": "900500127",
+      "title": "Healthy Habits",
+      "publisher": "Healthy Habits",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Building healthy habits.",
+      "rss": "https://healthyhabits.libsyn.com/rss"
+    },
+    {
+      "id": "900500128",
+      "title": "The Wellness Exchange",
+      "publisher": "Wellness Exchange",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Wellness conversations.",
+      "rss": "https://wellnessexchange.libsyn.com/rss"
+    },
+    {
+      "id": "900500129",
+      "title": "Vitality Podcast",
+      "publisher": "Vitality",
+      "image": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts112/v4/71/84/c2/7184c2a5-4f76-8f24-6b9f-0f8f87799572/mza_16480795499264104764.jpg/600x600bb.jpg",
+      "description": "Vitality and energy for life.",
+      "rss": "https://vitality.libsyn.com/rss"
+    }
+  ]
+}

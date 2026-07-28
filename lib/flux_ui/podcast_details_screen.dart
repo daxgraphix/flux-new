@@ -4,7 +4,6 @@ import '../flux_engine/radio_engine.dart';
 import '../helpers/navigation_helper.dart';
 import 'models/podcast.dart';
 import 'widgets/flux_image.dart';
-import 'widgets/empty_state_widget.dart';
 import 'widgets/shimmer_list_widget.dart';
 import 'now_playing_screen.dart';
 import 'package:intl/intl.dart';
@@ -23,8 +22,14 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<RadioEngine>(context, listen: false).loadEpisodes(widget.podcast.rss);
+      Provider.of<RadioEngine>(context, listen: false).loadEpisodes(widget.podcast);
     });
+  }
+
+  Future<void> _refreshEpisodes() async {
+    final engine = Provider.of<RadioEngine>(context, listen: false);
+    await engine.loadEpisodes(widget.podcast);
+    setState(() {});
   }
 
   @override
@@ -32,8 +37,10 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: CustomScrollView(
-        slivers: [
+      body: RefreshIndicator(
+        onRefresh: _refreshEpisodes,
+        child: CustomScrollView(
+          slivers: [
           SliverAppBar(
             expandedHeight: 300,
             pinned: true,
@@ -90,6 +97,20 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  Consumer<RadioEngine>(
+                    builder: (context, engine, _) {
+                      if (engine.episodes.isEmpty) return const SizedBox.shrink();
+                      return Text(
+                        '${engine.episodes.length} Episodes',
+                        style: TextStyle(
+                          color: theme.textTheme.bodySmall?.color,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     widget.podcast.description,
@@ -123,12 +144,79 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> {
               if (engine.episodes.isEmpty) {
                 return SliverFillRemaining(
                   hasScrollBody: false,
-                  child: EmptyStateWidget(
-                    icon: Icons.mic_off,
-                    title: 'No episodes found',
-                    message: 'We couldn\'t find any episodes for this podcast.',
-                    buttonLabel: 'Go Back',
-                    onButtonPressed: () => Navigator.pop(context),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: theme.primaryColor.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.wifi_off_rounded,
+                              size: 64,
+                              color: theme.primaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Unable to load episodes',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Check your connection and try again.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 32),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  Provider.of<RadioEngine>(context, listen: false).loadEpisodes(widget.podcast);
+                                },
+                                icon: const Icon(Icons.refresh_rounded, size: 18),
+                                label: const Text('RETRY', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.primaryColor,
+                                  foregroundColor: theme.colorScheme.onPrimary,
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              OutlinedButton.icon(
+                                onPressed: () => Navigator.pop(context),
+                                icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                                label: const Text('BACK', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: theme.primaryColor,
+                                  side: BorderSide(color: theme.primaryColor),
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 );
               }
@@ -146,8 +234,9 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _EpisodeListItem extends StatelessWidget {
@@ -210,8 +299,30 @@ class _EpisodeListItem extends StatelessWidget {
                   const SizedBox(width: 8),
                   const Icon(Icons.download_done, color: Colors.green, size: 14),
                 ],
+                if (episode.lastPosition > 0) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '${(episode.lastPosition / 60).floor()}m left',
+                    style: TextStyle(
+                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
               ],
             ),
+            if (episode.lastPosition > 0 && episode.duration > 0) ...[
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: episode.lastPosition / episode.duration,
+                  backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
+                  color: Colors.red,
+                  minHeight: 2,
+                ),
+              ),
+            ],
           ],
         ),
         trailing: isDownloading
@@ -233,18 +344,25 @@ class _EpisodeListItem extends StatelessWidget {
                   ),
                 ),
               )
-            : IconButton(
-                icon: Icon(
-                  isDownloaded ? Icons.delete_outline : Icons.download_for_offline,
-                  color: isDownloaded ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5) : Colors.red,
-                ),
-                onPressed: () {
-                  if (isDownloaded) {
-                    engine.deleteDownloadedEpisode(episode);
-                  } else {
-                    engine.downloadEpisode(episode);
-                  }
-                },
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _BookmarkButton(episode: episode, engine: engine, theme: theme),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: Icon(
+                      isDownloaded ? Icons.delete_outline : Icons.download_for_offline,
+                      color: isDownloaded ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5) : Colors.red,
+                    ),
+                    onPressed: () {
+                      if (isDownloaded) {
+                        engine.deleteDownloadedEpisode(episode);
+                      } else {
+                        engine.downloadEpisode(episode);
+                      }
+                    },
+                  ),
+                ],
               ),
         onTap: () {
           engine.playEpisode(episode);
@@ -253,6 +371,35 @@ class _EpisodeListItem extends StatelessWidget {
           }
         },
       ),
+    );
+  }
+}
+
+class _BookmarkButton extends StatelessWidget {
+  final Episode episode;
+  final RadioEngine engine;
+  final ThemeData theme;
+
+  const _BookmarkButton({
+    required this.episode,
+    required this.engine,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: engine.isBookmarked(episode.id),
+      builder: (context, snap) {
+        final isBookmarked = snap.data == true;
+        return IconButton(
+          icon: Icon(
+            isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+            color: isBookmarked ? Colors.amber : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+          ),
+          onPressed: () => engine.toggleBookmark(episode),
+        );
+      },
     );
   }
 }

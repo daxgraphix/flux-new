@@ -76,13 +76,15 @@ class EpisodeAdapter extends TypeAdapter<Episode> {
       duration: fields[4] as int,
       pubDate: fields[5] as DateTime,
       image: fields[6] as String,
+      downloadPath: fields[7] as String?,
+      lastPosition: fields[8] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, Episode obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -96,7 +98,11 @@ class EpisodeAdapter extends TypeAdapter<Episode> {
       ..writeByte(5)
       ..write(obj.pubDate)
       ..writeByte(6)
-      ..write(obj.image);
+      ..write(obj.image)
+      ..writeByte(7)
+      ..write(obj.downloadPath)
+      ..writeByte(8)
+      ..write(obj.lastPosition);
   }
 
   @override

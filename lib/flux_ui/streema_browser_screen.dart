@@ -101,19 +101,27 @@ class _StreemaBrowserScreenState extends State<StreemaBrowserScreen> {
           body { 
             padding-top: 0 !important; 
             margin-top: 0 !important; 
-            background-color: transparent !important;
+            background-color: #121212 !important;
+            color: #ffffff !important;
           }
           .main-container, .container { 
             padding-top: 10px !important; 
             margin-top: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
+            background-color: #121212 !important;
           }
           /* Make station items stand out */
           .item, .station-item {
-            border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+            border-bottom: 1px solid rgba(255,255,255,0.1) !important;
             padding: 15px !important;
+            background-color: #1e1e1e !important;
+            margin-bottom: 8px !important;
+            border-radius: 8px !important;
           }
+          a { color: #ff5252 !important; }
+          .station-name, h1, h2, h3 { color: #ffffff !important; }
+          p, span, div { color: rgba(255,255,255,0.7) !important; }
         `;
         document.head.appendChild(style);
       })();
@@ -210,12 +218,12 @@ class _StreemaBrowserScreenState extends State<StreemaBrowserScreen> {
           ? TextField(
               controller: _searchController,
               autofocus: true,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Search Streema Global...',
                 border: InputBorder.none,
-                hintStyle: TextStyle(color: Colors.white70),
+                hintStyle: TextStyle(color: theme.colorScheme.onPrimary.withValues(alpha: 0.7)),
               ),
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: theme.colorScheme.onPrimary),
               onSubmitted: _performSearch,
             )
           : const Text('Streema Global'),

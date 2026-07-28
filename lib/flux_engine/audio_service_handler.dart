@@ -141,10 +141,10 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> skipToPrevious() async => onSkipPrevious?.call();
 
   @override
-  Future<void> fastForward() => _player.seek(_player.position + const Duration(seconds: 10));
+  Future<void> fastForward() => seek(_player.position + const Duration(seconds: 30));
 
   @override
-  Future<void> rewind() => _player.seek(_player.position - const Duration(seconds: 10));
+  Future<void> rewind() => seek(_player.position - const Duration(seconds: 10));
 
   @override
   Future<void> stop() async {
@@ -160,6 +160,9 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> seek(Duration position) => _player.seek(position);
+
+  @override
+  Future<void> setSpeed(double speed) => _player.setSpeed(speed);
 
   Future<void> setUrl(String url, MediaItem item) async {
     try {
