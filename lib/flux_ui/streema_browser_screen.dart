@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:provider/provider.dart';
-import '../flux_engine/radio_engine.dart';
+import '../flux_engine/playback_controller.dart';
 
 class StreemaBrowserScreen extends StatefulWidget {
   final String url;
@@ -31,7 +31,7 @@ class _StreemaBrowserScreenState extends State<StreemaBrowserScreen> {
           if (parts.length >= 2) {
             final url = parts[0];
             final name = parts[1];
-            context.read<RadioEngine>().playStream(url, name);
+            context.read<PlaybackController>().playStream(url, name);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Playing $name from Streema'),
@@ -168,25 +168,55 @@ class _StreemaBrowserScreenState extends State<StreemaBrowserScreen> {
     final theme = Theme.of(context);
     
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: _isSearching 
-          ? TextField(
-              controller: _searchController,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: 'Search Streema Global...',
-                hintStyle: TextStyle(color: theme.colorScheme.onPrimary.withValues(alpha: 0.8)),
-                border: InputBorder.none,
+          ? Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  width: 1,
+                ),
               ),
-              style: TextStyle(color: theme.colorScheme.onPrimary, fontSize: 16),
-              onSubmitted: _performSearch,
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search Streema...',
+                  hintStyle: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    fontSize: 14,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    size: 20,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+                style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 15),
+                onSubmitted: _performSearch,
+              ),
             )
           : const Text('Streema Global'),
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
         elevation: 0,
-        backgroundColor: theme.primaryColor,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
           IconButton(
-            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            icon: Icon(
+              _isSearching ? Icons.close_rounded : Icons.search_rounded,
+              color: _isSearching ? theme.colorScheme.error : theme.colorScheme.onSurface,
+            ),
             onPressed: () {
               setState(() {
                 _isSearching = !_isSearching;
@@ -196,11 +226,7 @@ class _StreemaBrowserScreenState extends State<StreemaBrowserScreen> {
           ),
           if (!_isSearching) ...[
             IconButton(
-              icon: const Icon(Icons.home_outlined),
-              onPressed: () => _controller.loadRequest(Uri.parse('https://streema.com/radios/')),
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh_rounded),
               onPressed: () => _controller.reload(),
             ),
           ],
@@ -208,21 +234,31 @@ class _StreemaBrowserScreenState extends State<StreemaBrowserScreen> {
       ),
       body: Stack(
         children: [
-          Positioned.fill(child: WebViewWidget(controller: _controller)),
+          Positioned.fill(
+            child: Container(
+              color: theme.scaffoldBackgroundColor,
+              child: WebViewWidget(controller: _controller),
+            ),
+          ),
           if (_isLoading)
             Container(
-              color: theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
+              color: theme.scaffoldBackgroundColor,
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(color: theme.primaryColor),
-                    const SizedBox(height: 16),
+                    CircularProgressIndicator(
+                      color: theme.primaryColor,
+                      strokeWidth: 3,
+                    ),
+                    const SizedBox(height: 20),
                     Text(
-                      'Loading Streema Directory...',
+                      'Loading Directory...',
                       style: TextStyle(
                         color: theme.colorScheme.onSurface,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ],
@@ -237,6 +273,7 @@ class _StreemaBrowserScreenState extends State<StreemaBrowserScreen> {
               child: LinearProgressIndicator(
                 backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
                 valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
+                minHeight: 2,
               ),
             ),
         ],

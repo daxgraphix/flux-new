@@ -74,6 +74,8 @@ class Episode {
   final String? downloadPath;
   @HiveField(8)
   final int lastPosition;
+  @HiveField(9)
+  final String? podcastTitle;
 
   Episode({
     required this.id,
@@ -85,6 +87,7 @@ class Episode {
     required this.image,
     this.downloadPath,
     this.lastPosition = 0,
+    this.podcastTitle,
   });
 
   bool get isDownloaded => downloadPath != null;
@@ -100,6 +103,7 @@ class Episode {
       image: json['image'] ?? '',
       downloadPath: json['download_path'],
       lastPosition: json['last_position'] ?? 0,
+      podcastTitle: json['podcast_title'],
     );
   }
 
@@ -114,10 +118,11 @@ class Episode {
       'image': image,
       'download_path': downloadPath,
       'last_position': lastPosition,
+      'podcast_title': podcastTitle,
     };
   }
 
-  Episode copyWith({String? downloadPath, int? lastPosition}) {
+  Episode copyWith({String? downloadPath, int? lastPosition, String? podcastTitle}) {
     return Episode(
       id: id,
       title: title,
@@ -128,6 +133,7 @@ class Episode {
       image: image,
       downloadPath: downloadPath ?? this.downloadPath,
       lastPosition: lastPosition ?? this.lastPosition,
+      podcastTitle: podcastTitle ?? this.podcastTitle,
     );
   }
 }

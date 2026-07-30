@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../flux_engine/radio_engine.dart';
+import '../flux_engine/playback_controller.dart';
 import '../helpers/navigation_helper.dart';
 import 'main_screen.dart';
 import 'library_screen.dart';
@@ -35,8 +35,8 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
   }
 
   Widget _buildBody(BuildContext context, bool isTablet) {
-    final engine = Provider.of<RadioEngine>(context);
-    final hasPlayer = engine.currentStation != null || engine.currentEpisode != null;
+    final playbackController = Provider.of<PlaybackController>(context);
+    final hasPlayer = playbackController.currentStation != null || playbackController.currentEpisode != null;
 
     return Row(
       children: [
@@ -99,9 +99,8 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
                   right: 0,
                   bottom: kBottomNavigationBarHeight,
                   child: EnhancedMiniPlayer(
-                    engine: engine,
                     onExpandTap: () => Navigator.of(context).push(
-                      NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)),
+                      NavigationHelper.slideUpRoute(const NowPlayingScreen()),
                     ),
                   ),
                 ),

@@ -1,6 +1,10 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../flux_engine/radio_engine.dart';
+import '../flux_engine/playback_controller.dart';
+import '../flux_engine/station_provider.dart';
+import '../flux_engine/library_manager.dart';
+import '../flux_engine/download_service.dart';
 import '../flux_storage/radio_storage.dart';
 import '../flux_hardware/radio_service.dart';
 import '../helpers/navigation_helper.dart';
@@ -12,15 +16,44 @@ import 'podcast_details_screen.dart';
 import 'now_playing_screen.dart';
 import 'models/podcast.dart';
 
+import '../flux_engine/app_exception.dart';
+
+String _formatBytes(int bytes, {int decimals = 2}) {
+  if (bytes <= 0) return "0 B";
+  const suffixes = ["B", "KB", "MB", "GB", "TB"];
+  var i = (math.log(bytes) / math.log(1024)).floor();
+  return "${(bytes / math.pow(1024, i)).toStringAsFixed(decimals)} ${suffixes[i]}";
+}
+
+void _showErrorSnackBar(BuildContext context, AppException error, VoidCallback onRetry) {
+  final theme = Theme.of(context);
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(error.localizedMessage),
+      backgroundColor: theme.colorScheme.error,
+      behavior: SnackBarBehavior.floating,
+      action: error.canRetry 
+        ? SnackBarAction(
+            label: 'RETRY',
+            textColor: Colors.white,
+            onPressed: onRetry,
+          )
+        : null,
+    ),
+  );
+}
+
 class CategoryScreen extends StatefulWidget {
   final String title;
   final String? tag;
+  final String? url;
   final VoidCallback? loadFunction;
 
   const CategoryScreen({
     super.key,
     required this.title,
     this.tag,
+    this.url,
     this.loadFunction,
   });
 
@@ -33,11 +66,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final engine = Provider.of<RadioEngine>(context, listen: false);
+      final stationProvider = Provider.of<StationProvider>(context, listen: false);
       if (widget.loadFunction != null) {
         widget.loadFunction!();
       } else if (widget.tag != null) {
-        engine.searchStations(null, tag: widget.tag, limit: 500);
+        stationProvider.loadStationsByTag(widget.tag!, limit: 500);
       }
     });
   }
@@ -54,16 +87,16 @@ class _CategoryScreenState extends State<CategoryScreen> {
       ),
       body: Container(
         color: theme.colorScheme.surface,
-        child: Consumer<RadioEngine>(
-          builder: (context, engine, child) {
-            if (engine.isLoading) {
+        child: Consumer<StationProvider>(
+          builder: (context, stationProvider, child) {
+            if (stationProvider.isLoading) {
               return LayoutBuilder(
                 builder: (context, constraints) {
                   return ShimmerListWidget(isGrid: constraints.maxWidth >= 600);
                 },
               );
             }
-            if (engine.stations.isEmpty) {
+            if (stationProvider.stations.isEmpty) {
               return EmptyStateWidget(
                 icon: Icons.radio,
                 title: 'No stations found',
@@ -85,9 +118,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 8,
                     ),
-                    itemCount: engine.stations.take(100).length,
+                    itemCount: stationProvider.stations.take(100).length,
                     itemBuilder: (context, index) {
-                      final station = engine.stations[index];
+                      final station = stationProvider.stations[index];
                       return _buildStationItem(context, station);
                     },
                   );
@@ -95,9 +128,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 return ListView.builder(
                   key: const ValueKey('category_stations_list'),
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: engine.stations.take(100).length,
+                  itemCount: stationProvider.stations.take(100).length,
                   itemBuilder: (context, index) {
-                    final station = engine.stations[index];
+                    final station = stationProvider.stations[index];
                     return _buildStationItem(context, station);
                   },
                 );
@@ -111,90 +144,94 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
   Widget _buildStationItem(BuildContext context, RadioStation station) {
     final theme = Theme.of(context);
-    final engine = context.read<RadioEngine>();
-    return Card(
-      key: ValueKey('category_station_${station.id}_${station.name}'),
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      elevation: 0,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+    final playbackController = context.read<PlaybackController>();
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: FluxImage(
-          imageUrl: station.favicon,
-          width: 40,
-          height: 40,
-          placeholder: CircleAvatar(
-            radius: 20,
-            backgroundColor: theme.colorScheme.surfaceContainerHighest,
-            child: Icon(Icons.radio, color: theme.primaryColor, size: 16),
-          ),
-          errorWidget: CircleAvatar(
-            radius: 20,
-            backgroundColor: theme.colorScheme.surfaceContainerHighest,
-            child: Icon(Icons.radio, color: theme.primaryColor, size: 16),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: FluxImage(
+            imageUrl: station.favicon,
+            width: 52,
+            height: 52,
+            placeholder: Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Icon(Icons.radio, color: theme.primaryColor, size: 24),
+            ),
+            errorWidget: Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Icon(Icons.radio, color: theme.primaryColor, size: 24),
+            ),
           ),
         ),
         title: Text(
           station.name,
           style: TextStyle(
             color: theme.colorScheme.onSurface,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
-          '${station.country} • ${station.genre}',
-          style: TextStyle(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontSize: 12,
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Text(
+            '${station.country} • ${station.genre}',
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 12,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
-        trailing: IconButton(
-          icon: Icon(Icons.play_arrow, color: theme.primaryColor, size: 20),
-          onPressed: () async {
-            try {
-              await engine.playStation(station);
-              if (context.mounted) {
-                Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
-              }
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to play: ${station.name}'),
-                    backgroundColor: theme.colorScheme.error,
-                    action: SnackBarAction(
-                      label: 'Retry',
-                      textColor: Colors.white,
-                      onPressed: () => engine.playStation(station),
-                    ),
-                  ),
-                );
-              }
-            }
-          },
+        trailing: Container(
+          decoration: BoxDecoration(
+            color: theme.primaryColor.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 24),
+            onPressed: () => _playStation(context, station, playbackController),
+          ),
         ),
-        onTap: () {
-          final messenger = ScaffoldMessenger.of(context);
-          engine.playStation(station).then((_) {
-            if (context.mounted) {
-              Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
-            }
-          }).catchError((e) {
-            messenger.showSnackBar(
-              SnackBar(
-                content: Text('Failed to play: ${station.name}'),
-                backgroundColor: theme.colorScheme.error,
-              ),
-            );
-          });
-        },
+        onTap: () => _playStation(context, station, playbackController),
       ),
-     );
+    );
+  }
+
+  void _playStation(BuildContext context, RadioStation station, PlaybackController playbackController) {
+    final messenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
+    
+    playbackController.playStation(station).then((_) {
+      if (context.mounted) {
+        if (playbackController.error != null) {
+          _showErrorSnackBar(context, playbackController.error!, () => _playStation(context, station, playbackController));
+        } else {
+          Navigator.of(context).push(NavigationHelper.slideUpRoute(const NowPlayingScreen()));
+        }
+      }
+    }).catchError((e) {
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Failed to play: ${station.name}'),
+            backgroundColor: theme.colorScheme.error,
+          ),
+        );
+      }
+    });
   }
 }
 
@@ -301,11 +338,11 @@ _tabController.addListener(() {
                           final trimmed = value.trim();
                           setState(() => _searchQuery = trimmed.toLowerCase());
                           if (_tabController.index == 1 && _searchScope == 'podcasts') {
-                            final engine = Provider.of<RadioEngine>(context, listen: false);
+                            final stationProvider = Provider.of<StationProvider>(context, listen: false);
                             if (trimmed.isNotEmpty) {
-                              engine.searchPodcasts(trimmed);
+                              stationProvider.searchPodcasts(trimmed);
                             } else {
-                              engine.loadTrendingPodcasts();
+                              stationProvider.loadTrendingPodcasts();
                             }
                           }
                         },
@@ -313,11 +350,18 @@ _tabController.addListener(() {
                           hintText: _searchScope == 'episodes' && _tabController.index == 1
                             ? 'Search episodes...'
                             : 'Search ${_getTabName(_tabController.index)}...',
-                          hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
-                          prefixIcon: Icon(Icons.search, size: 20, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
+                          hintStyle: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                            fontSize: 14,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            size: 20,
+                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                          ),
                           suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
-                                icon: Icon(Icons.clear, size: 20, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
+                                icon: Icon(Icons.clear_rounded, size: 20, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
                                 onPressed: () {
                                   _searchController.clear();
                                   setState(() => _searchQuery = "");
@@ -325,15 +369,32 @@ _tabController.addListener(() {
                               )
                             : null,
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide(
+                              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide(
+                              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide(
+                              color: theme.primaryColor.withValues(alpha: 0.5),
+                              width: 1.5,
+                            ),
                           ),
                           filled: true,
                           fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                         ),
-                        style: TextStyle(color: theme.colorScheme.onSurface),
+                        style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 15),
                       ),
                     ],
                   ),
@@ -359,9 +420,9 @@ _tabController.addListener(() {
   }
 
   Widget _buildDownloadsTab() {
-    return Consumer<RadioEngine>(
-      builder: (context, engine, child) {
-        final downloadedEpisodes = engine.downloadedEpisodes.where((e) => 
+    return Consumer2<DownloadService, PlaybackController>(
+      builder: (context, downloadService, playbackController, child) {
+        final downloadedEpisodes = downloadService.downloadedEpisodes.where((e) => 
           e.title.toLowerCase().contains(_searchQuery) || 
           e.description.toLowerCase().contains(_searchQuery)
         ).toList();
@@ -390,13 +451,12 @@ _tabController.addListener(() {
             final isTablet = constraints.maxWidth >= 600;
             return RefreshIndicator(
               onRefresh: () async {
-                await engine.loadDownloadedEpisodes();
-                setState(() {});
+                await downloadService.loadDownloadedEpisodes();
               },
               child: Column(
                 children: [
                   FutureBuilder<int>(
-                    future: engine.getTotalDownloadSize(),
+                    future: downloadService.getTotalDownloadSize(),
                     builder: (context, snapshot) {
                       final size = snapshot.data ?? 0;
                       final sizeStr = _formatBytes(size);
@@ -408,7 +468,7 @@ _tabController.addListener(() {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                '$sizeStr * ${downloadedEpisodes.length} episodes',
+                                '$sizeStr • ${downloadedEpisodes.length} episodes',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -435,8 +495,7 @@ _tabController.addListener(() {
                                   ),
                                 );
                                 if (confirm == true && context.mounted) {
-                                  await engine.deletePlayedEpisodes();
-                                  setState(() {});
+                                  await downloadService.deletePlayedEpisodes();
                                 }
                               },
                               tooltip: 'Delete played episodes',
@@ -458,14 +517,14 @@ _tabController.addListener(() {
                             ),
                             itemCount: downloadedEpisodes.length,
                             itemBuilder: (context, index) {
-                              return _buildDownloadItem(context, downloadedEpisodes[index], engine);
+                              return _buildDownloadItem(context, downloadedEpisodes[index], downloadService, playbackController);
                             },
                           )
                         : ListView.builder(
                             padding: const EdgeInsets.symmetric(vertical: 0),
                             itemCount: downloadedEpisodes.length,
                             itemBuilder: (context, index) {
-                              return _buildDownloadItem(context, downloadedEpisodes[index], engine);
+                              return _buildDownloadItem(context, downloadedEpisodes[index], downloadService, playbackController);
                             },
                           ),
                   ),
@@ -478,27 +537,30 @@ _tabController.addListener(() {
     );
   }
 
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 MB';
-    const mb = 1024 * 1024;
-    final mbVal = bytes / mb;
-    return '${mbVal.toStringAsFixed(1)} MB';
-  }
-
-  Widget _buildDownloadItem(BuildContext context, Episode episode, RadioEngine engine) {
+  Widget _buildDownloadItem(BuildContext context, Episode episode, DownloadService downloadService, PlaybackController playbackController) {
     final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(12),
           child: FluxImage(
             imageUrl: episode.image,
-            width: 50,
-            height: 50,
-            errorWidget: Icon(Icons.mic, color: theme.primaryColor),
+            width: 52,
+            height: 52,
+            errorWidget: Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Icon(Icons.mic, color: theme.primaryColor, size: 28),
+            ),
           ),
         ),
         title: Text(
@@ -506,32 +568,49 @@ _tabController.addListener(() {
           style: TextStyle(
             color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
+            fontSize: 15,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
-          'Downloaded • ${(episode.duration / 60).floor()} min',
-          style: TextStyle(color: theme.primaryColor, fontSize: 12),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Text(
+            'Downloaded • ${(episode.duration / 60).floor()} min',
+            style: TextStyle(
+              color: theme.primaryColor, 
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
-        trailing: IconButton(
-          icon: Icon(Icons.delete_outline, color: theme.colorScheme.onSurfaceVariant),
-          onPressed: () => engine.deleteDownloadedEpisode(episode),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.offline_pin_rounded, color: Colors.green, size: 20),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              icon: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.onSurfaceVariant),
+              onPressed: () => downloadService.deleteDownloadedEpisode(episode),
+            ),
+          ],
         ),
-        onTap: () {
-          engine.playEpisode(episode);
-          if (context.mounted) {
-            Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
-          }
-        },
+        onTap: () => _playEpisode(context, episode, playbackController),
       ),
     );
   }
 
   Widget _buildStationsTab() {
     final theme = Theme.of(context);
-    return Consumer<RadioEngine>(
-      builder: (context, engine, child) {
+    return Consumer<StationProvider>(
+      builder: (context, stationProvider, child) {
         return LayoutBuilder(
           builder: (context, constraints) {
             final isTablet = constraints.maxWidth >= 600;
@@ -563,7 +642,7 @@ _tabController.addListener(() {
                             NavigationHelper.slideRightRoute(
                               CategoryScreen(
                                 title: 'Trending Stations',
-                                loadFunction: () => engine.loadTrendingStations(),
+                                loadFunction: () => stationProvider.loadTrendingStations(),
                               ),
                             ),
                           ),
@@ -577,7 +656,7 @@ _tabController.addListener(() {
                             NavigationHelper.slideRightRoute(
                               CategoryScreen(
                                 title: 'Music Stations',
-                                loadFunction: () => engine.loadMusicStations(),
+                                loadFunction: () => stationProvider.loadMusicStations(),
                               ),
                             ),
                           ),
@@ -591,7 +670,7 @@ _tabController.addListener(() {
                             NavigationHelper.slideRightRoute(
                               CategoryScreen(
                                 title: 'News Stations',
-                                loadFunction: () => engine.loadNewsStations(),
+                                loadFunction: () => stationProvider.loadNewsStations(),
                               ),
                             ),
                           ),
@@ -605,7 +684,7 @@ _tabController.addListener(() {
                             NavigationHelper.slideRightRoute(
                               CategoryScreen(
                                 title: 'Sports Stations',
-                                loadFunction: () => engine.loadSportsStations(),
+                                loadFunction: () => stationProvider.loadSportsStations(),
                               ),
                             ),
                           ),
@@ -619,7 +698,7 @@ _tabController.addListener(() {
                             NavigationHelper.slideRightRoute(
                               CategoryScreen(
                                 title: 'Talk Stations',
-                                loadFunction: () => engine.loadTalkStations(),
+                                loadFunction: () => stationProvider.loadTalkStations(),
                               ),
                             ),
                           ),
@@ -633,7 +712,7 @@ _tabController.addListener(() {
                             NavigationHelper.slideRightRoute(
                               CategoryScreen(
                                 title: 'Live Stations',
-                                loadFunction: () => engine.loadLiveStations(),
+                                loadFunction: () => stationProvider.loadLiveStations(),
                               ),
                             ),
                           ),
@@ -647,7 +726,7 @@ _tabController.addListener(() {
                             NavigationHelper.slideRightRoute(
                               CategoryScreen(
                                 title: 'Global AM/FM Stations',
-                                loadFunction: () => engine.loadGlobalAmFmStations(),
+                                loadFunction: () => stationProvider.loadGlobalAmFmStations(),
                               ),
                             ),
                           ),
@@ -661,7 +740,7 @@ _tabController.addListener(() {
                             NavigationHelper.slideRightRoute(
                               CategoryScreen(
                                 title: 'Tanzania Stations',
-                                loadFunction: () => engine.loadTanzaniaStations(),
+                                loadFunction: () => stationProvider.loadTanzaniaStations(),
                               ),
                             ),
                           ),
@@ -675,7 +754,7 @@ _tabController.addListener(() {
                             NavigationHelper.slideRightRoute(
                               CategoryScreen(
                                 title: 'Kenya Stations',
-                                loadFunction: () => engine.loadKenyaStations(),
+                                loadFunction: () => stationProvider.loadKenyaStations(),
                               ),
                             ),
                           ),
@@ -689,7 +768,7 @@ _tabController.addListener(() {
                             NavigationHelper.slideRightRoute(
                               CategoryScreen(
                                 title: 'Uganda Stations',
-                                loadFunction: () => engine.loadUgandaStations(),
+                                loadFunction: () => stationProvider.loadUgandaStations(),
                               ),
                             ),
                           ),
@@ -703,7 +782,7 @@ _tabController.addListener(() {
                             NavigationHelper.slideRightRoute(
                               CategoryScreen(
                                 title: 'Rwanda Stations',
-                                loadFunction: () => engine.loadRwandaStations(),
+                                loadFunction: () => stationProvider.loadRwandaStations(),
                               ),
                             ),
                           ),
@@ -717,7 +796,7 @@ _tabController.addListener(() {
                             NavigationHelper.slideRightRoute(
                               CategoryScreen(
                                 title: 'Nearby Stations',
-                                loadFunction: () => engine.loadNearbyStations(),
+                                loadFunction: () => stationProvider.loadTanzaniaStations(), // Nearby usually Tanzania for now
                               ),
                             ),
                           ),
@@ -731,7 +810,7 @@ _tabController.addListener(() {
                             NavigationHelper.slideRightRoute(
                               CategoryScreen(
                                 title: 'All Stations',
-                                loadFunction: () => engine.loadTopStations(),
+                                loadFunction: () => stationProvider.loadTopStations(),
                               ),
                             ),
                           ),
@@ -861,9 +940,9 @@ _tabController.addListener(() {
 
   Widget _buildPodcastsTab() {
     final theme = Theme.of(context);
-    return Consumer<RadioEngine>(
-      builder: (context, engine, child) {
-        if (engine.isLoading && engine.podcasts.isEmpty) {
+    return Consumer2<StationProvider, PlaybackController>(
+      builder: (context, stationProvider, playbackController, child) {
+        if (stationProvider.isLoading && stationProvider.podcasts.isEmpty) {
           return Center(child: CircularProgressIndicator(color: theme.primaryColor));
         }
 
@@ -872,20 +951,20 @@ _tabController.addListener(() {
         late final bool isEmpty;
 
         if (q.isEmpty) {
-          if (engine.podcasts.isEmpty && !engine.isLoading) {
+          if (stationProvider.podcasts.isEmpty && !stationProvider.isLoading) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted && _searchQuery.isEmpty) {
-                engine.loadTrendingPodcasts();
+                stationProvider.loadTrendingPodcasts();
               }
             });
           }
           results = [];
           isEmpty = false;
         } else if (_searchScope == 'episodes') {
+          // Note: episodes are usually loaded per podcast, so global search for episodes might need a separate service logic
+          // For now, filtering what's already loaded in stationProvider and downloaded/inProgress
           final allEpisodes = [
-            ...engine.downloadedEpisodes,
-            ...engine.inProgressEpisodes,
-            ...engine.episodes,
+            ...stationProvider.episodes,
           ];
           final unique = <String, Episode>{};
           for (final e in allEpisodes) {
@@ -897,7 +976,7 @@ _tabController.addListener(() {
           }).toList();
           isEmpty = results.isEmpty;
         } else {
-          final filtered = engine.podcasts.where((p) {
+          final filtered = stationProvider.podcasts.where((p) {
             return p.title.toLowerCase().contains(q) ||
                 p.publisher.toLowerCase().contains(q) ||
                 p.description.toLowerCase().contains(q);
@@ -928,7 +1007,7 @@ _tabController.addListener(() {
                         icon: Icon(Icons.refresh, color: theme.iconTheme.color?.withValues(alpha: 0.7)),
                         onPressed: () {
                           if (_searchQuery.isEmpty) {
-                            engine.loadTrendingPodcasts();
+                            stationProvider.loadTrendingPodcasts();
                           } else {
                             _searchController.clear();
                             setState(() => _searchQuery = "");
@@ -941,9 +1020,9 @@ _tabController.addListener(() {
                   
                   Expanded(
                     child: q.isEmpty
-                      ? engine.podcasts.isEmpty 
-                          ? _buildPodcastCategories(engine, isTablet, constraints.maxWidth)
-                          : _buildPodcastList(engine, isTablet, constraints.maxWidth)
+                      ? stationProvider.podcasts.isEmpty 
+                          ? _buildPodcastCategories(stationProvider, isTablet, constraints.maxWidth)
+                          : _buildPodcastList(stationProvider, isTablet, constraints.maxWidth)
                       : isEmpty
                         ? EmptyStateWidget(
                             icon: _searchScope == 'episodes' ? Icons.mic_off : Icons.podcasts,
@@ -955,7 +1034,7 @@ _tabController.addListener(() {
                               setState(() => _searchQuery = "");
                             },
                           )
-                        : _buildSearchResults(results, isTablet, constraints.maxWidth, theme, engine),
+                        : _buildSearchResults(results, isTablet, constraints.maxWidth, theme, playbackController),
                   ),
                 ],
               ),
@@ -966,7 +1045,7 @@ _tabController.addListener(() {
     );
   }
 
-  Widget _buildSearchResults(List<dynamic> results, bool isTablet, double maxWidth, ThemeData theme, RadioEngine engine) {
+  Widget _buildSearchResults(List<dynamic> results, bool isTablet, double maxWidth, ThemeData theme, PlaybackController playbackController) {
     if (_searchScope == 'episodes') {
       final episodes = results.cast<Episode>();
       return ListView(
@@ -980,7 +1059,7 @@ _tabController.addListener(() {
             ),
           ),
           const SizedBox(height: 12),
-          ...episodes.map((e) => _buildEpisodeResultItem(e, theme, engine)),
+          ...episodes.map((e) => _buildEpisodeResultItem(e, theme, playbackController)),
         ],
       );
     } else {
@@ -989,41 +1068,71 @@ _tabController.addListener(() {
     }
   }
 
-  Widget _buildEpisodeResultItem(Episode episode, ThemeData theme, RadioEngine engine) {
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      margin: const EdgeInsets.symmetric(vertical: 4),
+  Widget _buildEpisodeResultItem(Episode episode, ThemeData theme, PlaybackController playbackController) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
       child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(12),
           child: FluxImage(
             imageUrl: episode.image,
-            width: 50,
-            height: 50,
-            errorWidget: Icon(Icons.mic, color: theme.primaryColor),
+            width: 52,
+            height: 52,
+            errorWidget: Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Icon(Icons.mic_rounded, color: theme.primaryColor, size: 28),
+            ),
           ),
         ),
         title: Text(
           episode.title,
-          style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
-          episode.description,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Text(
+            episode.description,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 12,
+            ),
+          ),
         ),
-        trailing: Icon(Icons.play_arrow_rounded, color: theme.primaryColor),
-        onTap: () {
-          engine.playEpisode(episode);
-          if (context.mounted) {
-            Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
-          }
-        },
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (episode.isDownloaded)
+              const Padding(
+                padding: EdgeInsets.only(right: 8.0),
+                child: Icon(Icons.offline_pin_rounded, color: Colors.green, size: 20),
+              ),
+            Container(
+              decoration: BoxDecoration(
+                color: theme.primaryColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 28),
+            ),
+          ],
+        ),
+        onTap: () => _playEpisode(context, episode, playbackController),
       ),
     );
   }
@@ -1051,7 +1160,7 @@ _tabController.addListener(() {
     );
   }
 
-  Widget _buildPodcastCategories(RadioEngine engine, bool isTablet, double maxWidth) {
+  Widget _buildPodcastCategories(StationProvider stationProvider, bool isTablet, double maxWidth) {
     return GridView.count(
       crossAxisCount: isTablet ? (maxWidth > 900 ? 4 : 3) : 2,
       crossAxisSpacing: 16,
@@ -1061,55 +1170,55 @@ _tabController.addListener(() {
           title: 'News',
           icon: Icons.article,
           color: Colors.blue,
-          onTap: () => engine.searchPodcasts('news'),
+          onTap: () => stationProvider.searchPodcasts('news'),
         ),
         _CategoryCard(
           title: 'Tech',
           icon: Icons.computer,
           color: Colors.purple,
-          onTap: () => engine.searchPodcasts('tech'),
+          onTap: () => stationProvider.searchPodcasts('tech'),
         ),
         _CategoryCard(
           title: 'AI',
           icon: Icons.psychology,
           color: Colors.teal,
-          onTap: () => engine.searchPodcasts('ai'),
+          onTap: () => stationProvider.searchPodcasts('ai'),
         ),
         _CategoryCard(
           title: 'Security',
           icon: Icons.security,
           color: Colors.red,
-          onTap: () => engine.searchPodcasts('cyber security'),
+          onTap: () => stationProvider.searchPodcasts('cyber security'),
         ),
         _CategoryCard(
           title: 'Business',
           icon: Icons.business,
           color: Colors.indigo,
-          onTap: () => engine.searchPodcasts('business'),
+          onTap: () => stationProvider.searchPodcasts('business'),
         ),
         _CategoryCard(
           title: 'Comedy',
           icon: Icons.theater_comedy,
           color: Colors.orange,
-          onTap: () => engine.searchPodcasts('comedy'),
+          onTap: () => stationProvider.searchPodcasts('comedy'),
         ),
         _CategoryCard(
           title: 'Science',
           icon: Icons.science,
           color: Colors.green,
-          onTap: () => engine.searchPodcasts('science'),
+          onTap: () => stationProvider.searchPodcasts('science'),
         ),
         _CategoryCard(
           title: 'Health',
           icon: Icons.favorite,
           color: Colors.pink,
-          onTap: () => engine.searchPodcasts('health'),
+          onTap: () => stationProvider.searchPodcasts('health'),
         ),
       ],
     );
   }
 
-  Widget _buildPodcastList(RadioEngine engine, bool isTablet, double maxWidth) {
+  Widget _buildPodcastList(StationProvider stationProvider, bool isTablet, double maxWidth) {
     if (isTablet) {
       return GridView.builder(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -1118,48 +1227,66 @@ _tabController.addListener(() {
           crossAxisSpacing: 12,
           mainAxisSpacing: 8,
         ),
-        itemCount: engine.podcasts.length,
+        itemCount: stationProvider.podcasts.length,
         itemBuilder: (context, index) {
-          return _buildPodcastItem(engine.podcasts[index]);
+          return _buildPodcastItem(stationProvider.podcasts[index]);
         },
       );
     }
     return ListView.builder(
-      itemCount: engine.podcasts.length,
+      itemCount: stationProvider.podcasts.length,
       itemBuilder: (context, index) {
-        return _buildPodcastItem(engine.podcasts[index]);
+        return _buildPodcastItem(stationProvider.podcasts[index]);
       },
     );
   }
 
   Widget _buildPodcastItem(Podcast podcast) {
     final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      margin: const EdgeInsets.only(bottom: 8),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(12),
           child: FluxImage(
             imageUrl: podcast.image,
-            width: 50,
-            height: 50,
-            errorWidget: Icon(Icons.podcasts, color: theme.primaryColor),
+            width: 52,
+            height: 52,
+            errorWidget: Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Icon(Icons.podcasts_rounded, color: theme.primaryColor, size: 24),
+            ),
           ),
         ),
         title: Text(
           podcast.title,
-          style: TextStyle(color: theme.colorScheme.onSurface),
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
-          podcast.publisher,
-          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Text(
+            podcast.publisher,
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
+        trailing: Icon(Icons.chevron_right_rounded, color: theme.colorScheme.onSurfaceVariant),
         onTap: () {
           Navigator.push(
             context,
@@ -1171,15 +1298,15 @@ _tabController.addListener(() {
   }
 
   Widget _buildFavoritesTab() {
-    return Consumer<RadioEngine>(
-      builder: (context, engine, child) {
-        final favoriteStations = engine.favorites.where((f) => 
+    return Consumer2<LibraryManager, PlaybackController>(
+      builder: (context, libraryManager, playbackController, child) {
+        final favoriteStations = libraryManager.favorites.where((f) => 
           f.name.toLowerCase().contains(_searchQuery) || 
           f.genre.toLowerCase().contains(_searchQuery) ||
           f.country.toLowerCase().contains(_searchQuery)
         ).toList();
         
-        final bookmarkedEpisodes = engine.bookmarkedEpisodes.where((e) => 
+        final bookmarkedEpisodes = libraryManager.bookmarkedEpisodes.where((e) => 
           e.title.toLowerCase().contains(_searchQuery) || 
           e.description.toLowerCase().contains(_searchQuery)
         ).toList();
@@ -1248,7 +1375,7 @@ _tabController.addListener(() {
                       ],
                     ),
                   ),
-                  ...favoriteStations.map((f) => _buildFavoriteItem(context, f, engine)),
+                  ...favoriteStations.map((f) => _buildFavoriteItem(context, f, libraryManager, playbackController)),
                   if (hasEpisodes) const SizedBox(height: 16),
                 ],
                 if (hasEpisodes) ...[
@@ -1286,7 +1413,7 @@ _tabController.addListener(() {
                       ],
                     ),
                   ),
-                  ...bookmarkedEpisodes.map((e) => _buildBookmarkedEpisodeItem(context, e, engine)),
+                  ...bookmarkedEpisodes.map((e) => _buildBookmarkedEpisodeItem(context, e, libraryManager, playbackController)),
                 ],
               ],
             );
@@ -1296,115 +1423,184 @@ _tabController.addListener(() {
     );
   }
 
-  Widget _buildBookmarkedEpisodeItem(BuildContext context, Episode episode, RadioEngine engine) {
+  Widget _buildBookmarkedEpisodeItem(BuildContext context, Episode episode, LibraryManager libraryManager, PlaybackController playbackController) {
     final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
           child: FluxImage(
             imageUrl: episode.image,
-            width: 48,
-            height: 48,
-            errorWidget: Icon(Icons.podcasts_rounded, color: theme.primaryColor),
+            width: 52,
+            height: 52,
+            errorWidget: Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Icon(Icons.mic_rounded, color: theme.primaryColor, size: 28),
+            ),
           ),
         ),
         title: Text(
           episode.title,
           style: TextStyle(
             color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
-          episode.description,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontSize: 12,
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Text(
+            episode.description,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 12,
+            ),
           ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              icon: Icon(Icons.play_arrow_rounded, color: theme.primaryColor),
-              onPressed: () {
-                engine.playEpisode(episode);
-                if (context.mounted) {
-                  Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
-                }
-              },
+            if (episode.isDownloaded)
+              const Padding(
+                padding: EdgeInsets.only(right: 8.0),
+                child: Icon(Icons.offline_pin_rounded, color: Colors.green, size: 20),
+              ),
+            Container(
+              decoration: BoxDecoration(
+                color: theme.primaryColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 28),
+                onPressed: () => _playEpisode(context, episode, playbackController),
+              ),
             ),
             IconButton(
-              icon: Icon(Icons.bookmark_remove_rounded, color: theme.primaryColor),
-              onPressed: () => engine.toggleBookmark(episode),
+              icon: Icon(Icons.bookmark_remove_rounded, color: theme.primaryColor, size: 24),
+              onPressed: () => libraryManager.toggleBookmark(episode),
             ),
           ],
         ),
-        onTap: () {
-          engine.playEpisode(episode);
-          if (context.mounted) {
-            Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
-          }
-        },
+        onTap: () => _playEpisode(context, episode, playbackController),
       ),
     );
   }
 
-  Widget _buildFavoriteItem(BuildContext context, FavoriteStation favorite, RadioEngine engine) {
+  void _playEpisode(BuildContext context, Episode episode, PlaybackController playbackController) {
+    playbackController.playEpisode(episode).then((_) {
+      if (context.mounted) {
+        if (playbackController.error != null) {
+          _showErrorSnackBar(context, playbackController.error!, () => _playEpisode(context, episode, playbackController));
+        } else {
+          Navigator.of(context).push(NavigationHelper.slideUpRoute(const NowPlayingScreen()));
+        }
+      }
+    });
+  }
+
+  Widget _buildFavoriteItem(BuildContext context, FavoriteStation favorite, LibraryManager libraryManager, PlaybackController playbackController) {
     final theme = Theme.of(context);
     final station = favorite.toRadioStation();
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
       child: ListTile(
-        leading: FluxImage(
-          imageUrl: station.favicon,
-          width: 40,
-          height: 40,
-          errorWidget: CircleAvatar(
-            backgroundColor: theme.primaryColor,
-            child: const Icon(Icons.radio, color: Colors.white),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: FluxImage(
+            imageUrl: station.favicon,
+            width: 52,
+            height: 52,
+            errorWidget: Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Icon(Icons.radio_rounded, color: theme.primaryColor, size: 28),
+            ),
           ),
         ),
         title: Text(
           station.name,
           style: TextStyle(
             color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
-          '${station.country} • ${station.genre}',
-          style: TextStyle(
-            color: theme.colorScheme.onSurfaceVariant,
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Text(
+            '${station.country} • ${station.genre}',
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 12,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
-        trailing: IconButton(
-          icon: Icon(Icons.delete, color: theme.primaryColor),
-          onPressed: () {
-            engine.removeFromFavorites(station);
-          },
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: theme.primaryColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 28),
+                onPressed: () {
+                  final messenger = ScaffoldMessenger.of(context);
+                  playbackController.playStation(station).then((_) {
+                    if (context.mounted) {
+                      Navigator.of(context).push(NavigationHelper.slideUpRoute(const NowPlayingScreen()));
+                    }
+                  }).catchError((e) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to play: ${station.name}'),
+                        backgroundColor: theme.colorScheme.error,
+                      ),
+                    );
+                  });
+                },
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.favorite_rounded, color: theme.primaryColor, size: 24),
+              onPressed: () {
+                libraryManager.toggleFavorite(station);
+              },
+            ),
+          ],
         ),
         onTap: () {
           final messenger = ScaffoldMessenger.of(context);
-          engine.playStation(station).then((_) {
+          playbackController.playStation(station).then((_) {
             if (context.mounted) {
-              Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+              Navigator.of(context).push(NavigationHelper.slideUpRoute(const NowPlayingScreen()));
             }
           }).catchError((e) {
             messenger.showSnackBar(
@@ -1419,7 +1615,8 @@ _tabController.addListener(() {
     );
   }
   void _showClearDialog(BuildContext context) {
-    final engine = context.read<RadioEngine>();
+    final libraryManager = context.read<LibraryManager>();
+    final downloadService = context.read<DownloadService>();
     final tabIndex = _tabController.index;
     String title = "";
     String content = "";
@@ -1428,15 +1625,15 @@ _tabController.addListener(() {
     if (tabIndex == 2) {
       title = "Clear Downloads";
       content = "Are you sure you want to delete all downloaded episodes?";
-      onClear = () => engine.clearAllDownloads();
+      onClear = () => downloadService.clearAllDownloads();
     } else if (tabIndex == 3) {
       title = "Clear Favorites";
       content = "Are you sure you want to remove all your favorite stations and bookmarked episodes?";
-      onClear = () => engine.clearFavoritesAndBookmarks();
+      onClear = () => libraryManager.clearFavoritesAndBookmarks();
     } else if (tabIndex == 4) {
       title = "Clear History";
       content = "Are you sure you want to clear your playback history?";
-      onClear = () => engine.clearRecentStations();
+      onClear = () => libraryManager.clearRecentStations();
     }
 
     showDialog(
@@ -1527,10 +1724,11 @@ class _CategoryCard extends StatelessWidget {
     final theme = Theme.of(context);
     final accentColor = color ?? theme.primaryColor;
     final s = isTablet ? 1.2 : 1.0;
-    return Card(
-      elevation: 0,
-      color: accentColor.withValues(alpha: 0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16 * s)),
+    return Container(
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16 * s),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16 * s),

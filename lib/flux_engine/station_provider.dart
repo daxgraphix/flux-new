@@ -6,6 +6,8 @@ import 'radio_repository.dart';
 import '../flux_ui/models/podcast.dart';
 import 'podcast_service.dart';
 
+enum SearchType { station, podcast }
+
 class StationProvider extends ChangeNotifier {
   final RadioRepository _repository = RadioRepository();
   final PodcastService _podcastService = PodcastService();
@@ -17,6 +19,7 @@ class StationProvider extends ChangeNotifier {
   List<String> _countries = [];
   List<String> _genres = [];
   List<String> _languages = [];
+  SearchType _searchType = SearchType.station;
   
   bool _isLoading = false;
   String? _errorMessage;
@@ -33,9 +36,15 @@ class StationProvider extends ChangeNotifier {
   List<String> get countries => _countries;
   List<String> get genres => _genres;
   List<String> get languages => _languages;
+  SearchType get searchType => _searchType;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String? get loadingKey => _loadingKey;
+
+  void setSearchType(SearchType type) {
+    _searchType = type;
+    notifyListeners();
+  }
 
   List<Map<String, dynamic>> get categories => [
         {'title': 'Trending', 'icon': Icons.trending_up, 'color': Colors.red, 'action': loadTopStations},
@@ -99,6 +108,23 @@ class StationProvider extends ChangeNotifier {
       _isLoading = false;
       _loadingKey = null;
       notifyListeners();
+    }
+  }
+
+  Future<void> search(String query) async {
+    if (query.isEmpty) {
+      if (_searchType == SearchType.station) {
+        await loadTopStations();
+      } else {
+        await loadTrendingPodcasts();
+      }
+      return;
+    }
+
+    if (_searchType == SearchType.station) {
+      await searchStations(query);
+    } else {
+      await searchPodcasts(query);
     }
   }
 
@@ -350,5 +376,18 @@ class StationProvider extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  Future<void> reportBrokenStation(String uuid) async {
+    try {
+      final success = await RadioService().reportStation(uuid);
+      if (!success) {
+        _errorMessage = 'We couldn\'t submit your report. Please try again later.';
+        notifyListeners();
+      }
+    } catch (e) {
+      _errorMessage = 'Something went wrong while reporting. Please try again.';
+      notifyListeners();
+    }
   }
 }

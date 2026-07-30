@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../flux_engine/radio_engine.dart';
+import '../flux_engine/playback_controller.dart';
+import '../flux_engine/library_manager.dart';
 import '../flux_hardware/radio_service.dart';
 import '../helpers/navigation_helper.dart';
 import 'widgets/flux_image.dart';
@@ -19,7 +20,7 @@ class _RecentScreenState extends State<RecentScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<RadioEngine>(context, listen: false).loadRecentStations();
+      context.read<LibraryManager>().loadRecentStations();
     });
   }
 
@@ -28,16 +29,16 @@ class _RecentScreenState extends State<RecentScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recently Played'),
+        title: const Text('Recently Played', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
         backgroundColor: theme.appBarTheme.backgroundColor,
         foregroundColor: theme.appBarTheme.foregroundColor,
         elevation: 0,
       ),
-      body: Consumer<RadioEngine>(
-        builder: (context, engine, child) {
-          final recent = engine.recentStations;
+      body: Consumer2<LibraryManager, PlaybackController>(
+        builder: (context, library, playback, child) {
+          final recent = library.recentStations;
           return Container(
-            color: theme.scaffoldBackgroundColor,
+            color: theme.colorScheme.surface,
             child: Column(
               children: [
                 Expanded(
@@ -48,9 +49,6 @@ class _RecentScreenState extends State<RecentScreen> {
                           message: 'Your recently played stations will appear here.',
                           buttonLabel: 'Listen Now',
                           onButtonPressed: () {
-                            // If this is within LibraryScreen, we might want to switch tabs.
-                            // However, RecentScreen is also a standalone screen in some contexts.
-                            // For now, let's pop if possible or just navigate to main if we can.
                             if (Navigator.canPop(context)) {
                               Navigator.pop(context);
                             }
@@ -61,7 +59,7 @@ class _RecentScreenState extends State<RecentScreen> {
                             final isTablet = constraints.maxWidth >= 600;
                             if (isTablet) {
                               return GridView.builder(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                padding: const EdgeInsets.all(16),
                                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: constraints.maxWidth > 900 ? 3 : 2,
                                   childAspectRatio: 3.5,
@@ -70,7 +68,7 @@ class _RecentScreenState extends State<RecentScreen> {
                                 ),
                                 itemCount: recent.length,
                                 itemBuilder: (context, index) {
-                                  return _buildRecentItem(recent[index], engine);
+                                  return _buildRecentItem(recent[index], playback);
                                 },
                               );
                             }
@@ -78,7 +76,7 @@ class _RecentScreenState extends State<RecentScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               itemCount: recent.length,
                               itemBuilder: (context, index) {
-                                return _buildRecentItem(recent[index], engine);
+                                return _buildRecentItem(recent[index], playback);
                               },
                             );
                           },
@@ -92,76 +90,74 @@ class _RecentScreenState extends State<RecentScreen> {
     );
   }
 
-  Widget _buildRecentItem(RadioStation item, RadioEngine engine) {
+  Widget _buildRecentItem(RadioStation item, PlaybackController playback) {
     final theme = Theme.of(context);
-    return Card(
-      color: theme.cardColor,
-      margin: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 4,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          width: 1,
+        ),
       ),
       child: ListTile(
-        leading: FluxImage(
-          imageUrl: item.favicon,
-          width: 40,
-          height: 40,
-          errorWidget: CircleAvatar(
-            backgroundColor: theme.primaryColor,
-            child: const Icon(
-              Icons.history,
-              color: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: FluxImage(
+            imageUrl: item.favicon,
+            width: 52,
+            height: 52,
+            errorWidget: Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Icon(Icons.radio_rounded, color: theme.primaryColor, size: 28),
             ),
           ),
         ),
         title: Text(
           item.name.isNotEmpty ? item.name : 'Unknown Station',
-          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          "${item.country.isNotEmpty ? item.country : 'Unknown'} • ${item.genre}",
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: IconButton(
-          icon: Icon(
-            Icons.play_arrow,
-            color: theme.primaryColor,
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Text(
+            "${item.country.isNotEmpty ? item.country : 'Unknown'} • ${item.genre}",
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 12,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          onPressed: () {
-            engine.playStation(item).then((_) {
-              if (mounted) {
-                Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
-              }
-            }).catchError((e) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to play: ${item.name}'),
-                    backgroundColor: theme.colorScheme.error,
-                  ),
-                );
-              }
-            });
-          },
+        ),
+        trailing: Container(
+          decoration: BoxDecoration(
+            color: theme.primaryColor.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 24),
+            onPressed: () {
+              playback.playStation(item).then((_) {
+                if (mounted) {
+                  Navigator.of(context).push(NavigationHelper.slideUpRoute(const NowPlayingScreen()));
+                }
+              });
+            },
+          ),
         ),
         onTap: () {
-          engine.playStation(item).then((_) {
+          playback.playStation(item).then((_) {
             if (mounted) {
-              Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
-            }
-          }).catchError((e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Failed to play: ${item.name}'),
-                  backgroundColor: theme.colorScheme.error,
-                ),
-              );
+              Navigator.of(context).push(NavigationHelper.slideUpRoute(const NowPlayingScreen()));
             }
           });
         },
@@ -169,3 +165,4 @@ class _RecentScreenState extends State<RecentScreen> {
     );
   }
 }
+

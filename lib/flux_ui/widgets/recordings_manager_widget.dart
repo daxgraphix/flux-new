@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import '../../flux_engine/radio_engine.dart';
+import 'package:provider/provider.dart';
+import '../../flux_engine/recording_service.dart';
 
 class RecordingsManagerWidget extends StatefulWidget {
-  final RadioEngine engine;
-
-  const RecordingsManagerWidget({
-    super.key,
-    required this.engine,
-  });
+  const RecordingsManagerWidget({super.key});
 
   @override
   State<RecordingsManagerWidget> createState() =>
@@ -19,168 +15,178 @@ class _RecordingsManagerWidgetState extends State<RecordingsManagerWidget> {
   @override
   void initState() {
     super.initState();
-    _loadRecordings();
-  }
-
-  Future<void> _loadRecordings() async {
-    await widget.engine.loadSavedRecordings();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<RecordingService>().loadSavedRecordings();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.orange.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Recordings',
-                style: TextStyle(
-                  color: Color(0xFF1A1C1E),
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${widget.engine.savedRecordings.length} files',
-                  style: const TextStyle(
-                    color: Colors.orange,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
+    return Consumer<RecordingService>(
+      builder: (context, recordingService, child) {
+        final theme = Theme.of(context);
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+              width: 1,
+            ),
           ),
-          const SizedBox(height: 16),
-          if (widget.engine.savedRecordings.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.mic_off,
-                      size: 32,
-                      color: Color(0xFF9E9E9E),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Recordings',
+                    style: TextStyle(
+                      color: Color(0xFF1A1C1E),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'No recordings yet',
-                      style: TextStyle(
-                        color: Color(0xFF616161),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${recordingService.savedRecordings.length} files',
+                      style: const TextStyle(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            )
-          else
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: widget.engine.savedRecordings.length,
-              itemBuilder: (context, index) {
-                final recordingPath = widget.engine.savedRecordings[index];
-                final file = File(recordingPath);
-                final filename = file.path.split('/').last;
-                final size = file.lengthSync();
-                final sizeStr = _formatBytes(size);
-
-                return Card(
-                  elevation: 0,
-                  color: Colors.black.withValues(alpha: 0.03),
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  child: ListTile(
-                    leading: const Icon(Icons.mic, color: Colors.red, size: 20),
-                    title: Text(
-                      filename,
-                      style: const TextStyle(
-                        color: Color(0xFF1A1C1E),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(
-                      sizeStr,
-                      style: const TextStyle(
-                        color: Color(0xFF616161),
-                        fontSize: 11,
-                      ),
-                    ),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (value) async {
-                        if (value == 'share') {
-                          await _shareRecording(recordingPath);
-                        } else if (value == 'export') {
-                          await _exportRecording(recordingPath);
-                        } else if (value == 'delete') {
-                          await _deleteRecording(recordingPath);
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'share',
-                          child: Row(
-                            children: [
-                              Icon(Icons.share, size: 18,
-                                  color: Colors.blue),
-                              SizedBox(width: 8),
-                              Text('Share'),
-                            ],
-                          ),
+              const SizedBox(height: 16),
+              if (recordingService.savedRecordings.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        const Icon(
+                          Icons.mic_off,
+                          size: 32,
+                          color: Color(0xFF9E9E9E),
                         ),
-                        const PopupMenuItem(
-                          value: 'export',
-                          child: Row(
-                            children: [
-                              Icon(Icons.download, size: 18,
-                                  color: Colors.green),
-                              SizedBox(width: 8),
-                              Text('Export'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete, size: 18,
-                                  color: Colors.red),
-                              SizedBox(width: 8),
-                              Text('Delete'),
-                            ],
+                        const SizedBox(height: 8),
+                        const Text(
+                          'No recordings yet',
+                          style: TextStyle(
+                            color: Color(0xFF616161),
                           ),
                         ),
                       ],
                     ),
                   ),
-                );
-              },
-            ),
-        ],
-      ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: recordingService.savedRecordings.length,
+                  itemBuilder: (context, index) {
+                    final recordingPath = recordingService.savedRecordings[index];
+                    final file = File(recordingPath);
+                    final filename = file.path.split('/').last;
+                    final size = file.lengthSync();
+                    final sizeStr = _formatBytes(size);
+
+                    return Container(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.1),
+                          width: 1,
+                        ),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.mic, color: Colors.red, size: 20),
+                        title: Text(
+                          filename,
+                          style: const TextStyle(
+                            color: Color(0xFF1A1C1E),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          sizeStr,
+                          style: const TextStyle(
+                            color: Color(0xFF616161),
+                            fontSize: 11,
+                          ),
+                        ),
+                        trailing: PopupMenuButton<String>(
+                          onSelected: (value) async {
+                            if (value == 'share') {
+                              await _shareRecording(recordingPath);
+                            } else if (value == 'export') {
+                              await _exportRecording(recordingPath);
+                            } else if (value == 'delete') {
+                              await _deleteRecording(recordingService, recordingPath);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'share',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.share, size: 18,
+                                      color: Colors.blue),
+                                  SizedBox(width: 8),
+                                  Text('Share'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'export',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.download, size: 18,
+                                      color: Colors.green),
+                                  SizedBox(width: 8),
+                                  Text('Export'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete, size: 18,
+                                      color: Colors.red),
+                                  SizedBox(width: 8),
+                                  Text('Delete'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -211,7 +217,6 @@ class _RecordingsManagerWidgetState extends State<RecordingsManagerWidget> {
 
   Future<void> _exportRecording(String path) async {
     try {
-      // For now, just show a message about where it's saved
       final filename = path.split('/').last;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -237,7 +242,7 @@ class _RecordingsManagerWidgetState extends State<RecordingsManagerWidget> {
     }
   }
 
-  Future<void> _deleteRecording(String path) async {
+  Future<void> _deleteRecording(RecordingService service, String path) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -257,7 +262,7 @@ class _RecordingsManagerWidgetState extends State<RecordingsManagerWidget> {
     );
 
     if (confirm == true) {
-      final success = await widget.engine.deleteRecording(path);
+      final success = await service.deleteRecording(path);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -270,7 +275,6 @@ class _RecordingsManagerWidgetState extends State<RecordingsManagerWidget> {
           ),
         );
       }
-      setState(() {});
     }
   }
 

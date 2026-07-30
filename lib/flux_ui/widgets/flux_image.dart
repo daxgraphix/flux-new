@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
-import '../../flux_engine/radio_engine.dart';
+import '../../flux_engine/settings_service.dart';
 
 class FluxImage extends StatelessWidget {
   final String imageUrl;
@@ -29,11 +29,11 @@ class FluxImage extends StatelessWidget {
       return errorWidget ?? _defaultError(context);
     }
 
-    final engine = context.read<RadioEngine>();
+    final settings = context.watch<SettingsService>();
     String finalUrl = imageUrl;
     
     // Apply Data Saver logic: Resize image via proxy to save bandwidth
-    if (engine.dataSaver && useProxy && imageUrl.startsWith('http')) {
+    if (settings.dataSaver && useProxy && imageUrl.startsWith('http')) {
       final int size = (width ?? 100).toInt() * 2; // Request 2x for retina-ish quality but still small
       finalUrl = 'https://wsrv.nl/?url=${Uri.encodeComponent(imageUrl)}&w=$size&h=$size&fit=cover&q=60';
     }

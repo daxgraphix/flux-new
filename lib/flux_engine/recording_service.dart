@@ -11,6 +11,7 @@ class RecordingService extends ChangeNotifier {
   DateTime? _recordingStartTime;
   Duration _recordingDuration = Duration.zero;
   Timer? _recordingTimer;
+  List<String> _savedRecordings = [];
 
   HttpClient? _recordingClient;
   HttpClientRequest? _recordingRequest;
@@ -21,6 +22,12 @@ class RecordingService extends ChangeNotifier {
   String? get recordingPath => _recordingPath;
   Duration get recordingDuration => _recordingDuration;
   DateTime? get recordingStartTime => _recordingStartTime;
+  List<String> get savedRecordings => List.unmodifiable(_savedRecordings);
+
+  Future<void> loadSavedRecordings() async {
+    _savedRecordings = await getSavedRecordings();
+    notifyListeners();
+  }
 
   Future<bool> startRecording(RadioStation station) async {
     if (_isRecording) return false;
@@ -104,7 +111,22 @@ class RecordingService extends ChangeNotifier {
     await _recordingSink?.close();
     _recordingClient?.close();
     _cleanup();
-    notifyListeners();
+    await loadSavedRecordings();
+  }
+
+  Future<bool> deleteRecording(String path) async {
+    try {
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+        await loadSavedRecordings();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error deleting recording: $e');
+      return false;
+    }
   }
 
   void _cleanup() {

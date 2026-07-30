@@ -5,9 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
-import '../../flux_engine/radio_engine.dart';
+import '../../flux_engine/station_provider.dart';
+import '../../flux_engine/playback_controller.dart';
+import '../../flux_engine/audio_effects_service.dart';
+import '../../flux_engine/library_manager.dart';
+import '../../flux_engine/settings_service.dart';
+import '../../flux_engine/recording_service.dart';
 import '../../flux_hardware/radio_service.dart';
 import '../flux_ui/models/podcast.dart';
 import 'widgets/flux_image.dart';
@@ -20,11 +24,8 @@ extension RadioStationX on RadioStation {
 }
 
 class NowPlayingScreen extends StatefulWidget {
-  final RadioEngine engine;
-
   const NowPlayingScreen({
     super.key,
-    required this.engine,
   });
 
   @override
@@ -65,17 +66,19 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    if (widget.engine.isPlaying) {
+    final playbackController = Provider.of<PlaybackController>(context, listen: false);
+    if (playbackController.isPlaying) {
       _rotationController.repeat();
     }
   }
 
   @override
-  void didUpdateWidget(NowPlayingScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.engine.isPlaying && !_rotationController.isAnimating) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final playbackController = Provider.of<PlaybackController>(context);
+    if (playbackController.isPlaying && !_rotationController.isAnimating) {
       _rotationController.repeat();
-    } else if (!widget.engine.isPlaying && _rotationController.isAnimating) {
+    } else if (!playbackController.isPlaying && _rotationController.isAnimating) {
       _rotationController.stop();
     }
   }
@@ -109,7 +112,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
       ScreenBrightness().current.then((v) => _dragStartValue = v);
     } else {
       _dragType = 'volume';
-      _dragStartValue = widget.engine.volume;
+      _dragStartValue = Provider.of<SettingsService>(context, listen: false).volume;
     }
   }
 
@@ -119,7 +122,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     final newValue = (_dragStartValue + delta).clamp(0.0, 1.0);
 
     if (_dragType == 'volume') {
-      widget.engine.setVolume(newValue);
+      Provider.of<SettingsService>(context, listen: false).setVolume(newValue);
       setState(() {
         _overlayText = 'Volume: ${(newValue * 100).round()}%';
         _showOverlayText = true;
@@ -148,110 +151,123 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     final cardColor = theme.colorScheme.surfaceContainerHighest;
     final backgroundColor = theme.colorScheme.surface;
 
-    return Consumer<RadioEngine>(
-      builder: (context, engine, _) {
-        final station = engine.currentStation;
-        final episode = engine.currentEpisode;
+    return MultiProvider(
+      providers: [
+        Consumer<PlaybackController>(builder: (context, controller, _) => Provider.value(value: controller)),
+      ],
+      child: Consumer<PlaybackController>(
+        builder: (context, controller, _) {
+          final effectsService = Provider.of<AudioEffectsService>(context);
+          final libraryManager = Provider.of<LibraryManager>(context);
+          final stationProvider = Provider.of<StationProvider>(context);
 
-        if (station == null && episode == null) {
-          return Scaffold(
-            backgroundColor: backgroundColor,
-            body: Center(child: Text('Nothing playing', style: TextStyle(color: textColor))),
-          );
-        }
+          final station = controller.currentStation;
+          final episode = controller.currentEpisode;
 
-        return Scaffold(
-          backgroundColor: backgroundColor,
-          body: LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 600;
-              final contentWidth = isWide ? 600.0 : constraints.maxWidth;
+          if (station == null && episode == null) {
+            return Scaffold(
+              backgroundColor: backgroundColor,
+              body: Center(child: Text('Nothing playing', style: TextStyle(color: textColor))),
+            );
+          }
 
-              return GestureDetector(
-                onTap: () => setState(() => _showControls = !_showControls),
-                onDoubleTap: _toggleFullscreen,
-                onVerticalDragStart: (d) => _onVerticalDragStart(d, constraints),
-                onVerticalDragUpdate: (d) => _onVerticalDragUpdate(d, constraints),
-                onVerticalDragEnd: (details) {
-                  _onVerticalDragEnd(details);
-                  if (details.primaryVelocity != null && details.primaryVelocity! > 300) {
-                    Navigator.pop(context);
-                  }
-                },
-                onHorizontalDragEnd: (details) {
-                  if (details.primaryVelocity != null && details.primaryVelocity! > 800) {
-                    Navigator.pop(context);
-                  }
-                },
-                child: Stack(
-                  children: [
-                    _buildBackground(station, episode, backgroundColor),
-                    Center(
-                      child: SizedBox(
-                        width: contentWidth,
-                        child: SafeArea(
-                          child: Column(
-                            children: [
-                              AnimatedOpacity(
-                                opacity: _showControls ? 1.0 : 0.0,
-                                duration: const Duration(milliseconds: 300),
-                                child: _buildTopBar(context, textColor, primaryColor),
-                              ),
-                              Expanded(
-                                child: Center(
-                                  child: _buildArtwork(station, episode, engine, primaryColor, backgroundColor),
-                                ),
-                              ),
-                              AnimatedOpacity(
-                                opacity: _showControls ? 1.0 : 0.0,
-                                duration: const Duration(milliseconds: 300),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                                  child: Column(
-                                    children: [
-                                      _buildStationInfo(engine, textColor, secondaryTextColor, primaryColor),
-                                      const SizedBox(height: 16),
-                                      if (engine.errorMessage != null)
-                                        _buildErrorMessage(engine, theme),
-                                      _buildSpectrumVisualizer(station, episode, engine),
-                                      const SizedBox(height: 20),
-                                      _buildProgressBar(engine, primaryColor, secondaryTextColor),
-                                      const SizedBox(height: 24),
-                                      _buildMainControls(engine, primaryColor, textColor),
-                                      const SizedBox(height: 24),
-                                      _buildSecondaryControls(engine, cardColor, primaryColor, textColor),
-                                      const SizedBox(height: 32),
-                                    ],
+          return Provider.value(
+            value: controller,
+            child: Scaffold(
+              backgroundColor: backgroundColor,
+              body: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 600;
+                  final contentWidth = isWide ? 600.0 : constraints.maxWidth;
+
+                  return GestureDetector(
+                    onTap: () => setState(() => _showControls = !_showControls),
+                    onDoubleTap: _toggleFullscreen,
+                    onVerticalDragStart: (d) => _onVerticalDragStart(d, constraints),
+                    onVerticalDragUpdate: (d) => _onVerticalDragUpdate(d, constraints),
+                    onVerticalDragEnd: (details) {
+                      _onVerticalDragEnd(details);
+                      if (details.primaryVelocity != null && details.primaryVelocity! > 300) {
+                        Navigator.pop(context);
+                      }
+                    },
+                    onHorizontalDragEnd: (details) {
+                      if (details.primaryVelocity != null && details.primaryVelocity! > 800) {
+                        Navigator.pop(context);
+                      }
+                    },
+                    child: Stack(
+                      children: [
+                        _buildBackground(station, episode, backgroundColor),
+                        Center(
+                          child: SizedBox(
+                            width: contentWidth,
+                            child: SafeArea(
+                              child: Column(
+                                children: [
+                                  AnimatedOpacity(
+                                    opacity: _showControls ? 1.0 : 0.0,
+                                    duration: const Duration(milliseconds: 300),
+                                    child: _buildTopBar(context, textColor, primaryColor),
                                   ),
-                                ),
+                                  Expanded(
+                                    child: Center(
+                                      child: _buildArtwork(station, episode, controller, primaryColor, backgroundColor),
+                                    ),
+                                  ),
+                                  AnimatedOpacity(
+                                    opacity: _showControls ? 1.0 : 0.0,
+                                    duration: const Duration(milliseconds: 300),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          _buildStationInfo(controller, textColor, secondaryTextColor, primaryColor),
+                                          SizedBox(height: isWide ? 32 : 16),
+                                          if (controller.errorMessage != null)
+                                            _buildErrorMessage(controller, stationProvider, theme),
+                                          _buildSpectrumVisualizer(station, episode, controller),
+                                          SizedBox(height: isWide ? 24 : 20),
+                                          _buildProgressBar(controller, primaryColor, secondaryTextColor),
+                                          SizedBox(height: isWide ? 40 : 24),
+                                          _buildMainControls(controller, stationProvider, primaryColor, textColor),
+                                          SizedBox(height: isWide ? 40 : 24),
+                                          _buildSecondaryControls(controller, effectsService, libraryManager, cardColor, primaryColor, textColor),
+                                          SizedBox(height: isWide ? 48 : 32),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
+                        if (_showOverlayText)
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surface.withValues(alpha: 0.9),
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(color: primaryColor.withValues(alpha: 0.5)),
+                              ),
+                              child: Text(
+                                _overlayText,
+                                style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                    if (_showOverlayText)
-                      Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surface.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(color: primaryColor.withValues(alpha: 0.5)),
-                          ),
-                          child: Text(
-                            _overlayText,
-                            style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            },
-          ),
-        );
-      },
+                  );
+                },
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -305,7 +321,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     );
   }
 
-  Widget _buildArtwork(RadioStation? station, Episode? episode, RadioEngine engine, Color primaryColor, Color backgroundColor) {
+  Widget _buildArtwork(RadioStation? station, Episode? episode, PlaybackController controller, Color primaryColor, Color backgroundColor) {
     final size = _isFullscreen ? 300.0 : 260.0;
     final theme = Theme.of(context);
     final imageUrl = station?.favicon ?? episode?.image ?? '';
@@ -325,7 +341,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: primaryColor.withValues(alpha: engine.isPlaying ? 0.3 : 0.05),
+                  color: primaryColor.withValues(alpha: controller.isPlaying ? 0.3 : 0.05),
                   blurRadius: 80,
                   spreadRadius: 5,
                 ),
@@ -375,9 +391,9 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     );
   }
 
-  Widget _buildStationInfo(RadioEngine engine, Color textColor, Color secondaryTextColor, Color primaryColor) {
-    final title = engine.currentTitle;
-    final subtitle = engine.currentSubtitle;
+  Widget _buildStationInfo(PlaybackController controller, Color textColor, Color secondaryTextColor, Color primaryColor) {
+    final title = controller.currentTitle;
+    final subtitle = controller.currentSubtitle;
 
     return Column(
       children: [
@@ -395,18 +411,18 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
-        _buildLiveBadge(engine, primaryColor, secondaryTextColor),
+        _buildLiveBadge(controller, primaryColor, secondaryTextColor),
       ],
     );
   }
 
-  Widget _buildLiveBadge(RadioEngine engine, Color primaryColor, Color secondaryTextColor) {
+  Widget _buildLiveBadge(PlaybackController controller, Color primaryColor, Color secondaryTextColor) {
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
-        final isPlaying = engine.isPlaying;
-        final isLoading = engine.isLoading;
-        final hasError = engine.errorMessage != null;
+        final isPlaying = controller.isPlaying;
+        final isLoading = controller.isLoading;
+        final hasError = controller.errorMessage != null;
         
         final color = hasError 
             ? Theme.of(context).colorScheme.error 
@@ -440,7 +456,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                 ),
               const SizedBox(width: 8),
               Text(
-                hasError ? 'ERROR' : (isLoading ? 'LOADING...' : (isPlaying ? (engine.currentEpisode != null ? 'PODCAST' : 'LIVE STREAM') : 'PAUSED')),
+                hasError ? 'ERROR' : (isLoading ? 'LOADING...' : (isPlaying ? (controller.currentEpisode != null ? 'PODCAST' : 'LIVE STREAM') : 'PAUSED')),
                 style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2),
               ),
             ],
@@ -450,8 +466,8 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     );
   }
 
-  Widget _buildSpectrumVisualizer(RadioStation? station, Episode? episode, RadioEngine engine) {
-    if (engine.errorMessage != null) return const SizedBox.shrink();
+  Widget _buildSpectrumVisualizer(RadioStation? station, Episode? episode, PlaybackController controller) {
+    if (controller.errorMessage != null) return const SizedBox.shrink();
     
     return ShaderBuilder(
       (context, shader, child) {
@@ -460,7 +476,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
           painter: SpectrumPainter(
             shader: shader,
             currentFreq: station?.frequency ?? 98.0,
-            isPlaying: engine.isPlaying,
+            isPlaying: controller.isPlaying,
             time: _waveController.value,
           ),
         );
@@ -469,67 +485,79 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     );
   }
 
-  Widget _buildProgressBar(RadioEngine engine, Color primaryColor, Color secondaryTextColor) {
-    final position = engine.position;
-    final duration = engine.duration;
-    final isLive = duration == Duration.zero;
+  Widget _buildProgressBar(PlaybackController controller, Color primaryColor, Color secondaryTextColor) {
+    return StreamBuilder<Duration?>(
+      stream: controller.durationStream,
+      builder: (context, durationSnap) {
+        final duration = durationSnap.data ?? controller.duration;
+        final isLive = duration == Duration.zero;
 
-    if (isLive) {
-      return Container(
-        height: 4,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: secondaryTextColor.withValues(alpha: 0.1), 
-          borderRadius: BorderRadius.circular(2)
-        ),
-        child: FractionallySizedBox(
-          alignment: Alignment.centerLeft,
-          widthFactor: engine.isPlaying ? 1.0 : 0.0,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [primaryColor, primaryColor.withValues(alpha: 0.7)]),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ),
-      );
-    }
+        return StreamBuilder<Duration>(
+          stream: controller.positionStream,
+          initialData: controller.position,
+          builder: (context, positionSnap) {
+            final position = positionSnap.data ?? Duration.zero;
 
-    return Column(
-      children: [
-        SliderTheme(
-          data: SliderThemeData(
-            trackHeight: 4,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-            thumbColor: primaryColor,
-            activeTrackColor: primaryColor,
-            inactiveTrackColor: secondaryTextColor.withValues(alpha: 0.15),
-            overlayColor: primaryColor.withValues(alpha: 0.15),
-            trackShape: const RoundedRectSliderTrackShape(),
-          ),
-          child: Slider(
-            value: position.inSeconds.clamp(0, duration.inSeconds).toDouble(),
-            min: 0,
-            max: duration.inSeconds.toDouble(),
-            onChanged: (v) => engine.seek(Duration(seconds: v.toInt())),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(_fmt(position), style: TextStyle(color: secondaryTextColor, fontSize: 12, fontWeight: FontWeight.w500)),
-              Text(_fmt(duration), style: TextStyle(color: secondaryTextColor, fontSize: 12, fontWeight: FontWeight.w500)),
-            ],
-          ),
-        ),
-      ],
+            if (isLive) {
+              return Container(
+                height: 4,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: secondaryTextColor.withValues(alpha: 0.1), 
+                  borderRadius: BorderRadius.circular(2)
+                ),
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: controller.isPlaying ? 1.0 : 0.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [primaryColor, primaryColor.withValues(alpha: 0.7)]),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return Column(
+              children: [
+                SliderTheme(
+                  data: SliderThemeData(
+                    trackHeight: 4,
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                    thumbColor: primaryColor,
+                    activeTrackColor: primaryColor,
+                    inactiveTrackColor: secondaryTextColor.withValues(alpha: 0.15),
+                    overlayColor: primaryColor.withValues(alpha: 0.15),
+                    trackShape: const RoundedRectSliderTrackShape(),
+                  ),
+                  child: Slider(
+                    value: position.inSeconds.clamp(0, duration.inSeconds).toDouble(),
+                    min: 0,
+                    max: duration.inSeconds.toDouble(),
+                    onChanged: (v) => controller.seek(Duration(seconds: v.toInt())),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(_fmt(position), style: TextStyle(color: secondaryTextColor, fontSize: 12, fontWeight: FontWeight.w500)),
+                      Text(_fmt(duration), style: TextStyle(color: secondaryTextColor, fontSize: 12, fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _buildMainControls(RadioEngine engine, Color primaryColor, Color textColor) {
-    final isPodcast = engine.currentEpisode != null;
+  Widget _buildMainControls(PlaybackController controller, StationProvider stationProvider, Color primaryColor, Color textColor) {
+    final isPodcast = controller.currentEpisode != null;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -538,7 +566,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
           icon: Icons.skip_previous_rounded,
           size: isPodcast ? 36 : 38,
           color: textColor.withValues(alpha: 0.7),
-          onTap: () => engine.skipPrevious(),
+          onTap: () => controller.skipPrevious(stationProvider.stations, stationProvider.episodes),
         ),
         const SizedBox(width: 16),
         if (isPodcast)
@@ -546,24 +574,24 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
             icon: Icons.replay_10_rounded,
             size: 28,
             color: textColor.withValues(alpha: 0.6),
-            onTap: () => engine.seekBackward(seconds: 10),
+            onTap: () => controller.seekBackward(seconds: 10),
           )
         else
           _ControlBtn(
             icon: Icons.stop_rounded,
             size: 32,
             color: textColor.withValues(alpha: 0.7),
-            onTap: () => engine.stop(),
+            onTap: () => controller.stop(),
           ),
         const SizedBox(width: 20),
         GestureDetector(
           onTap: () {
-            if (engine.isLoading) return;
-            if (engine.isPlaying) {
-              engine.pause();
+            if (controller.isLoading) return;
+            if (controller.isPlaying) {
+              controller.pause();
               _rotationController.stop();
             } else {
-              engine.resume();
+              controller.resume();
               _rotationController.repeat();
             }
           },
@@ -571,7 +599,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
             width: 88,
             height: 88,
             decoration: BoxDecoration(
-              color: engine.isLoading ? primaryColor.withValues(alpha: 0.6) : primaryColor,
+              color: controller.isLoading ? primaryColor.withValues(alpha: 0.6) : primaryColor,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
@@ -581,7 +609,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                 ),
               ],
             ),
-            child: engine.isLoading
+            child: controller.isLoading
                 ? Padding(
                     padding: const EdgeInsets.all(24.0),
                     child: CircularProgressIndicator(
@@ -590,7 +618,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                     ),
                   )
                 : Icon(
-                    engine.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    controller.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                     color: Theme.of(context).colorScheme.onPrimary,
                     size: 44,
                   ),
@@ -602,7 +630,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
             icon: Icons.forward_30_rounded,
             size: 32,
             color: textColor.withValues(alpha: 0.7),
-            onTap: () => engine.seekForward(seconds: 30),
+            onTap: () => controller.seekForward(seconds: 30),
           )
         else
           _ControlBtn(
@@ -616,13 +644,13 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
           icon: Icons.skip_next_rounded,
           size: isPodcast ? 36 : 38,
           color: textColor.withValues(alpha: 0.7),
-          onTap: () => engine.skipNext(),
+          onTap: () => controller.skipNext(stationProvider.stations, stationProvider.episodes),
         ),
       ],
     );
   }
 
-  Widget _buildSecondaryControls(RadioEngine engine, Color cardColor, Color primaryColor, Color textColor) {
+  Widget _buildSecondaryControls(PlaybackController controller, AudioEffectsService effectsService, LibraryManager libraryManager, Color cardColor, Color primaryColor, Color textColor) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       decoration: BoxDecoration(
@@ -632,41 +660,47 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildFavBtn(engine, primaryColor, textColor),
-          _buildRecordBtn(engine, primaryColor, textColor),
-          _buildSleepTimerBtn(engine, textColor),
-          _buildEqBtn(engine, textColor),
-          _buildShareBtn(engine, textColor),
+          _buildFavBtn(controller, libraryManager, primaryColor, textColor),
+          _buildRecordBtn(controller, primaryColor, textColor),
+          _buildSleepTimerBtn(controller, textColor),
+          _buildEqBtn(effectsService, textColor),
+          _buildShareBtn(controller, textColor),
         ],
       ),
     );
   }
 
-  Widget _buildSleepTimerBtn(RadioEngine engine, Color textColor) {
-    final remaining = engine.sleepTimerDuration;
-    final hasTimer = remaining != null && remaining.inSeconds > 0;
-    
-    return IconButton(
-      icon: Icon(
-        hasTimer ? Icons.hourglass_full_rounded : Icons.hourglass_empty_rounded,
-        color: hasTimer ? Colors.amber : textColor.withValues(alpha: 0.7),
-      ),
-      onPressed: () => _showSleepTimerSheet(engine),
+  Widget _buildSleepTimerBtn(PlaybackController controller, Color textColor) {
+    return StreamBuilder<Duration?>(
+      stream: controller.sleepTimerStream,
+      initialData: controller.sleepTimerDuration,
+      builder: (context, snapshot) {
+        final remaining = snapshot.data;
+        final hasTimer = remaining != null && remaining.inSeconds > 0;
+        
+        return IconButton(
+          icon: Icon(
+            hasTimer ? Icons.hourglass_full_rounded : Icons.hourglass_empty_rounded,
+            color: hasTimer ? Colors.amber : textColor.withValues(alpha: 0.7),
+          ),
+          onPressed: () => _showSleepTimerSheet(controller),
+        );
+      },
     );
   }
 
-  Widget _buildFavBtn(RadioEngine engine, Color primaryColor, Color textColor) {
-    final station = engine.currentStation;
+  Widget _buildFavBtn(PlaybackController controller, LibraryManager libraryManager, Color primaryColor, Color textColor) {
+    final station = controller.currentStation;
     if (station == null) return const SizedBox.shrink();
     
     return FutureBuilder<bool>(
-      future: engine.isFavorite(station.url, uuid: station.uuid),
+      future: libraryManager.isFavorite(station.url, uuid: station.uuid),
       builder: (context, snap) {
         final isFav = snap.data == true;
         return IconButton(
           icon: Icon(isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: isFav ? primaryColor : textColor.withValues(alpha: 0.7)),
           onPressed: () async {
-            await engine.toggleFavorite(station);
+            await libraryManager.toggleFavorite(station);
             setState(() {});
           },
         );
@@ -674,26 +708,27 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     );
   }
 
-  Widget _buildRecordBtn(RadioEngine engine, Color primaryColor, Color textColor) {
-    final isRecording = engine.isRecording;
+  Widget _buildRecordBtn(PlaybackController controller, Color primaryColor, Color textColor) {
+    final recordingService = Provider.of<RecordingService>(context);
+    final isRecording = recordingService.isRecording;
     return IconButton(
       icon: Icon(isRecording ? Icons.stop_circle_rounded : Icons.fiber_manual_record_rounded, color: isRecording ? primaryColor : textColor.withValues(alpha: 0.7)),
-      onPressed: () => _showRecordingSheet(engine),
+      onPressed: () => _showRecordingSheet(controller),
     );
   }
 
-  Widget _buildEqBtn(RadioEngine engine, Color textColor) {
+  Widget _buildEqBtn(AudioEffectsService effectsService, Color textColor) {
     return IconButton(
       icon: Icon(Icons.equalizer_rounded, color: textColor.withValues(alpha: 0.7)),
-      onPressed: () => _showEqualizerSheet(engine),
+      onPressed: () => _showEqualizerSheet(effectsService),
     );
   }
 
-  Widget _buildShareBtn(RadioEngine engine, Color textColor) {
+  Widget _buildShareBtn(PlaybackController controller, Color textColor) {
     return IconButton(
       icon: Icon(Icons.share_rounded, color: textColor.withValues(alpha: 0.7)),
       onPressed: () {
-        final station = engine.currentStation;
+        final station = controller.currentStation;
         if (station != null) {
           Share.share('Listening to ${station.name} on Flux Radio! 📻\n${station.url}');
         }
@@ -701,7 +736,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     );
   }
 
-  Widget _buildErrorMessage(RadioEngine engine, ThemeData theme) {
+  Widget _buildErrorMessage(PlaybackController controller, StationProvider stationProvider, ThemeData theme) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -718,7 +753,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  engine.errorMessage!,
+                  controller.errorMessage!,
                   style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 13, fontWeight: FontWeight.w500),
                 ),
               ),
@@ -730,10 +765,10 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    if (engine.currentStation != null) {
-                      engine.playStation(engine.currentStation!);
-                    } else if (engine.currentEpisode != null) {
-                      engine.playEpisode(engine.currentEpisode!);
+                    if (controller.currentStation != null) {
+                      controller.playStation(controller.currentStation!);
+                    } else if (controller.currentEpisode != null) {
+                      controller.playEpisode(controller.currentEpisode!);
                     }
                   },
                   icon: const Icon(Icons.refresh_rounded, size: 18),
@@ -749,7 +784,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => engine.clearError(),
+                  onPressed: () => controller.clearError(),
                   icon: const Icon(Icons.close_rounded, size: 18),
                   label: const Text('CANCEL', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                   style: OutlinedButton.styleFrom(
@@ -772,7 +807,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     return '$m:$s';
   }
 
-  void _showEqualizerSheet(RadioEngine engine) {
+  void _showEqualizerSheet(AudioEffectsService effectsService) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -784,7 +819,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
             width: isWide ? 500 : double.infinity,
             child: _GlassSheetWrapper(
               theme: Theme.of(context),
-              child: _EqualizerSheet(engine: engine),
+              child: _EqualizerSheet(effectsService: effectsService),
             ),
           ),
         );
@@ -792,7 +827,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     );
   }
 
-  void _showRecordingSheet(RadioEngine engine) {
+  void _showRecordingSheet(PlaybackController controller) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -804,7 +839,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
             width: isWide ? 500 : double.infinity,
             child: _GlassSheetWrapper(
               theme: Theme.of(context),
-              child: _RecordingSheet(engine: engine),
+              child: _RecordingSheet(controller: controller),
             ),
           ),
         );
@@ -812,7 +847,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     );
   }
 
-  void _showSleepTimerSheet(RadioEngine engine) {
+  void _showSleepTimerSheet(PlaybackController controller) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -828,7 +863,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
             child: _GlassSheetWrapper(
               theme: Theme.of(context),
               child: _SleepTimerSheet(
-                engine: engine,
+                controller: controller,
                 textColor: textColor,
                 primaryColor: primaryColor,
               ),
@@ -841,19 +876,18 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
 }
 
 class _SleepTimerSheet extends StatelessWidget {
-  final RadioEngine engine;
+  final PlaybackController controller;
   final Color textColor;
   final Color primaryColor;
 
   const _SleepTimerSheet({
-    required this.engine,
+    required this.controller,
     required this.textColor,
     required this.primaryColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final remaining = engine.sleepTimerDuration;
     final options = [
       const Duration(minutes: 5),
       const Duration(minutes: 15),
@@ -871,36 +905,47 @@ class _SleepTimerSheet extends StatelessWidget {
           Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 24), decoration: BoxDecoration(color: textColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(2))),
           Text('SLEEP TIMER', style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 3)),
           const SizedBox(height: 16),
-          if (remaining != null && remaining.inSeconds > 0)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Text(
-                'Remaining: ${remaining.inMinutes} min',
-                style: TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            alignment: WrapAlignment.center,
-            children: [
-              for (final opt in options)
-                ChoiceChip(
-                  label: Text(opt.inHours > 0 ? '${opt.inHours}h' : '${opt.inMinutes}m'),
-                  selected: remaining == opt,
-                  onSelected: (_) {
-                    engine.setSleepTimer(opt);
-                    if (context.mounted) Navigator.pop(context);
-                  },
-                  selectedColor: primaryColor,
-                  labelStyle: TextStyle(color: remaining == opt ? Colors.white : textColor),
-                ),
-            ],
+          StreamBuilder<Duration?>(
+            stream: controller.sleepTimerStream,
+            initialData: controller.sleepTimerDuration,
+            builder: (context, snapshot) {
+              final remaining = snapshot.data;
+              return Column(
+                children: [
+                  if (remaining != null && remaining.inSeconds > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        'Remaining: ${remaining.inMinutes} min',
+                        style: TextStyle(color: Colors.amber, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      for (final opt in options)
+                        ChoiceChip(
+                          label: Text(opt.inHours > 0 ? '${opt.inHours}h' : '${opt.inMinutes}m'),
+                          selected: remaining?.inMinutes == opt.inMinutes,
+                          onSelected: (_) {
+                            controller.setSleepTimer(opt);
+                            if (context.mounted) Navigator.pop(context);
+                          },
+                          selectedColor: primaryColor,
+                          labelStyle: TextStyle(color: remaining?.inMinutes == opt.inMinutes ? Colors.white : textColor),
+                        ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
           TextButton(
             onPressed: () {
-              engine.cancelSleepTimer();
+              controller.cancelSleepTimer();
               if (context.mounted) Navigator.pop(context);
             },
             child: Text('CANCEL TIMER', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
@@ -989,8 +1034,8 @@ class _ControlBtn extends StatelessWidget {
 }
 
 class _EqualizerSheet extends StatelessWidget {
-  final RadioEngine engine;
-  const _EqualizerSheet({required this.engine});
+  final AudioEffectsService effectsService;
+  const _EqualizerSheet({required this.effectsService});
 
   @override
   Widget build(BuildContext context) {
@@ -1010,38 +1055,38 @@ class _EqualizerSheet extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _PresetChip(label: 'Flat', onTap: () => engine.resetEqualizer(), primaryColor: primaryColor, textColor: textColor),
+                _PresetChip(label: 'Flat', onTap: () => effectsService.resetEqualizer(), primaryColor: primaryColor, textColor: textColor),
                 const SizedBox(width: 8),
-                _PresetChip(label: 'Pop', onTap: () => _applyPreset(engine, [3, 2, 0, 1, 3], bass: 200), primaryColor: primaryColor, textColor: textColor),
+                _PresetChip(label: 'Pop', onTap: () => _applyPreset(effectsService, [3, 2, 0, 1, 3], bass: 200), primaryColor: primaryColor, textColor: textColor),
                 const SizedBox(width: 8),
-                _PresetChip(label: 'Rock', onTap: () => _applyPreset(engine, [5, 3, -1, 3, 5], bass: 400), primaryColor: primaryColor, textColor: textColor),
+                _PresetChip(label: 'Rock', onTap: () => _applyPreset(effectsService, [5, 3, -1, 3, 5], bass: 400), primaryColor: primaryColor, textColor: textColor),
                 const SizedBox(width: 8),
-                _PresetChip(label: 'Jazz', onTap: () => _applyPreset(engine, [4, 2, 1, 2, 4], bass: 150), primaryColor: primaryColor, textColor: textColor),
+                _PresetChip(label: 'Jazz', onTap: () => _applyPreset(effectsService, [4, 2, 1, 2, 4], bass: 150), primaryColor: primaryColor, textColor: textColor),
                 const SizedBox(width: 8),
-                _PresetChip(label: 'Classical', onTap: () => _applyPreset(engine, [5, 3, -2, 4, 4], bass: 100), primaryColor: primaryColor, textColor: textColor),
+                _PresetChip(label: 'Classical', onTap: () => _applyPreset(effectsService, [5, 3, -2, 4, 4], bass: 100), primaryColor: primaryColor, textColor: textColor),
                 const SizedBox(width: 8),
-                _PresetChip(label: 'Dance', onTap: () => _applyPreset(engine, [6, 0, 2, 4, 1], bass: 600), primaryColor: primaryColor, textColor: textColor),
+                _PresetChip(label: 'Dance', onTap: () => _applyPreset(effectsService, [6, 0, 2, 4, 1], bass: 600), primaryColor: primaryColor, textColor: textColor),
                 const SizedBox(width: 8),
-                _PresetChip(label: 'Bass Boost', onTap: () => _applyPreset(engine, [8, 5, 0, 0, 0], bass: 900), primaryColor: primaryColor, textColor: textColor),
+                _PresetChip(label: 'Bass Boost', onTap: () => _applyPreset(effectsService, [8, 5, 0, 0, 0], bass: 900), primaryColor: primaryColor, textColor: textColor),
                 const SizedBox(width: 8),
-                _PresetChip(label: 'Hi-Fi', onTap: () => _applyPreset(engine, [2, 1, 0, 2, 4], bass: 250), primaryColor: primaryColor, textColor: textColor),
+                _PresetChip(label: 'Hi-Fi', onTap: () => _applyPreset(effectsService, [2, 1, 0, 2, 4], bass: 250), primaryColor: primaryColor, textColor: textColor),
                 const SizedBox(width: 8),
-                _PresetChip(label: 'Vocal', onTap: () => _applyPreset(engine, [-2, -1, 3, 4, 2], bass: 0), primaryColor: primaryColor, textColor: textColor),
+                _PresetChip(label: 'Vocal', onTap: () => _applyPreset(effectsService, [-2, -1, 3, 4, 2], bass: 0), primaryColor: primaryColor, textColor: textColor),
                 const SizedBox(width: 8),
-                _PresetChip(label: 'Electronic', onTap: () => _applyPreset(engine, [5, 2, 0, 3, 6], bass: 500), primaryColor: primaryColor, textColor: textColor),
+                _PresetChip(label: 'Electronic', onTap: () => _applyPreset(effectsService, [5, 2, 0, 3, 6], bass: 500), primaryColor: primaryColor, textColor: textColor),
               ],
             ),
           ),
           const SizedBox(height: 32),
-          Consumer<RadioEngine>(
-            builder: (context, eng, _) => Column(
+          Consumer<AudioEffectsService>(
+            builder: (context, effects, _) => Column(
               children: [
                 SizedBox(
                   height: 180,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(eng.equalizerBands.length, (i) {
-                      final freq = eng.equalizerCenterFrequencies[i];
+                    children: List.generate(effects.equalizerBands.length, (i) {
+                      final freq = effects.equalizerCenterFrequencies[i];
                       final label = freq >= 1000 ? '${(freq / 1000).toStringAsFixed(1)}k' : '${freq}Hz';
                       return Column(
                         children: [
@@ -1055,10 +1100,10 @@ class _EqualizerSheet extends StatelessWidget {
                                   overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
                                 ),
                                 child: Slider(
-                                  value: eng.equalizerBands[i],
+                                  value: effects.equalizerBands[i],
                                   min: -15,
                                   max: 15,
-                                  onChanged: (v) => eng.updateEqualizerBand(i, v),
+                                  onChanged: (v) => effects.updateEqualizerBand(i, v),
                                   activeColor: primaryColor,
                                   inactiveColor: textColor.withValues(alpha: 0.1),
                                 ),
@@ -1067,7 +1112,7 @@ class _EqualizerSheet extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           Text(label, style: TextStyle(color: textColor.withValues(alpha: 0.4), fontSize: 10)),
-                          Text('${eng.equalizerBands[i].toInt()}dB', style: TextStyle(color: textColor.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.bold)),
+                          Text('${effects.equalizerBands[i].toInt()}dB', style: TextStyle(color: textColor.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.bold)),
                         ],
                       );
                     }),
@@ -1076,47 +1121,47 @@ class _EqualizerSheet extends StatelessWidget {
                 const SizedBox(height: 20),
                 _EffectSlider(
                   label: 'BASS BOOST',
-                  value: eng.bassBoostStrength,
+                  value: effects.bassBoostStrength,
                   max: 1000,
                   icon: Icons.speaker_group_outlined,
-                  onChanged: (v) => eng.setBassBoostStrength(v),
+                  onChanged: (v) => effects.setBassBoostStrength(v),
                   primaryColor: primaryColor,
                   textColor: textColor,
-                  valueLabel: '${(eng.bassBoostStrength / 10).toInt()}%',
+                  valueLabel: '${(effects.bassBoostStrength / 10).toInt()}%',
                 ),
                 _EffectSlider(
                   label: 'LOUDNESS',
-                  value: eng.loudnessGain,
+                  value: effects.loudnessGain,
                   max: 1000,
                   icon: Icons.volume_up_outlined,
-                  onChanged: (v) => eng.setLoudnessGain(v),
+                  onChanged: (v) => effects.setLoudness(v),
                   primaryColor: primaryColor,
                   textColor: textColor,
-                  valueLabel: '${(eng.loudnessGain / 100).toStringAsFixed(1)}x',
+                  valueLabel: '${(effects.loudnessGain / 100).toStringAsFixed(1)}x',
                 ),
                 _EffectSlider(
                   label: 'SPEED',
-                  value: eng.speed,
+                  value: effects.speed,
                   min: 0.5,
                   max: 2.0,
                   divisions: 15,
                   icon: Icons.speed,
-                  onChanged: (v) => eng.setPlaybackSpeed(v),
+                  onChanged: (v) => effects.setSpeed(v),
                   primaryColor: primaryColor,
                   textColor: textColor,
-                  valueLabel: '${eng.speed.toStringAsFixed(2)}x',
+                  valueLabel: '${effects.speed.toStringAsFixed(2)}x',
                 ),
                 _EffectSlider(
                   label: 'PITCH',
-                  value: eng.pitch,
+                  value: effects.pitch,
                   min: 0.5,
                   max: 2.0,
                   divisions: 15,
                   icon: Icons.height,
-                  onChanged: (v) => eng.setPlaybackPitch(v),
+                  onChanged: (v) => effects.setPitch(v),
                   primaryColor: primaryColor,
                   textColor: textColor,
-                  valueLabel: '${eng.pitch.toStringAsFixed(2)}x',
+                  valueLabel: '${effects.pitch.toStringAsFixed(2)}x',
                 ),
               ],
             ),
@@ -1128,13 +1173,13 @@ class _EqualizerSheet extends StatelessWidget {
     );
   }
 
-  void _applyPreset(RadioEngine engine, List<double> values, {double bass = 0.0, double speed = 1.0, double pitch = 1.0}) {
-    for (int i = 0; i < values.length && i < engine.equalizerBands.length; i++) {
-      engine.updateEqualizerBand(i, values[i]);
+  void _applyPreset(AudioEffectsService effects, List<double> values, {double bass = 0.0, double speed = 1.0, double pitch = 1.0}) {
+    for (int i = 0; i < values.length && i < effects.equalizerBands.length; i++) {
+      effects.updateEqualizerBand(i, values[i]);
     }
-    engine.setBassBoostStrength(bass);
-    engine.setPlaybackSpeed(speed);
-    engine.setPlaybackPitch(pitch);
+    effects.setBassBoostStrength(bass);
+    effects.setSpeed(speed);
+    effects.setPitch(pitch);
   }
 }
 
@@ -1218,15 +1263,41 @@ class _PresetChip extends StatelessWidget {
   }
 }
 
-class _RecordingSheet extends StatelessWidget {
-  final RadioEngine engine;
-  const _RecordingSheet({required this.engine});
+class _RecordingSheet extends StatefulWidget {
+  final PlaybackController controller;
+  const _RecordingSheet({required this.controller});
+
+  @override
+  State<_RecordingSheet> createState() => _RecordingSheetState();
+}
+
+class _RecordingSheetState extends State<_RecordingSheet> {
+  List<String> _recordings = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecordings();
+  }
+
+  Future<void> _loadRecordings() async {
+    final recordingService = Provider.of<RecordingService>(context, listen: false);
+    final list = await recordingService.getSavedRecordings();
+    if (mounted) {
+      setState(() {
+        _recordings = list;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textColor = theme.textTheme.bodyLarge?.color;
     final primaryColor = theme.primaryColor;
+    final recordingService = Provider.of<RecordingService>(context);
 
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
@@ -1237,70 +1308,81 @@ class _RecordingSheet extends StatelessWidget {
           Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 24), decoration: BoxDecoration(color: textColor?.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(2))),
           Text('STREAM RECORDING', style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 2)),
           const SizedBox(height: 20),
-          Consumer<RadioEngine>(
-            builder: (context, eng, _) {
-              if (eng.isRecording) {
-                return Column(
-                  children: [
-                    Icon(Icons.mic_rounded, color: primaryColor, size: 48),
-                    const SizedBox(height: 8),
-                    Text(_fmtDuration(eng.recordingDuration), style: TextStyle(color: textColor, fontSize: 24, fontWeight: FontWeight.bold)),
-                    Text('RECORDING...', style: TextStyle(color: primaryColor, fontSize: 10, fontWeight: FontWeight.w900)),
-                  ],
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
+          if (recordingService.isRecording)
+            Column(
+              children: [
+                Icon(Icons.mic_rounded, color: primaryColor, size: 48),
+                const SizedBox(height: 8),
+                Text(_fmtDuration(recordingService.recordingDuration), style: TextStyle(color: textColor, fontSize: 24, fontWeight: FontWeight.bold)),
+                Text('RECORDING...', style: TextStyle(color: primaryColor, fontSize: 10, fontWeight: FontWeight.w900)),
+              ],
+            ),
           const SizedBox(height: 20),
           Expanded(
-            child: Consumer<RadioEngine>(
-              builder: (context, eng, _) {
-                if (eng.savedRecordings.isEmpty && !eng.isRecording) {
-                  return Center(child: Text('No recordings found', style: TextStyle(color: textColor?.withValues(alpha: 0.4))));
-                }
-                return ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: eng.savedRecordings.length,
-                  itemBuilder: (context, i) {
-                    final path = eng.savedRecordings[eng.savedRecordings.length - 1 - i];
-                    final name = path.split('/').last;
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.audiotrack_rounded, color: textColor?.withValues(alpha: 0.4)),
-                      title: Text(name, style: TextStyle(color: textColor?.withValues(alpha: 0.7), fontSize: 13), overflow: TextOverflow.ellipsis),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(icon: Icon(Icons.share, color: textColor?.withValues(alpha: 0.4), size: 20), onPressed: () => Share.shareXFiles([XFile(path)])),
-                          IconButton(icon: Icon(Icons.open_in_new, color: primaryColor, size: 20), onPressed: () => OpenFilex.open(path)),
-                          IconButton(icon: Icon(Icons.delete_outline, color: textColor?.withValues(alpha: 0.2), size: 20), onPressed: () => eng.deleteRecording(path)),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+            child: _isLoading 
+              ? const Center(child: CircularProgressIndicator())
+              : _recordings.isEmpty && !recordingService.isRecording
+                ? Center(child: Text('No recordings found', style: TextStyle(color: textColor?.withValues(alpha: 0.4))))
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _recordings.length,
+                    itemBuilder: (context, i) {
+                      final path = _recordings[i];
+                      final name = path.split('/').last;
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                          leading: Icon(Icons.audiotrack_rounded, color: textColor?.withValues(alpha: 0.6)),
+                          title: Text(name, style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.share, color: textColor?.withValues(alpha: 0.5), size: 18), 
+                                onPressed: () => Share.shareXFiles([XFile(path)])
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.delete_outline, color: theme.colorScheme.error.withValues(alpha: 0.7), size: 18), 
+                                onPressed: () async {
+                                  await recordingService.deleteRecording(path);
+                                  _loadRecordings();
+                                }
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
           const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (engine.isRecording) {
-                      engine.stopRecording();
-                    } else {
-                      engine.startRecording();
+                  onPressed: () async {
+                    if (recordingService.isRecording) {
+                      await recordingService.stopRecording();
+                      _loadRecordings();
+                    } else if (widget.controller.currentStation != null) {
+                      await recordingService.startRecording(widget.controller.currentStation!);
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: engine.isRecording ? (theme.colorScheme.error) : primaryColor,
-                      foregroundColor: engine.isRecording ? theme.colorScheme.onError : theme.colorScheme.onPrimary,
+                      backgroundColor: recordingService.isRecording ? (theme.colorScheme.error) : primaryColor,
+                      foregroundColor: recordingService.isRecording ? theme.colorScheme.onError : theme.colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                  child: Text(engine.isRecording ? 'STOP RECORDING' : 'START RECORDING'),
+                  child: Text(recordingService.isRecording ? 'STOP RECORDING' : 'START RECORDING'),
                 ),
               ),
             ],

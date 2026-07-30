@@ -16,7 +16,7 @@ Future<RadioAudioHandler> initAudioService() async {
       androidStopForegroundOnPause: false,
       androidShowNotificationBadge: true,
       notificationColor: const Color(0xFFE53935),
-      androidNotificationIcon: 'ic_notification',
+      androidNotificationIcon: 'mipmap/launcher_icon',
       androidNotificationClickStartsActivity: true,
       androidResumeOnClick: true,
     ),
@@ -41,6 +41,8 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
           // _bassBoost,
         ],
       ),
+      handleAudioSessionActivation: false,
+      handleInterruptions: false,
     );
     
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
@@ -191,8 +193,6 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
       if (_player.playing) MediaControl.pause else MediaControl.play,
       MediaControl.stop,
       MediaControl.skipToNext,
-      if (!isStation) MediaControl.rewind,
-      if (!isStation) MediaControl.fastForward,
     ];
 
     return PlaybackState(

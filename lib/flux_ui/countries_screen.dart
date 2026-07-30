@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'streema_browser_screen.dart';
-import '../flux_engine/radio_engine.dart';
+import '../flux_engine/station_provider.dart';
 import '../flux_hardware/radio_service.dart';
 import '../helpers/navigation_helper.dart';
 import 'models/countries_data.dart';
@@ -56,13 +56,16 @@ class _CountriesScreenState extends State<CountriesScreen> {
                                   _expandedRegionIndex = isExpanded ? null : index;
                                 });
                               },
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(16),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                 decoration: BoxDecoration(
                                   color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                                  border: Border(left: BorderSide(color: theme.colorScheme.primary, width: 4)),
-                                  borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
+                                  border: Border.all(
+                                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+                                    width: 1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -129,10 +132,10 @@ class _CountriesScreenState extends State<CountriesScreen> {
   }
 
   void _loadAndNavigateToCountry(BuildContext context, String countryName) {
-    final engine = context.read<RadioEngine>();
-    final service = context.read<RadioService>();
+    final stationProvider = context.read<StationProvider>();
+    final service = RadioService();
     final theme = Theme.of(context);
-    engine.loadStationsByCountry(countryName);
+    stationProvider.loadStationsByCountry(countryName);
     Navigator.push(
       context,
       NavigationHelper.slideRightRoute(
@@ -172,12 +175,16 @@ class _CountryCard extends StatelessWidget {
     final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: theme.primaryColor.withValues(alpha: 0.1),
-          border: Border.all(color: theme.primaryColor.withValues(alpha: 0.3)),
-          borderRadius: BorderRadius.circular(20),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

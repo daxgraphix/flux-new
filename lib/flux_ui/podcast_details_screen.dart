@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../flux_engine/radio_engine.dart';
+import '../flux_engine/playback_controller.dart';
+import '../flux_engine/station_provider.dart';
+import '../flux_engine/download_service.dart';
+import '../flux_engine/library_manager.dart';
 import '../helpers/navigation_helper.dart';
+import '../flux_engine/app_exception.dart';
 import 'models/podcast.dart';
 import 'widgets/flux_image.dart';
 import 'widgets/shimmer_list_widget.dart';
@@ -23,7 +27,7 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> with RouteA
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<RadioEngine>(context, listen: false).loadEpisodes(widget.podcast);
+      Provider.of<StationProvider>(context, listen: false).loadEpisodes(widget.podcast.rss);
     });
   }
 
@@ -43,15 +47,14 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> with RouteA
   void didPopNext() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        Provider.of<RadioEngine>(context, listen: false).loadEpisodes(widget.podcast);
+        Provider.of<StationProvider>(context, listen: false).loadEpisodes(widget.podcast.rss);
       }
     });
   }
 
   Future<void> _refreshEpisodes() async {
-    final engine = Provider.of<RadioEngine>(context, listen: false);
-    await engine.loadEpisodes(widget.podcast);
-    setState(() {});
+    final stationProvider = Provider.of<StationProvider>(context, listen: false);
+    await stationProvider.loadEpisodes(widget.podcast.rss);
   }
 
 @override
@@ -62,9 +65,9 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> with RouteA
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: Consumer<RadioEngine>(
-        builder: (context, engine, _) {
-          if (engine.isLoading) {
+      body: Consumer<StationProvider>(
+        builder: (context, stationProvider, _) {
+          if (stationProvider.isLoading && stationProvider.episodes.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -132,11 +135,11 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> with RouteA
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Consumer<RadioEngine>(
-                              builder: (context, engine, _) {
-                                if (engine.episodes.isEmpty) return const SizedBox.shrink();
+                            Consumer<StationProvider>(
+                              builder: (context, stationProvider, _) {
+                                if (stationProvider.episodes.isEmpty) return const SizedBox.shrink();
                                 return Text(
-                                  '${engine.episodes.length} Episodes',
+                                  '${stationProvider.episodes.length} Episodes',
                                   style: TextStyle(
                                     color: theme.textTheme.bodySmall?.color,
                                     fontSize: 14,
@@ -167,15 +170,15 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> with RouteA
                         ),
                       ),
                     ),
-                    Consumer<RadioEngine>(
-                      builder: (context, engine, child) {
-                        if (engine.isLoading) {
+                    Consumer<StationProvider>(
+                      builder: (context, stationProvider, child) {
+                        if (stationProvider.isLoading && stationProvider.episodes.isEmpty) {
                           return const SliverToBoxAdapter(
                             child: ShimmerListWidget(itemCount: 5),
                           );
                         }
 
-                        if (engine.episodes.isEmpty) {
+                        if (stationProvider.episodes.isEmpty) {
                           return SliverFillRemaining(
                             hasScrollBody: false,
                             child: Center(
@@ -219,7 +222,7 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> with RouteA
                                       children: [
                                         ElevatedButton.icon(
                                           onPressed: () {
-                                            Provider.of<RadioEngine>(context, listen: false).loadEpisodes(widget.podcast);
+                                            Provider.of<StationProvider>(context, listen: false).loadEpisodes(widget.podcast.rss);
                                           },
                                           icon: const Icon(Icons.refresh_rounded, size: 18),
                                           label: const Text('RETRY', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
@@ -258,10 +261,10 @@ class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> with RouteA
                         return SliverList(
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
-                              final episode = engine.episodes[index];
+                              final episode = stationProvider.episodes[index];
                               return _EpisodeListItem(episode: episode);
                             },
-                            childCount: engine.episodes.length,
+                            childCount: stationProvider.episodes.length,
                           ),
                         );
                       },
@@ -285,34 +288,48 @@ class _EpisodeListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final engine = Provider.of<RadioEngine>(context);
+    final playbackController = Provider.of<PlaybackController>(context);
+    final downloadService = Provider.of<DownloadService>(context);
+    final libraryManager = Provider.of<LibraryManager>(context);
+    
     final dateStr = DateFormat('MMM d, yyyy').format(episode.pubDate);
     final durationStr = '${(episode.duration / 60).floor()} min';
     
-    final isDownloading = engine.isDownloading(episode.id);
-    final downloadProgress = engine.getDownloadProgress(episode.id);
+    final isDownloading = downloadService.isDownloading(episode.id);
+    final downloadProgress = downloadService.getDownloadProgress(episode.id);
     final isDownloaded = episode.isDownloaded;
 
-    return Card(
-      color: theme.cardColor,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(12),
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(12),
           child: FluxImage(
             imageUrl: episode.image.isNotEmpty ? episode.image : '',
-            width: 60,
-            height: 60,
+            width: 52,
+            height: 52,
             errorWidget: Container(
-              color: theme.scaffoldBackgroundColor,
-              child: const Icon(Icons.mic, color: Colors.red),
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Icon(Icons.mic_rounded, color: theme.primaryColor, size: 28),
             ),
           ),
         ),
         title: Text(
           episode.title,
-          style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+          ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
@@ -324,52 +341,56 @@ class _EpisodeListItem extends StatelessWidget {
               episode.description,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6), fontSize: 12),
+              style: TextStyle(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-             Text(
-               '$dateStr • $durationStr',
-               style: TextStyle(
-                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                 fontSize: 11,
-                 fontWeight: FontWeight.w500,
-               ),
-             ),
+                Text(
+                  '$dateStr • $durationStr',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 if (isDownloaded) ...[
                   const SizedBox(width: 8),
-                  const Icon(Icons.download_done, color: Colors.green, size: 14),
+                  const Icon(Icons.offline_pin_rounded, color: Colors.green, size: 16),
                 ],
                 if (episode.lastPosition > 0) ...[
                   const SizedBox(width: 8),
                   Text(
                     '${(episode.lastPosition / 60).floor()}m left',
                     style: TextStyle(
-                      color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+                      color: theme.primaryColor,
                       fontSize: 11,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ],
             ),
-if (episode.lastPosition > 0 && episode.duration > 0) ...[
-               const SizedBox(height: 8),
-               ClipRRect(
-                 borderRadius: BorderRadius.circular(2),
-                 child: LinearProgressIndicator(
-                   value: episode.lastPosition / episode.duration,
-                   backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
-                   color: theme.colorScheme.primary,
-                   minHeight: 2,
-                 ),
-               ),
-             ],
+            if (episode.lastPosition > 0 && episode.duration > 0) ...[
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: episode.lastPosition / episode.duration,
+                  backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
+                  color: theme.primaryColor,
+                  minHeight: 2,
+                ),
+              ),
+            ],
           ],
         ),
         trailing: isDownloading
             ? InkWell(
-                onTap: () => engine.cancelDownload(episode.id),
+                onTap: () => downloadService.cancelDownload(episode.id),
                 child: SizedBox(
                   width: 24,
                   height: 24,
@@ -379,9 +400,9 @@ if (episode.lastPosition > 0 && episode.duration > 0) ...[
                       CircularProgressIndicator(
                         value: downloadProgress > 0 ? downloadProgress : null,
                         strokeWidth: 2,
-                        color: Colors.red,
+                        color: theme.colorScheme.error,
                       ),
-                      const Icon(Icons.close, size: 12, color: Colors.red),
+                      Icon(Icons.close_rounded, size: 12, color: theme.colorScheme.error),
                     ],
                   ),
                 ),
@@ -389,29 +410,54 @@ if (episode.lastPosition > 0 && episode.duration > 0) ...[
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _BookmarkButton(episode: episode, engine: engine, theme: theme),
+                  _BookmarkButton(episode: episode, libraryManager: libraryManager, theme: theme),
                   const SizedBox(width: 4),
                   IconButton(
                     icon: Icon(
-                      isDownloaded ? Icons.delete_outline : Icons.download_for_offline,
-                      color: isDownloaded ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5) : Colors.red,
+                      isDownloaded ? Icons.delete_outline_rounded : Icons.download_for_offline_rounded,
+                      color: isDownloaded ? theme.colorScheme.onSurfaceVariant : theme.primaryColor,
                     ),
                     onPressed: () {
                       if (isDownloaded) {
-                        engine.deleteDownloadedEpisode(episode);
+                        downloadService.deleteDownloadedEpisode(episode);
                       } else {
-                        engine.downloadEpisode(episode);
+                        downloadService.downloadEpisode(episode);
                       }
                     },
                   ),
                 ],
               ),
-        onTap: () {
-          engine.playEpisode(episode);
-          if (context.mounted) {
-            Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
-          }
-        },
+        onTap: () => _playEpisode(context, episode, playbackController),
+      ),
+    );
+  }
+
+  void _playEpisode(BuildContext context, Episode episode, PlaybackController playbackController) {
+    playbackController.playEpisode(episode).then((_) {
+      if (context.mounted) {
+        if (playbackController.error != null) {
+          _showErrorSnackBar(context, playbackController.error!, () => _playEpisode(context, episode, playbackController));
+        } else {
+          Navigator.of(context).push(NavigationHelper.slideUpRoute(const NowPlayingScreen()));
+        }
+      }
+    });
+  }
+
+  void _showErrorSnackBar(BuildContext context, AppException error, VoidCallback onRetry) {
+    final theme = Theme.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(error.localizedMessage),
+        backgroundColor: theme.colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+        action: error.canRetry 
+          ? SnackBarAction(
+              label: 'RETRY',
+              textColor: Colors.white,
+              onPressed: onRetry,
+            )
+          : null,
       ),
     );
   }
@@ -419,29 +465,24 @@ if (episode.lastPosition > 0 && episode.duration > 0) ...[
 
 class _BookmarkButton extends StatelessWidget {
   final Episode episode;
-  final RadioEngine engine;
+  final LibraryManager libraryManager;
   final ThemeData theme;
 
   const _BookmarkButton({
     required this.episode,
-    required this.engine,
+    required this.libraryManager,
     required this.theme,
   });
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: engine.isBookmarked(episode.id),
-      builder: (context, snap) {
-        final isBookmarked = snap.data == true;
-        return IconButton(
-          icon: Icon(
-            isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-            color: isBookmarked ? Colors.amber : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
-          ),
-          onPressed: () => engine.toggleBookmark(episode),
-        );
-      },
+    final isBookmarked = libraryManager.bookmarkedEpisodes.any((e) => e.id == episode.id);
+    return IconButton(
+      icon: Icon(
+        isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+        color: isBookmarked ? Colors.amber : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+      ),
+      onPressed: () => libraryManager.toggleBookmark(episode),
     );
   }
 }

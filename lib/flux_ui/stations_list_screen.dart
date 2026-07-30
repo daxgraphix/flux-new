@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'streema_browser_screen.dart';
-import '../flux_engine/radio_engine.dart';
+import '../flux_engine/station_provider.dart';
+import '../flux_engine/playback_controller.dart';
 import '../flux_hardware/radio_service.dart';
 import '../helpers/navigation_helper.dart';
 import 'now_playing_screen.dart';
@@ -49,8 +50,8 @@ class _StationsListScreenState extends State<StationsListScreen> {
       body: Container(
         color: theme.scaffoldBackgroundColor,
         child: SafeArea(
-          child: Consumer<RadioEngine>(
-            builder: (context, engine, child) {
+          child: Consumer2<StationProvider, PlaybackController>(
+            builder: (context, provider, playback, child) {
               return Column(
                 children: [
                   // Header
@@ -87,7 +88,7 @@ class _StationsListScreenState extends State<StationsListScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      '${engine.stations.length} stations found',
+                      '${provider.stations.length} stations found',
                       style: TextStyle(
                         color: theme.colorScheme.onSurfaceVariant,
                         fontSize: 14,
@@ -97,13 +98,13 @@ class _StationsListScreenState extends State<StationsListScreen> {
                   const SizedBox(height: 12),
                   // Stations list
                   Expanded(
-                    child: engine.isLoading
+                    child: provider.isLoading
                         ? LayoutBuilder(
                             builder: (context, constraints) {
                               return ShimmerListWidget(isGrid: constraints.maxWidth >= 600);
                             },
                           )
-                        : engine.stations.isEmpty
+                        : provider.stations.isEmpty
                             ? EmptyStateWidget(
                                 icon: Icons.radio,
                                 title: 'No stations found',
@@ -131,24 +132,24 @@ class _StationsListScreenState extends State<StationsListScreen> {
                                         crossAxisSpacing: 12,
                                         mainAxisSpacing: 8,
                                       ),
-                                      itemCount: engine.stations.length + 1,
+                                      itemCount: provider.stations.length + 1,
                                       itemBuilder: (context, index) {
-                                        if (index == engine.stations.length) {
+                                        if (index == provider.stations.length) {
                                           return _buildStreemaFooter(widget.title);
                                         }
-                                        final station = engine.stations[index];
-                                        return _buildStationItem(station, engine);
+                                        final station = provider.stations[index];
+                                        return _buildStationItem(station, playback);
                                       },
                                     );
                                   }
                                   return ListView.builder(
-                                    itemCount: engine.stations.length + 1,
+                                    itemCount: provider.stations.length + 1,
                                     itemBuilder: (context, index) {
-                                      if (index == engine.stations.length) {
+                                      if (index == provider.stations.length) {
                                         return _buildStreemaFooter(widget.title);
                                       }
-                                      final station = engine.stations[index];
-                                      return _buildStationItem(station, engine);
+                                      final station = provider.stations[index];
+                                      return _buildStationItem(station, playback);
                                     },
                                   );
                                 },
@@ -163,35 +164,29 @@ class _StationsListScreenState extends State<StationsListScreen> {
     );
   }
 
-  Widget _buildStationItem(RadioStation station, RadioEngine engine) {
+  Widget _buildStationItem(RadioStation station, PlaybackController playback) {
     final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      color: theme.cardColor,
-      margin: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 4,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          width: 1,
+        ),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: FluxImage(
-          imageUrl: station.favicon,
-          width: 40,
-          height: 40,
-          placeholder: CircleAvatar(
-            backgroundColor: theme.primaryColor,
-            child: Icon(
-              Icons.radio,
-              color: theme.colorScheme.onPrimary,
-              size: 20,
-            ),
-          ),
-          errorWidget: CircleAvatar(
-            backgroundColor: theme.primaryColor,
-            child: Icon(
-              Icons.radio,
-              color: theme.colorScheme.onPrimary,
-              size: 20,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: FluxImage(
+            imageUrl: station.favicon,
+            width: 52,
+            height: 52,
+            errorWidget: Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Icon(Icons.radio_rounded, color: theme.primaryColor, size: 28),
             ),
           ),
         ),
@@ -199,29 +194,40 @@ class _StationsListScreenState extends State<StationsListScreen> {
           station.name,
           style: TextStyle(
             color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
             fontSize: 15,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
-          '${station.country} • ${station.genre}',
-          style: TextStyle(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontSize: 12,
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Text(
+            '${station.country} • ${station.genre}',
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 12,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
-        trailing: Icon(
-          Icons.play_circle_fill,
-          color: theme.primaryColor,
-          size: 32,
+        trailing: Container(
+          decoration: BoxDecoration(
+            color: theme.primaryColor.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            icon: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 24),
+            onPressed: () {
+              playback.playStation(station);
+              Navigator.of(context).push(NavigationHelper.slideUpRoute(const NowPlayingScreen()));
+            },
+          ),
         ),
         onTap: () {
-          engine.playStation(station);
-          Navigator.of(context).push(NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)));
+          playback.playStation(station);
+          Navigator.of(context).push(NavigationHelper.slideUpRoute(const NowPlayingScreen()));
         },
       ),
     );

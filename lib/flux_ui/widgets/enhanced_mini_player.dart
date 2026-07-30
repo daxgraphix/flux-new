@@ -1,17 +1,14 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../flux_engine/radio_engine.dart';
-
+import '../../flux_engine/playback_controller.dart';
 import 'flux_image.dart';
 
 class EnhancedMiniPlayer extends StatefulWidget {
-  final RadioEngine engine;
   final VoidCallback onExpandTap;
 
   const EnhancedMiniPlayer({
     super.key,
-    required this.engine,
     required this.onExpandTap,
   });
 
@@ -42,20 +39,19 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cardColor = theme.colorScheme.surface;
     final primaryColor = theme.primaryColor;
     final textColor = theme.colorScheme.onSurface;
 
-    return Consumer<RadioEngine>(
-      builder: (context, engine, _) {
-        final station = engine.currentStation;
-        final episode = engine.currentEpisode;
+    return Consumer<PlaybackController>(
+      builder: (context, controller, _) {
+        final station = controller.currentStation;
+        final episode = controller.currentEpisode;
 
         if (station == null && episode == null) return const SizedBox.shrink();
 
         final imageUrl = station?.favicon ?? episode?.image ?? '';
-        final title = engine.currentTitle;
-        final subtitle = engine.currentSubtitle;
+        final title = controller.currentTitle;
+        final subtitle = controller.currentSubtitle;
         final isPodcast = episode != null;
 
         return GestureDetector(
@@ -68,149 +64,142 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
             duration: const Duration(milliseconds: 120),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              margin: EdgeInsets.fromLTRB(12, 6, 12, _isPressed ? 2 : 4),
+              margin: EdgeInsets.fromLTRB(16, 8, 16, _isPressed ? 10 : 12),
               decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(16),
+                color: theme.colorScheme.surface.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: primaryColor.withValues(alpha: 0.35),
-                  width: 1,
+                  color: primaryColor.withValues(alpha: 0.2),
+                  width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryColor.withValues(alpha: 0.12),
-                    blurRadius: _isPressed ? 12 : 16,
-                    spreadRadius: 0,
-                    offset: Offset(0, _isPressed ? 2 : 4),
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isPodcast && episode.duration > 0)
-                    _MiniProgressBar(
-                      engine: engine,
-                      color: primaryColor,
-                    ),
-                  Container(
-                    height: 3,
-                    decoration: BoxDecoration(
-                      color: primaryColor,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isPodcast && controller.duration.inSeconds > 0)
+                      _MiniProgressBar(
+                        controller: controller,
+                        color: primaryColor,
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            margin: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: primaryColor.withValues(alpha: 0.2),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: FluxImage(
+                                imageUrl: imageUrl,
+                                fit: BoxFit.cover,
+                                placeholder: Container(
+                                  color: theme.colorScheme.surfaceContainerHighest,
+                                  child: Icon(
+                                    station != null ? Icons.radio_rounded : Icons.podcasts_rounded,
+                                    color: primaryColor,
+                                    size: 24),
+                                ),
+                                errorWidget: Container(
+                                  color: theme.colorScheme.surfaceContainerHighest,
+                                  child: Icon(
+                                    station != null ? Icons.radio_rounded : Icons.podcasts_rounded,
+                                    color: primaryColor,
+                                    size: 24),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  title,
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    letterSpacing: 0.2,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    if (controller.isPlaying)
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 6.0),
+                                        child: _MiniWaveform(
+                                          controller: _waveController,
+                                          color: primaryColor,
+                                        ),
+                                      ),
+                                    Expanded(
+                                      child: Text(
+                                        controller.errorMessage ?? subtitle,
+                                        style: TextStyle(
+                                            color: controller.errorMessage != null
+                                                ? theme.colorScheme.error
+                                                : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                                            fontSize: 11,
+                                            fontWeight: controller.errorMessage != null
+                                                ? FontWeight.bold
+                                                : FontWeight.w500),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          _MiniControlButton(
+                            icon: controller.isLoading
+                                ? Icons.hourglass_top_rounded
+                                : (controller.isPlaying
+                                    ? Icons.pause_rounded
+                                    : Icons.play_arrow_rounded),
+                            color: primaryColor,
+                            onTap: () => controller.isPlaying ? controller.pause() : controller.resume(),
+                          ),
+                          const SizedBox(width: 4),
+                          _MiniControlButton(
+                            icon: Icons.stop_rounded,
+                            color: textColor.withValues(alpha: 0.4),
+                            onTap: () => controller.stop(),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            border: Border.all(color: primaryColor.withValues(alpha: 0.5), width: 1.5),
-                          ),
-                          child: ClipOval(
-                            child: FluxImage(
-                              imageUrl: imageUrl,
-                              width: 44,
-                              height: 44,
-                              placeholder: Icon(
-                                  station != null ? Icons.radio_rounded : Icons.podcasts_rounded,
-                                  color: primaryColor,
-                                  size: 22),
-                              errorWidget: Icon(
-                                  station != null ? Icons.radio_rounded : Icons.podcasts_rounded,
-                                  color: primaryColor,
-                                  size: 22),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                title,
-                                style: TextStyle(
-                                  color: textColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  if (engine.isPlaying)
-                                    _MiniWaveform(
-                                      controller: _waveController,
-                                      color: primaryColor,
-                                    ),
-                                  Expanded(
-                                    child: Text(
-                                      engine.errorMessage ?? subtitle,
-                                      style: TextStyle(
-                                          color: engine.errorMessage != null
-                                              ? theme.colorScheme.error
-                                              : theme.colorScheme.onSurfaceVariant,
-                                          fontSize: 11,
-                                          fontWeight: engine.errorMessage != null
-                                              ? FontWeight.bold
-                                              : FontWeight.normal),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (engine.errorMessage != null)
-                          GestureDetector(
-                            onTap: () => engine.clearError(),
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.error.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.close_rounded,
-                                color: theme.colorScheme.error,
-                                size: 18,
-                              ),
-                            ),
-                          ),
-                        _MiniControlButton(
-                          icon: engine.isLoading
-                              ? Icons.hourglass_top_rounded
-                              : (engine.isPlaying
-                                  ? Icons.pause_rounded
-                                  : Icons.play_arrow_rounded),
-                          color: primaryColor,
-                          onTap: () => engine.isPlaying ? engine.pause() : engine.resume(),
-                        ),
-                        const SizedBox(width: 6),
-                        _MiniControlButton(
-                          icon: Icons.stop_rounded,
-                          color: textColor.withValues(alpha: 0.6),
-                          onTap: () => engine.stop(),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -221,21 +210,21 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
 }
 
 class _MiniProgressBar extends StatelessWidget {
-  final RadioEngine engine;
+  final PlaybackController controller;
   final Color color;
 
   const _MiniProgressBar({
-    required this.engine,
+    required this.controller,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final episode = engine.currentEpisode;
-    if (episode == null || episode.duration <= 0) return const SizedBox.shrink();
+    final episode = controller.currentEpisode;
+    if (episode == null || controller.duration.inSeconds <= 0) return const SizedBox.shrink();
 
-    final progress = episode.duration > 0
-        ? (episode.lastPosition / episode.duration).clamp(0.0, 1.0)
+    final progress = controller.duration.inSeconds > 0
+        ? (controller.position.inSeconds / controller.duration.inSeconds).clamp(0.0, 1.0)
         : 0.0;
 
     return GestureDetector(

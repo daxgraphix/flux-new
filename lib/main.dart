@@ -4,7 +4,6 @@ import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'flux_engine/radio_engine.dart';
 import 'flux_engine/theme_provider.dart';
 import 'flux_engine/audio_service_handler.dart';
 import 'flux_ui/navigation_wrapper.dart';
@@ -15,6 +14,11 @@ import 'flux_engine/alarm_service.dart';
 import 'flux_engine/station_provider.dart';
 import 'flux_engine/download_service.dart';
 import 'flux_hardware/radio_service.dart';
+import 'flux_engine/playback_controller.dart';
+import 'flux_engine/audio_effects_service.dart';
+import 'flux_engine/library_manager.dart';
+import 'flux_engine/settings_service.dart';
+import 'flux_storage/radio_storage.dart';
 import 'flux_ui/route_observer.dart';
 
 late RadioAudioHandler _audioHandler;
@@ -52,12 +56,15 @@ class FluxApp extends StatefulWidget {
 }
 
 class _FluxAppState extends State<FluxApp> {
-  late RadioEngine _engine;
   late ThemeProvider _themeProvider;
   late RecordingService _recordingService;
   late AlarmService _alarmService;
   late StationProvider _stationProvider;
   late DownloadService _downloadService;
+  late PlaybackController _playbackController;
+  late AudioEffectsService _audioEffectsService;
+  late LibraryManager _libraryManager;
+  late SettingsService _settingsService;
   AppState _appState = AppState.splash;
 
   @override
@@ -67,22 +74,33 @@ class _FluxAppState extends State<FluxApp> {
     _alarmService = AlarmService();
     _stationProvider = StationProvider();
     _downloadService = DownloadService();
-    _engine = RadioEngine(_audioHandler, _recordingService, _alarmService, _stationProvider, _downloadService);
+    _playbackController = PlaybackController(_audioHandler);
+    _audioEffectsService = AudioEffectsService(_audioHandler);
+    _libraryManager = LibraryManager();
+    _settingsService = SettingsService();
     _themeProvider = ThemeProvider();
     _initializeApp();
   }
 
   Future<void> _initializeApp() async {
     try {
-      await _engine.initialize().timeout(const Duration(seconds: 12));
+      await RadioStorage().init();
+      await _stationProvider.initialize();
+      await _alarmService.initialize();
+      await _playbackController.initialize();
+      await _settingsService.loadSettings();
+      await _audioEffectsService.initialize();
+      await _libraryManager.loadLibrary();
+      await _recordingService.loadSavedRecordings();
     } catch (e) {
-      debugPrint('Engine initialization failed or timed out: $e');
+      debugPrint('Initialization failed: $e');
     }
   }
 
   @override
   void dispose() {
-    _engine.dispose();
+    _playbackController.dispose();
+    _recordingService.dispose();
     super.dispose();
   }
 
@@ -90,12 +108,15 @@ class _FluxAppState extends State<FluxApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<RadioEngine>(create: (_) => _engine),
         ChangeNotifierProvider<ThemeProvider>.value(value: _themeProvider),
         ChangeNotifierProvider<RecordingService>.value(value: _recordingService),
         ChangeNotifierProvider<AlarmService>.value(value: _alarmService),
         ChangeNotifierProvider<StationProvider>.value(value: _stationProvider),
         ChangeNotifierProvider<DownloadService>.value(value: _downloadService),
+        ChangeNotifierProvider<PlaybackController>.value(value: _playbackController),
+        ChangeNotifierProvider<AudioEffectsService>.value(value: _audioEffectsService),
+        ChangeNotifierProvider<LibraryManager>.value(value: _libraryManager),
+        ChangeNotifierProvider<SettingsService>.value(value: _settingsService),
         Provider<RadioService>(create: (_) => RadioService()),
       ],
       child: Consumer<ThemeProvider>(

@@ -1,2 +1,3 @@
-﻿Analyzing flux...                                               
-No issues found! (ran in 4.8s)
+[error] The named parameter 'url' is required, but there's no corresponding argument. Try adding the required argument (D:\FlutterApps\flux-new\lib\flux_ui\main_screen.dart:140:93)
+[info] Unnecessary use of multiple underscores. Try using '_' (D:\FlutterApps\flux-new\lib\flux_ui\main_screen.dart:303:26)
+[info] Unnecessary use of multiple underscores. Try using '_' (D:\FlutterApps\flux-new\lib\flux_ui\main_screen.dart:442:33)

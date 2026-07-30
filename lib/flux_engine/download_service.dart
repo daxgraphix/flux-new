@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../flux_ui/models/podcast.dart';
+import '../flux_storage/radio_storage.dart';
 
 class DownloadService extends ChangeNotifier {
   final Map<String, double> _progress = {};
@@ -86,6 +87,7 @@ class DownloadService extends ChangeNotifier {
       }
 
       _cleanup(episode.id);
+      await loadDownloadedEpisodes();
       return filePath;
     } catch (e) {
       debugPrint('Download failed for ${episode.title}: $e');
@@ -127,6 +129,22 @@ class DownloadService extends ChangeNotifier {
     }
   }
 
+  List<Episode> _downloadedEpisodes = [];
+  List<Episode> get downloadedEpisodes => List.unmodifiable(_downloadedEpisodes);
+
+  Future<void> loadDownloadedEpisodes() async {
+    _downloadedEpisodes = await RadioStorage().getDownloadedEpisodes();
+    notifyListeners();
+  }
+
+  Future<void> deleteDownloadedEpisode(Episode episode) async {
+    if (episode.downloadPath != null) {
+      await deleteEpisode(episode.downloadPath!);
+      await RadioStorage().removeDownloadedEpisode(episode.id);
+      await loadDownloadedEpisodes();
+    }
+  }
+
   Future<void> clearAllDownloads() async {
     try {
       final dir = await getExternalStorageDirectory() ?? await getApplicationDocumentsDirectory();
@@ -135,10 +153,24 @@ class DownloadService extends ChangeNotifier {
         await downloadsDir.delete(recursive: true);
         await downloadsDir.create(recursive: true);
       }
-      notifyListeners();
+      await RadioStorage().clearAllDownloadedEpisodes();
+      await loadDownloadedEpisodes();
     } catch (e) {
       debugPrint('Error clearing all downloads: $e');
     }
+  }
+
+  Future<void> deletePlayedEpisodes() async {
+    final episodes = await RadioStorage().getDownloadedEpisodes();
+    for (final episode in episodes) {
+      if (episode.lastPosition > 0 && episode.duration > 0 && episode.lastPosition >= episode.duration) {
+        if (episode.downloadPath != null) {
+          await deleteEpisode(episode.downloadPath!);
+        }
+        await RadioStorage().removeDownloadedEpisode(episode.id);
+      }
+    }
+    await loadDownloadedEpisodes();
   }
 
   Future<int> getTotalDownloadSize() async {
