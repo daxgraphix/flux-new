@@ -12,7 +12,8 @@ class StationProvider extends ChangeNotifier {
   
   List<RadioStation> _stations = [];
   List<Podcast> _podcasts = [];
-  List<Episode> _episodes = [];
+  final Map<String, List<Episode>> _episodesByRss = {};
+  String? _currentRss;
   List<String> _countries = [];
   List<String> _genres = [];
   List<String> _languages = [];
@@ -23,7 +24,12 @@ class StationProvider extends ChangeNotifier {
 
   List<RadioStation> get stations => _stations;
   List<Podcast> get podcasts => _podcasts;
-  List<Episode> get episodes => _episodes;
+  List<Episode> get episodes {
+    if (_currentRss != null && _episodesByRss[_currentRss] != null) {
+      return _episodesByRss[_currentRss]!;
+    }
+    return [];
+  }
   List<String> get countries => _countries;
   List<String> get genres => _genres;
   List<String> get languages => _languages;
@@ -298,7 +304,8 @@ class StationProvider extends ChangeNotifier {
 
   Future<void> loadEpisodes(String rssUrl) async {
     _isLoading = true;
-    _episodes = [];
+    _currentRss = rssUrl;
+    _episodesByRss[rssUrl] = [];
     notifyListeners();
     try {
       var episodes = await _podcastService.fetchEpisodes(rssUrl);
@@ -315,7 +322,7 @@ class StationProvider extends ChangeNotifier {
           );
         }
       }
-      _episodes = episodes;
+      _episodesByRss[rssUrl] = episodes;
     } catch (e) {
       _errorMessage = 'Failed to load episodes: $e';
     }
@@ -323,10 +330,13 @@ class StationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateEpisode(Episode episode) async {
-    final index = _episodes.indexWhere((e) => e.id == episode.id);
+  Future<void> updateEpisode(Episode episode, {String? rssUrl}) async {
+    final targetRss = rssUrl ?? _currentRss;
+    if (targetRss == null || !_episodesByRss.containsKey(targetRss)) return;
+    
+    final index = _episodesByRss[targetRss]!.indexWhere((e) => e.id == episode.id);
     if (index != -1) {
-      _episodes[index] = episode;
+      _episodesByRss[targetRss]![index] = episode;
       notifyListeners();
     }
   }

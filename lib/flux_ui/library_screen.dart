@@ -886,31 +886,18 @@ class _LibraryScreenState extends State<LibraryScreen>
                       ),
                       IconButton(
                         icon: Icon(Icons.refresh, color: theme.iconTheme.color?.withValues(alpha: 0.7)),
-                        onPressed: () => engine.searchPodcasts(''),
+                        onPressed: () {
+                          if (_searchQuery.isEmpty) {
+                            engine.loadTrendingPodcasts();
+                          } else {
+                            _searchController.clear();
+                            setState(() => _searchQuery = "");
+                          }
+                        },
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
-                  // Search scope chips
-                  if (q.isNotEmpty) ...[
-                    Row(
-                      children: [
-                        _SearchScopeChip(
-                          label: 'Podcasts',
-                          selected: _searchScope == 'podcasts',
-                          onTap: () => setState(() => _searchScope = 'podcasts'),
-                        ),
-                        const SizedBox(width: 8),
-                        _SearchScopeChip(
-                          label: 'Episodes',
-                          selected: _searchScope == 'episodes',
-                          onTap: () => setState(() => _searchScope = 'episodes'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                  ],
                   
                   Expanded(
                     child: q.isEmpty
@@ -942,8 +929,8 @@ class _LibraryScreenState extends State<LibraryScreen>
   Widget _buildSearchResults(List<dynamic> results, bool isTablet, double maxWidth, ThemeData theme, RadioEngine engine) {
     if (_searchScope == 'episodes') {
       final episodes = results.cast<Episode>();
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      return ListView(
+        shrinkWrap: true,
         children: [
           Text(
             '${episodes.length} Episode${episodes.length == 1 ? '' : 's'}',

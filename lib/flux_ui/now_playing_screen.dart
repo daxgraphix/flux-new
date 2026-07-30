@@ -174,16 +174,13 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                 onVerticalDragUpdate: (d) => _onVerticalDragUpdate(d, constraints),
                 onVerticalDragEnd: (details) {
                   _onVerticalDragEnd(details);
-                  // Dismiss on swipe down
                   if (details.primaryVelocity != null && details.primaryVelocity! > 300) {
-                    Navigator.maybePop(context);
+                    Navigator.pop(context);
                   }
                 },
                 onHorizontalDragEnd: (details) {
-                  // Keep horizontal for potential future skip gestures, 
-                  // but let's make it more sensitive for back if needed.
                   if (details.primaryVelocity != null && details.primaryVelocity! > 800) {
-                    Navigator.maybePop(context);
+                    Navigator.pop(context);
                   }
                 },
                 child: Stack(
@@ -281,12 +278,12 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: Icon(Icons.keyboard_arrow_down_rounded, color: textColor, size: 36),
-            onPressed: () {
-              Navigator.maybePop(context);
-            },
-          ),
+            IconButton(
+              icon: Icon(Icons.keyboard_arrow_down_rounded, color: textColor, size: 36),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
           Column(
             children: [
               Text(

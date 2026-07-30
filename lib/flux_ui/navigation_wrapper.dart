@@ -99,12 +99,10 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
               left: 0,
               right: 0,
               bottom: isTablet ? 0 : kBottomNavigationBarHeight,
-              child: SafeArea(
-                child: EnhancedMiniPlayer(
-                  engine: engine,
-                  onExpandTap: () => Navigator.of(context).push(
-                    NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)),
-                  ),
+              child: EnhancedMiniPlayer(
+                engine: engine,
+                onExpandTap: () => Navigator.of(context).push(
+                  NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)),
                 ),
               ),
             ),
@@ -112,53 +110,44 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
       ),
       bottomNavigationBar: isTablet
           ? null
-          : Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    width: 0.5,
-                  ),
+          : BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: _onItemTapped,
+              type: BottomNavigationBarType.fixed,
+              backgroundColor: theme.colorScheme.surface,
+              selectedItemColor: theme.primaryColor,
+              unselectedItemColor: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              showUnselectedLabels: true,
+              selectedFontSize: 12,
+              unselectedFontSize: 12,
+              elevation: 8,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home_outlined),
+                  activeIcon: Icon(Icons.home_rounded),
+                  label: 'Home',
                 ),
-              ),
-              child: BottomNavigationBar(
-                currentIndex: _selectedIndex,
-                onTap: _onItemTapped,
-                type: BottomNavigationBarType.fixed,
-                backgroundColor: Colors.white,
-                selectedItemColor: theme.primaryColor,
-                unselectedItemColor: Colors.grey,
-                showUnselectedLabels: true,
-                selectedFontSize: 12,
-                unselectedFontSize: 12,
-                items: const [
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.home_outlined),
-                    activeIcon: Icon(Icons.home_rounded),
-                    label: 'Home',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.library_music_outlined),
-                    activeIcon: Icon(Icons.library_music_rounded),
-                    label: 'Library',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.public_outlined),
-                    activeIcon: Icon(Icons.public_rounded),
-                    label: 'Explore',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.language_outlined),
-                    activeIcon: Icon(Icons.language_rounded),
-                    label: 'Streema',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.settings_outlined),
-                    activeIcon: Icon(Icons.settings_rounded),
-                    label: 'Settings',
-                  ),
-                ],
-              ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.library_music_outlined),
+                  activeIcon: Icon(Icons.library_music_rounded),
+                  label: 'Library',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.public_outlined),
+                  activeIcon: Icon(Icons.public_rounded),
+                  label: 'Explore',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.language_outlined),
+                  activeIcon: Icon(Icons.language_rounded),
+                  label: 'Streema',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.settings_outlined),
+                  activeIcon: Icon(Icons.settings_rounded),
+                  label: 'Settings',
+                ),
+              ],
             ),
     );
   }

@@ -15,6 +15,7 @@ import 'flux_engine/alarm_service.dart';
 import 'flux_engine/station_provider.dart';
 import 'flux_engine/download_service.dart';
 import 'flux_hardware/radio_service.dart';
+import 'flux_ui/route_observer.dart';
 
 late RadioAudioHandler _audioHandler;
 
@@ -103,6 +104,7 @@ class _FluxAppState extends State<FluxApp> {
             title: 'Flux Radio',
             theme: themeProvider.theme,
             themeMode: ThemeMode.light,
+            navigatorObservers: [routeObserver],
             builder: (context, child) {
               return DefaultTextStyle.merge(
                 style: const TextStyle(decoration: TextDecoration.none),

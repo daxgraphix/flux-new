@@ -23,7 +23,7 @@ class _StreemaBrowserScreenState extends State<StreemaBrowserScreen> {
     super.initState();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0x00000000))
+      ..setBackgroundColor(const Color(0xFF121212))
       ..addJavaScriptChannel(
         'FluxPlayer',
         onMessageReceived: (JavaScriptMessage message) {
@@ -69,11 +69,11 @@ class _StreemaBrowserScreenState extends State<StreemaBrowserScreen> {
   }
 
   void _cleanUI() {
-    // Inject CSS to hide Streema's branding, header, footer, and ads
     _controller.runJavaScript("""
       (function() {
         var style = document.createElement('style');
         style.innerHTML = `
+          html { background-color: #121212 !important; }
           header, footer, 
           nav, 
           .navbar, 
@@ -253,7 +253,7 @@ class _StreemaBrowserScreenState extends State<StreemaBrowserScreen> {
       ),
       body: Stack(
         children: [
-          WebViewWidget(controller: _controller),
+          Positioned.fill(child: WebViewWidget(controller: _controller)),
           if (_isLoading)
             Container(
               color: theme.scaffoldBackgroundColor.withValues(alpha: 0.8),

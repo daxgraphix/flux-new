@@ -7,6 +7,7 @@ import 'widgets/flux_image.dart';
 import 'widgets/shimmer_list_widget.dart';
 import 'now_playing_screen.dart';
 import 'package:intl/intl.dart';
+import 'route_observer.dart';
 
 class PodcastDetailsScreen extends StatefulWidget {
   final Podcast podcast;
@@ -17,12 +18,33 @@ class PodcastDetailsScreen extends StatefulWidget {
   State<PodcastDetailsScreen> createState() => _PodcastDetailsScreenState();
 }
 
-class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> {
+class _PodcastDetailsScreenState extends State<PodcastDetailsScreen> with RouteAware {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<RadioEngine>(context, listen: false).loadEpisodes(widget.podcast);
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<RadioEngine>(context, listen: false).loadEpisodes(widget.podcast);
+      }
     });
   }
 

@@ -59,10 +59,10 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
         final isPodcast = episode != null;
 
         return GestureDetector(
+          onTap: widget.onExpandTap,
           onTapDown: (_) => setState(() => _isPressed = true),
           onTapUp: (_) => setState(() => _isPressed = false),
           onTapCancel: () => setState(() => _isPressed = false),
-          onTap: widget.onExpandTap,
           child: AnimatedScale(
             scale: _isPressed ? 0.98 : 1.0,
             duration: const Duration(milliseconds: 120),
@@ -88,13 +88,11 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Progress bar
                   if (isPodcast && episode.duration > 0)
                     _MiniProgressBar(
                       engine: engine,
                       color: primaryColor,
                     ),
-                  // Top accent line
                   Container(
                     height: 3,
                     decoration: BoxDecoration(
@@ -109,7 +107,6 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     child: Row(
                       children: [
-                        // Artwork
                         Container(
                           width: 44,
                           height: 44,
@@ -135,7 +132,6 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // Info
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,7 +176,7 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                           ),
                         ),
                         const SizedBox(width: 8),
-                        if (engine.errorMessage != null) ...[
+                        if (engine.errorMessage != null)
                           GestureDetector(
                             onTap: () => engine.clearError(),
                             child: Container(
@@ -196,9 +192,6 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                        ],
-                        // Play / Pause button
                         _MiniControlButton(
                           icon: engine.isLoading
                               ? Icons.hourglass_top_rounded
@@ -209,7 +202,6 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                           onTap: () => engine.isPlaying ? engine.pause() : engine.resume(),
                         ),
                         const SizedBox(width: 6),
-                        // Stop button
                         _MiniControlButton(
                           icon: Icons.stop_rounded,
                           color: textColor.withValues(alpha: 0.6),
