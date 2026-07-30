@@ -25,15 +25,18 @@ class _RecordingsManagerWidgetState extends State<RecordingsManagerWidget> {
     return Consumer<RecordingService>(
       builder: (context, recordingService, child) {
         final theme = Theme.of(context);
+        final textColor = theme.colorScheme.onSurface;
+        final primaryColor = theme.colorScheme.primary;
+
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-              width: 1,
+              color: primaryColor.withValues(alpha: 0.1),
+              width: 1.5,
             ),
           ),
           child: Column(
@@ -43,49 +46,50 @@ class _RecordingsManagerWidgetState extends State<RecordingsManagerWidget> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Recordings',
-                    style: TextStyle(
-                      color: Color(0xFF1A1C1E),
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                  Text(
+                    'RECORDINGS',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.2),
+                      color: primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: primaryColor.withValues(alpha: 0.3), width: 1),
                     ),
                     child: Text(
-                      '${recordingService.savedRecordings.length} files',
-                      style: const TextStyle(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                      '${recordingService.savedRecordings.length} FILES',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: primaryColor,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               if (recordingService.savedRecordings.isEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  padding: const EdgeInsets.symmetric(vertical: 32),
                   child: Center(
                     child: Column(
                       children: [
-                        const Icon(
-                          Icons.mic_off,
-                          size: 32,
-                          color: Color(0xFF9E9E9E),
+                        Icon(
+                          Icons.mic_off_rounded,
+                          size: 40,
+                          color: textColor.withValues(alpha: 0.2),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'No recordings yet',
-                          style: TextStyle(
-                            color: Color(0xFF616161),
+                        const SizedBox(height: 12),
+                        Text(
+                          'NO RECORDINGS YET',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: textColor.withValues(alpha: 0.4),
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.0,
                           ),
                         ),
                       ],
@@ -107,33 +111,43 @@ class _RecordingsManagerWidgetState extends State<RecordingsManagerWidget> {
                     return Container(
                       margin: const EdgeInsets.symmetric(vertical: 6),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(12),
+                        color: theme.colorScheme.surface.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(15),
                         border: Border.all(
                           color: theme.colorScheme.outlineVariant.withValues(alpha: 0.1),
                           width: 1,
                         ),
                       ),
                       child: ListTile(
-                        leading: const Icon(Icons.mic, color: Colors.red, size: 20),
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.mic_rounded, color: Colors.red, size: 20),
+                        ),
                         title: Text(
-                          filename,
-                          style: const TextStyle(
-                            color: Color(0xFF1A1C1E),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                          filename.toUpperCase(),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: textColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         subtitle: Text(
-                          sizeStr,
-                          style: const TextStyle(
-                            color: Color(0xFF616161),
-                            fontSize: 11,
+                          sizeStr.toUpperCase(),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: textColor.withValues(alpha: 0.5),
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                         trailing: PopupMenuButton<String>(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          iconColor: textColor.withValues(alpha: 0.4),
                           onSelected: (value) async {
                             if (value == 'share') {
                               await _shareRecording(recordingPath);
@@ -144,36 +158,33 @@ class _RecordingsManagerWidgetState extends State<RecordingsManagerWidget> {
                             }
                           },
                           itemBuilder: (context) => [
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'share',
                               child: Row(
                                 children: [
-                                  Icon(Icons.share, size: 18,
-                                      color: Colors.blue),
-                                  SizedBox(width: 8),
-                                  Text('Share'),
+                                  Icon(Icons.share_rounded, size: 18, color: theme.colorScheme.primary),
+                                  const SizedBox(width: 12),
+                                  const Text('SHARE', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11)),
                                 ],
                               ),
                             ),
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'export',
                               child: Row(
                                 children: [
-                                  Icon(Icons.download, size: 18,
-                                      color: Colors.green),
-                                  SizedBox(width: 8),
-                                  Text('Export'),
+                                  Icon(Icons.download_rounded, size: 18, color: Colors.green),
+                                  const SizedBox(width: 12),
+                                  const Text('EXPORT', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11)),
                                 ],
                               ),
                             ),
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'delete',
                               child: Row(
                                 children: [
-                                  Icon(Icons.delete, size: 18,
-                                      color: Colors.red),
-                                  SizedBox(width: 8),
-                                  Text('Delete'),
+                                  Icon(Icons.delete_outline_rounded, size: 18, color: theme.colorScheme.error),
+                                  const SizedBox(width: 12),
+                                  Text('DELETE', style: TextStyle(color: theme.colorScheme.error, fontWeight: FontWeight.w900, fontSize: 11)),
                                 ],
                               ),
                             ),

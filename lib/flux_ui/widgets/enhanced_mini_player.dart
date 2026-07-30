@@ -39,7 +39,7 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primaryColor = theme.primaryColor;
+    final primaryColor = theme.colorScheme.primary;
     final textColor = theme.colorScheme.onSurface;
 
     return Consumer<PlaybackController>(
@@ -55,28 +55,27 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
         final isPodcast = episode != null;
 
         return GestureDetector(
-          onTap: widget.onExpandTap,
           onTapDown: (_) => setState(() => _isPressed = true),
           onTapUp: (_) => setState(() => _isPressed = false),
           onTapCancel: () => setState(() => _isPressed = false),
+          onTap: widget.onExpandTap,
           child: AnimatedScale(
-            scale: _isPressed ? 0.98 : 1.0,
-            duration: const Duration(milliseconds: 120),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: EdgeInsets.fromLTRB(16, 8, 16, _isPressed ? 10 : 12),
+            scale: _isPressed ? 0.96 : 1.0,
+            duration: const Duration(milliseconds: 100),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface.withValues(alpha: 0.95),
+                color: theme.colorScheme.surface.withValues(alpha: 0.98),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: primaryColor.withValues(alpha: 0.2),
+                  color: primaryColor.withValues(alpha: 0.15),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
@@ -91,63 +90,27 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                         color: primaryColor,
                       ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
                       child: Row(
                         children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            margin: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: primaryColor.withValues(alpha: 0.2),
-                                  blurRadius: 8,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: FluxImage(
-                                imageUrl: imageUrl,
-                                fit: BoxFit.cover,
-                                placeholder: Container(
-                                  color: theme.colorScheme.surfaceContainerHighest,
-                                  child: Icon(
-                                    station != null ? Icons.radio_rounded : Icons.podcasts_rounded,
-                                    color: primaryColor,
-                                    size: 24),
-                                ),
-                                errorWidget: Container(
-                                  color: theme.colorScheme.surfaceContainerHighest,
-                                  child: Icon(
-                                    station != null ? Icons.radio_rounded : Icons.podcasts_rounded,
-                                    color: primaryColor,
-                                    size: 24),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
+                          _buildArtwork(imageUrl, station, primaryColor, theme),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  title,
-                                  style: TextStyle(
+                                  title.toUpperCase(),
+                                  style: theme.textTheme.titleSmall?.copyWith(
                                     color: textColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    letterSpacing: 0.2,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.2,
+                                    fontSize: 13,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 2),
                                 Row(
                                   children: [
                                     if (controller.isPlaying)
@@ -160,15 +123,14 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                                       ),
                                     Expanded(
                                       child: Text(
-                                        controller.errorMessage ?? subtitle,
-                                        style: TextStyle(
+                                        (controller.errorMessage ?? subtitle).toUpperCase(),
+                                        style: theme.textTheme.labelSmall?.copyWith(
                                             color: controller.errorMessage != null
                                                 ? theme.colorScheme.error
-                                                : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                                            fontSize: 11,
-                                            fontWeight: controller.errorMessage != null
-                                                ? FontWeight.bold
-                                                : FontWeight.w500),
+                                                : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 9,
+                                            letterSpacing: 0.5),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -178,7 +140,7 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                               ],
                             ),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 8),
                           _MiniControlButton(
                             icon: controller.isLoading
                                 ? Icons.hourglass_top_rounded
@@ -188,13 +150,12 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
                             color: primaryColor,
                             onTap: () => controller.isPlaying ? controller.pause() : controller.resume(),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 8),
                           _MiniControlButton(
                             icon: Icons.stop_rounded,
-                            color: textColor.withValues(alpha: 0.4),
+                            color: textColor.withValues(alpha: 0.3),
                             onTap: () => controller.stop(),
                           ),
-                          const SizedBox(width: 4),
                         ],
                       ),
                     ),
@@ -205,6 +166,47 @@ class _EnhancedMiniPlayerState extends State<EnhancedMiniPlayer>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildArtwork(String imageUrl, dynamic station, Color primaryColor, ThemeData theme) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withValues(alpha: 0.1),
+            blurRadius: 8,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Hero(
+        tag: 'player_artwork',
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: FluxImage(
+            imageUrl: imageUrl,
+            fit: BoxFit.cover,
+            placeholder: Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Icon(
+                station != null ? Icons.radio_rounded : Icons.podcasts_rounded,
+                color: primaryColor,
+                size: 22),
+            ),
+            errorWidget: Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Icon(
+                station != null ? Icons.radio_rounded : Icons.podcasts_rounded,
+                color: primaryColor,
+                size: 22),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

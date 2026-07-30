@@ -8,6 +8,7 @@ import '../flux_engine/alarm_service.dart';
 import '../flux_engine/station_provider.dart';
 import '../flux_engine/playback_controller.dart';
 import '../flux_storage/radio_storage.dart';
+import '../flux_engine/theme_provider.dart';
 import '../helpers/navigation_helper.dart';
 import 'recent_screen.dart';
 
@@ -29,11 +30,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text('Settings', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, color: theme.appBarTheme.foregroundColor)),
-        centerTitle: true,
+        title: Text(
+          'SETTINGS',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+            color: theme.colorScheme.onSurface,
+            fontSize: 24,
+          ),
+        ),
+        centerTitle: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: true,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              shape: BoxShape.circle,
+            ),
+            child: Consumer<ThemeProvider>(
+              builder: (context, themeProvider, _) => IconButton(
+                icon: Icon(
+                  themeProvider.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+                onPressed: () => themeProvider.toggleTheme(),
+              ),
+            ),
+          ),
+        ],
       ),
       body: MultiConsumer6<SettingsService, AudioEffectsService, RecordingService, AlarmService, StationProvider, PlaybackController>(
         builder: (context, settings, effects, recording, alarm, stationProvider, playback, child) {
@@ -159,8 +185,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             title: 'Clear All Cache',
                             subtitle: 'Reset temporary data',
                             onTap: () {
-                              // assuming cache clearing is still handled somewhere, but SettingsService should probably have it
-                              // engine.clearCache();
                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cache cleared')));
                             },
                           ),
@@ -199,21 +223,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
           child: Text(
             title,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              fontWeight: FontWeight.w800,
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w900,
+              fontSize: 12,
               letterSpacing: 1.5,
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.outline,
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(children: children),
         ),
@@ -232,33 +267,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }) {
     final theme = Theme.of(context);
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       leading: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
+          color: theme.colorScheme.primary.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
-        child: Icon(icon, color: theme.colorScheme.primary, size: 22),
+        child: Icon(icon, color: theme.colorScheme.primary, size: 24),
       ),
       title: Text(
         title,
-        style: theme.textTheme.titleMedium?.copyWith(
-          color: textColor,
-          fontWeight: FontWeight.w600,
-          fontSize: 15,
+        style: TextStyle(
+          color: textColor ?? theme.colorScheme.onSurface,
+          fontWeight: FontWeight.w700,
+          fontSize: 16,
+          letterSpacing: -0.5,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-          fontSize: 13,
+        style: TextStyle(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
         ),
       ),
-      trailing: trailing ?? Icon(Icons.chevron_right_rounded, color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+      trailing: trailing ?? Icon(Icons.chevron_right_rounded, color: theme.colorScheme.primary, size: 24),
       onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
     );
   }
 
@@ -275,35 +316,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final effectiveActiveColor = activeColor ?? theme.colorScheme.primary;
     return SwitchListTile(
       secondary: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: effectiveActiveColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
+          color: effectiveActiveColor.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: effectiveActiveColor.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
-        child: Icon(icon, color: effectiveActiveColor, size: 22),
+        child: Icon(icon, color: effectiveActiveColor, size: 24),
       ),
       title: Text(
         title,
-        style: theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          fontSize: 15,
+        style: TextStyle(
+          color: theme.colorScheme.onSurface,
+          fontWeight: FontWeight.w700,
+          fontSize: 16,
+          letterSpacing: -0.5,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-          fontSize: 13,
+        style: TextStyle(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
         ),
       ),
       value: value,
       onChanged: onChanged,
-      activeThumbColor: effectiveActiveColor,
-      activeTrackColor: effectiveActiveColor.withValues(alpha: 0.5),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      activeThumbColor: Colors.white,
+      activeTrackColor: effectiveActiveColor,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
     );
   }
+
 
   Widget _buildLiveIndicator(ThemeData theme) {
     return Container(
@@ -323,10 +372,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) {
         final theme = Theme.of(context);
         return AlertDialog(
-          backgroundColor: theme.cardColor,
+          backgroundColor: theme.colorScheme.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Text(
             'Volume Control',
-            style: TextStyle(color: theme.textTheme.titleLarge?.color),
+            style: theme.textTheme.titleLarge,
           ),
           content: StatefulBuilder(
             builder: (context, setState) => Column(
@@ -334,7 +384,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.volume_down, color: theme.iconTheme.color?.withValues(alpha: 0.7)),
+                    Icon(Icons.volume_down, color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
                     Expanded(
                       child: Slider(
                         value: settings.volume,
@@ -344,17 +394,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           settings.setVolume(v);
                           setState(() {});
                         },
-                        activeColor: theme.primaryColor,
-                        inactiveColor: theme.primaryColor.withValues(alpha: 0.2),
+                        activeColor: theme.colorScheme.primary,
+                        inactiveColor: theme.colorScheme.primary.withValues(alpha: 0.2),
                       ),
                     ),
-                    Icon(Icons.volume_up, color: theme.iconTheme.color?.withValues(alpha: 0.7)),
+                    Icon(Icons.volume_up, color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Volume: ${(settings.volume * 100).round()}%',
-                  style: TextStyle(color: theme.textTheme.bodyMedium?.color),
+                  style: theme.textTheme.bodyMedium,
                 ),
               ],
             ),
@@ -362,7 +412,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Close', style: TextStyle(color: theme.primaryColor)),
+              child: Text('Close', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -380,7 +430,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final secondaryTextColor = theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6);
 
           return AlertDialog(
-            backgroundColor: theme.cardColor,
+            backgroundColor: theme.colorScheme.surface,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             title: Row(
               children: [
@@ -481,7 +531,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final textColor = theme.textTheme.bodyLarge?.color;
 
         return AlertDialog(
-          backgroundColor: theme.cardColor,
+          backgroundColor: theme.colorScheme.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Text(
             'Equalizer',
             style: TextStyle(color: theme.textTheme.titleLarge?.color),
@@ -599,7 +650,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             builder: (context, snapshot) {
               final savedRecordings = snapshot.data ?? [];
               return AlertDialog(
-                backgroundColor: theme.cardColor,
+                backgroundColor: theme.colorScheme.surface,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                 title: Text(
                   'Recording',
                   style: TextStyle(color: theme.textTheme.titleLarge?.color),
@@ -610,7 +662,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     if (recording.isRecording)
                       Column(
                         children: [
-                          CircularProgressIndicator(color: theme.primaryColor),
+                          CircularProgressIndicator(color: theme.colorScheme.primary),
                           const SizedBox(height: 8),
                           Text(
                             'Recording in progress...',
@@ -631,7 +683,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             margin: const EdgeInsets.symmetric(vertical: 4),
                             decoration: BoxDecoration(
                               color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
                                 width: 1,
@@ -724,7 +776,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         return StatefulBuilder(
           builder: (context, setDialogState) => AlertDialog(
-            backgroundColor: theme.cardColor,
+            backgroundColor: theme.colorScheme.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             title: Text('Cache Size', style: TextStyle(color: theme.textTheme.titleLarge?.color)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -780,7 +833,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) {
         final theme = Theme.of(context);
         return AlertDialog(
-          backgroundColor: theme.cardColor,
+          backgroundColor: theme.colorScheme.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Text('Reset Settings', style: TextStyle(color: theme.textTheme.titleLarge?.color)),
           content: Text(
             'Are you sure you want to reset all settings to their default values?',

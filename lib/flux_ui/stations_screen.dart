@@ -28,16 +28,17 @@ class StationsScreen extends StatelessWidget {
                       Text(
                         'All Stations',
                         style: TextStyle(
-                          color: theme.primaryColor,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -1.2,
                         ),
                       ),
                       const Spacer(),
                       IconButton(
                         icon: const Icon(Icons.refresh_rounded),
                         onPressed: () => stationProvider.loadTopStations(),
-                        color: theme.primaryColor,
+                        color: theme.colorScheme.primary,
                       ),
                     ],
                   ),
@@ -60,15 +61,15 @@ class StationsScreen extends StatelessWidget {
                             return Container(
                               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                               decoration: BoxDecoration(
-                                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                                borderRadius: BorderRadius.circular(16),
+                                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                                borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-                                  width: 1,
+                                  color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                                  width: 1.5,
                                 ),
                               ),
                               child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 leading: ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
                                   child: FluxImage(
@@ -77,7 +78,7 @@ class StationsScreen extends StatelessWidget {
                                     height: 52,
                                     errorWidget: Container(
                                       color: theme.colorScheme.surfaceContainerHighest,
-                                      child: Icon(Icons.radio_rounded, color: theme.primaryColor, size: 28),
+                                      child: Icon(Icons.radio_rounded, color: theme.colorScheme.primary, size: 30),
                                     ),
                                   ),
                                 ),
@@ -85,8 +86,9 @@ class StationsScreen extends StatelessWidget {
                                   station.name,
                                   style: TextStyle(
                                     color: theme.colorScheme.onSurface,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 16,
+                                    letterSpacing: -0.5,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -98,6 +100,7 @@ class StationsScreen extends StatelessWidget {
                                     style: TextStyle(
                                       color: theme.colorScheme.onSurfaceVariant,
                                       fontSize: 12,
+                                      fontWeight: FontWeight.w900,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -105,11 +108,15 @@ class StationsScreen extends StatelessWidget {
                                 ),
                                 trailing: Container(
                                   decoration: BoxDecoration(
-                                    color: theme.primaryColor.withValues(alpha: 0.1),
+                                    color: theme.colorScheme.primary.withValues(alpha: 0.15),
                                     shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                                      width: 1.5,
+                                    ),
                                   ),
                                   child: IconButton(
-                                    icon: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 28),
+                                    icon: Icon(Icons.play_arrow_rounded, color: theme.colorScheme.primary, size: 30),
                                     onPressed: () {
                                       playbackController.playStation(station).then((_) {
                                         if (context.mounted) {

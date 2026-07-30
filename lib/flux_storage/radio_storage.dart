@@ -135,6 +135,7 @@ class RadioStorage {
   Box<RadioAlarm>? _alarmsBox;
   Box<Episode>? _downloadsBox;
   Box<Episode>? _progressBox;
+  Box<Podcast>? _followedPodcastsBox;
   Box<dynamic>? _settingsBox;
   Box<Map>? _analyticsBox;
   Box<Episode>? _bookmarksBox;
@@ -163,6 +164,7 @@ class RadioStorage {
       _alarmsBox = await _openSafeBox<RadioAlarm>('alarms');
       _downloadsBox = await _openSafeBox<Episode>('downloads');
       _progressBox = await _openSafeBox<Episode>('episode_progress');
+      _followedPodcastsBox = await _openSafeBox<Podcast>('followed_podcasts');
       _settingsBox = await _openSafeBox('settings');
       _analyticsBox = await _openSafeBox<Map>('analytics');
       _bookmarksBox = await _openSafeBox<Episode>('bookmarks');
@@ -598,6 +600,26 @@ class RadioStorage {
   Future<bool> isBookmarked(String id) async {
     if (!_initialized) await init();
     return _bookmarksBox?.containsKey(id) ?? false;
+  }
+
+  // --- Followed Podcasts ---
+  Future<void> toggleFollowPodcast(Podcast podcast) async {
+    if (!_initialized) await init();
+    if (_followedPodcastsBox?.containsKey(podcast.id) ?? false) {
+      await _followedPodcastsBox?.delete(podcast.id);
+    } else {
+      await _followedPodcastsBox?.put(podcast.id, podcast);
+    }
+  }
+
+  Future<List<Podcast>> getFollowedPodcasts() async {
+    if (!_initialized) await init();
+    return _followedPodcastsBox?.values.toList() ?? [];
+  }
+
+  Future<void> updateFollowedPodcast(Podcast podcast) async {
+    if (!_initialized) await init();
+    await _followedPodcastsBox?.put(podcast.id, podcast);
   }
 }
 

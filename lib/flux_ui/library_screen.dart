@@ -15,6 +15,7 @@ import 'widgets/shimmer_list_widget.dart';
 import 'podcast_details_screen.dart';
 import 'now_playing_screen.dart';
 import 'models/podcast.dart';
+import 'widgets/search_result_items.dart';
 
 import '../flux_engine/app_exception.dart';
 
@@ -48,6 +49,7 @@ class CategoryScreen extends StatefulWidget {
   final String? tag;
   final String? url;
   final VoidCallback? loadFunction;
+  final SearchType searchType;
 
   const CategoryScreen({
     super.key,
@@ -55,6 +57,7 @@ class CategoryScreen extends StatefulWidget {
     this.tag,
     this.url,
     this.loadFunction,
+    this.searchType = SearchType.station,
   });
 
   @override
@@ -80,7 +83,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(widget.title, style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: -1.0)),
         backgroundColor: theme.appBarTheme.backgroundColor,
         foregroundColor: theme.appBarTheme.foregroundColor,
         elevation: 0,
@@ -96,10 +99,15 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 },
               );
             }
-            if (stationProvider.stations.isEmpty) {
+
+            final items = widget.searchType == SearchType.station 
+                ? stationProvider.stations 
+                : stationProvider.podcasts;
+
+            if (items.isEmpty) {
               return EmptyStateWidget(
-                icon: Icons.radio,
-                title: 'No stations found',
+                icon: widget.searchType == SearchType.station ? Icons.radio : Icons.podcasts,
+                title: widget.searchType == SearchType.station ? 'No stations found' : 'No podcasts found',
                 message: 'Try adjusting your search or check back later.',
                 buttonLabel: 'Go Back',
                 onButtonPressed: () => Navigator.of(context).pop(),
@@ -110,28 +118,34 @@ class _CategoryScreenState extends State<CategoryScreen> {
                 final isTablet = constraints.maxWidth >= 600;
                 if (isTablet) {
                   return GridView.builder(
-                    key: const ValueKey('category_stations_grid'),
+                    key: ValueKey('category_${widget.searchType}_grid'),
                     padding: const EdgeInsets.all(16),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: constraints.maxWidth > 900 ? 3 : 2,
-                      childAspectRatio: 3.5,
+                      childAspectRatio: widget.searchType == SearchType.station ? 3.5 : 2.8,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 8,
                     ),
-                    itemCount: stationProvider.stations.take(100).length,
+                    itemCount: items.length,
                     itemBuilder: (context, index) {
-                      final station = stationProvider.stations[index];
-                      return _buildStationItem(context, station);
+                      if (widget.searchType == SearchType.station) {
+                        return _buildStationItem(context, items[index] as RadioStation);
+                      } else {
+                        return PodcastResultItem(podcast: items[index] as Podcast);
+                      }
                     },
                   );
                 }
                 return ListView.builder(
-                  key: const ValueKey('category_stations_list'),
+                  key: ValueKey('category_${widget.searchType}_list'),
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: stationProvider.stations.take(100).length,
+                  itemCount: items.length,
                   itemBuilder: (context, index) {
-                    final station = stationProvider.stations[index];
-                    return _buildStationItem(context, station);
+                    if (widget.searchType == SearchType.station) {
+                      return _buildStationItem(context, items[index] as RadioStation);
+                    } else {
+                      return PodcastResultItem(podcast: items[index] as Podcast);
+                    }
                   },
                 );
               },
@@ -148,28 +162,28 @@ class _CategoryScreenState extends State<CategoryScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          width: 1,
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1.5,
         ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: FluxImage(
             imageUrl: station.favicon,
             width: 52,
             height: 52,
             placeholder: Container(
               color: theme.colorScheme.surfaceContainerHighest,
-              child: Icon(Icons.radio, color: theme.primaryColor, size: 24),
+              child: Icon(Icons.radio, color: theme.colorScheme.primary, size: 28),
             ),
             errorWidget: Container(
               color: theme.colorScheme.surfaceContainerHighest,
-              child: Icon(Icons.radio, color: theme.primaryColor, size: 24),
+              child: Icon(Icons.radio, color: theme.colorScheme.primary, size: 28),
             ),
           ),
         ),
@@ -178,7 +192,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
           style: TextStyle(
             color: theme.colorScheme.onSurface,
             fontSize: 15,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -190,6 +205,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
             style: TextStyle(
               color: theme.colorScheme.onSurfaceVariant,
               fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -197,11 +213,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
         ),
         trailing: Container(
           decoration: BoxDecoration(
-            color: theme.primaryColor.withValues(alpha: 0.1),
+            color: theme.colorScheme.primary.withValues(alpha: 0.15),
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            icon: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 24),
+            icon: Icon(Icons.play_arrow_rounded, color: theme.colorScheme.primary, size: 28),
             onPressed: () => _playStation(context, station, playbackController),
           ),
         ),
@@ -236,7 +252,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
 }
 
 class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({super.key});
+  final int initialIndex;
+  const LibraryScreen({super.key, this.initialIndex = 0});
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
@@ -252,7 +269,7 @@ class _LibraryScreenState extends State<LibraryScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this, initialIndex: widget.initialIndex);
 _tabController.addListener(() {
   if (!_tabController.indexIsChanging) {
     setState(() {
@@ -276,13 +293,13 @@ _tabController.addListener(() {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Library', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+        title: const Text('Library', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -1.0)),
         backgroundColor: theme.appBarTheme.backgroundColor,
         foregroundColor: theme.appBarTheme.foregroundColor,
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
-          if (_tabController.index >= 2 && _tabController.index <= 4)
+          if (_tabController.index >= 3 && _tabController.index <= 5)
             IconButton(
               icon: const Icon(Icons.delete_sweep),
               tooltip: 'Clear All',
@@ -290,7 +307,7 @@ _tabController.addListener(() {
             ),
         ],
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(_tabController.index >= 2 && _tabController.index <= 4 ? 110 : 48),
+          preferredSize: Size.fromHeight(_tabController.index >= 1 && _tabController.index <= 5 ? (_tabController.index == 1 ? 150 : 110) : 48),
           child: Column(
             children: [
               TabBar(
@@ -305,12 +322,13 @@ _tabController.addListener(() {
                 tabs: const [
                   Tab(text: 'Stations'),
                   Tab(text: 'Podcasts'),
+                  Tab(text: 'Following'),
                   Tab(text: 'Downloads'),
                   Tab(text: 'Favorites'),
                   Tab(text: 'History'),
                 ],
               ),
-              if (_tabController.index >= 1 && _tabController.index <= 4)
+              if (_tabController.index >= 1 && _tabController.index <= 5)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Column(
@@ -331,7 +349,7 @@ _tabController.addListener(() {
                             ),
                           ],
                         ),
-                      const SizedBox(height: 8),
+                      if (_tabController.index == 1) const SizedBox(height: 8),
                       TextField(
                         controller: _searchController,
                         onChanged: (value) {
@@ -410,6 +428,7 @@ _tabController.addListener(() {
           children: [
             _buildStationsTab(),
             _buildPodcastsTab(),
+            _buildFollowingTab(),
             _buildDownloadsTab(),
             _buildFavoritesTab(),
             const RecentScreen(),
@@ -420,6 +439,7 @@ _tabController.addListener(() {
   }
 
   Widget _buildDownloadsTab() {
+    final theme = Theme.of(context);
     return Consumer2<DownloadService, PlaybackController>(
       builder: (context, downloadService, playbackController, child) {
         final downloadedEpisodes = downloadService.downloadedEpisodes.where((e) => 
@@ -464,19 +484,19 @@ _tabController.addListener(() {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         child: Row(
                           children: [
-                            Icon(Icons.storage_rounded, size: 16, color: Theme.of(context).primaryColor),
+                            Icon(Icons.storage_rounded, size: 16, color: theme.colorScheme.primary),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 '$sizeStr • ${downloadedEpisodes.length} episodes',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
                             IconButton(
-                              icon: Icon(Icons.cleaning_services_rounded, size: 18, color: Theme.of(context).primaryColor),
+                              icon: Icon(Icons.cleaning_services_rounded, size: 18, color: theme.colorScheme.primary),
                               onPressed: () async {
                                 final playedCount = downloadedEpisodes.where((e) => e.lastPosition > 0 && e.duration > 0 && e.lastPosition >= e.duration).length;
                                 if (playedCount == 0) {
@@ -542,24 +562,24 @@ _tabController.addListener(() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          width: 1,
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1.5,
         ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: FluxImage(
             imageUrl: episode.image,
             width: 52,
             height: 52,
             errorWidget: Container(
               color: theme.colorScheme.surfaceContainerHighest,
-              child: Icon(Icons.mic, color: theme.primaryColor, size: 28),
+              child: Icon(Icons.mic, color: theme.colorScheme.primary, size: 28),
             ),
           ),
         ),
@@ -567,8 +587,9 @@ _tabController.addListener(() {
           episode.title,
           style: TextStyle(
             color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w900,
             fontSize: 15,
+            letterSpacing: -0.5,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -578,9 +599,9 @@ _tabController.addListener(() {
           child: Text(
             'Downloaded • ${(episode.duration / 60).floor()} min',
             style: TextStyle(
-              color: theme.primaryColor, 
+              color: theme.colorScheme.secondary, 
               fontSize: 12,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ),
@@ -588,17 +609,25 @@ _tabController.addListener(() {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(4),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.green.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.offline_pin_rounded, color: Colors.green, size: 20),
+              child: const Icon(Icons.offline_pin_rounded, color: Colors.green, size: 18),
             ),
-            const SizedBox(width: 4),
-            IconButton(
-              icon: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.onSurfaceVariant),
-              onPressed: () => downloadService.deleteDownloadedEpisode(episode),
+            const SizedBox(width: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8), size: 20),
+                onPressed: () => downloadService.deleteDownloadedEpisode(episode),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+              ),
             ),
           ],
         ),
@@ -622,8 +651,9 @@ _tabController.addListener(() {
                   Text(
                     'Browse Stations',
                     style: theme.textTheme.headlineSmall?.copyWith(
-                      color: theme.primaryColor,
-                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1.0,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -999,8 +1029,9 @@ _tabController.addListener(() {
                       Text(
                         'Podcasts',
                         style: theme.textTheme.headlineSmall?.copyWith(
-                          color: theme.primaryColor,
-                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -1.0,
                         ),
                       ),
                       IconButton(
@@ -1072,11 +1103,11 @@ _tabController.addListener(() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          width: 1,
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1.5,
         ),
       ),
       child: ListTile(
@@ -1097,8 +1128,9 @@ _tabController.addListener(() {
           episode.title,
           style: TextStyle(
             color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w900,
             fontSize: 15,
+            letterSpacing: -0.5,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -1112,6 +1144,7 @@ _tabController.addListener(() {
             style: TextStyle(
               color: theme.colorScheme.onSurfaceVariant,
               fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -1119,16 +1152,16 @@ _tabController.addListener(() {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (episode.isDownloaded)
-              const Padding(
-                padding: EdgeInsets.only(right: 8.0),
-                child: Icon(Icons.offline_pin_rounded, color: Colors.green, size: 20),
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: Icon(Icons.offline_pin_rounded, color: theme.colorScheme.secondary, size: 22),
               ),
             Container(
               decoration: BoxDecoration(
-                color: theme.primaryColor.withValues(alpha: 0.1),
+                color: theme.colorScheme.primary.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 28),
+              child: Icon(Icons.play_arrow_rounded, color: theme.colorScheme.primary, size: 30),
             ),
           ],
         ),
@@ -1243,57 +1276,118 @@ _tabController.addListener(() {
 
   Widget _buildPodcastItem(Podcast podcast) {
     final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: FluxImage(
-            imageUrl: podcast.image,
-            width: 52,
-            height: 52,
-            errorWidget: Container(
-              color: theme.colorScheme.surfaceContainerHighest,
-              child: Icon(Icons.podcasts_rounded, color: theme.primaryColor, size: 24),
+    return Consumer<LibraryManager>(
+      builder: (context, libraryManager, _) {
+        final isFollowing = libraryManager.isFollowingPodcast(podcast.id);
+        final notificationsEnabled = isFollowing ? libraryManager.areNotificationsEnabled(podcast.id) : false;
+        
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.1),
+              width: 1.5,
             ),
           ),
-        ),
-        title: Text(
-          podcast.title,
-          style: TextStyle(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            leading: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: FluxImage(
+                imageUrl: podcast.image,
+                width: 52,
+                height: 52,
+                errorWidget: Container(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: Icon(Icons.podcasts_rounded, color: theme.colorScheme.primary, size: 28),
+                ),
+              ),
+            ),
+            title: Text(
+              podcast.title,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+                letterSpacing: -0.5,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    podcast.publisher,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant, 
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (isFollowing)
+                  Icon(
+                    notificationsEnabled ? Icons.notifications_active_rounded : Icons.notifications_off_rounded,
+                    size: 16,
+                    color: notificationsEnabled ? theme.colorScheme.secondary : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  ),
+              ],
+            ),
+            trailing: Icon(Icons.chevron_right_rounded, color: theme.colorScheme.onSurfaceVariant, size: 28),
+            onTap: () {
+              Navigator.push(
+                context,
+                NavigationHelper.slideUpRoute(PodcastDetailsScreen(podcast: podcast)),
+              );
+            },
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4.0),
-          child: Text(
-            podcast.publisher,
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        trailing: Icon(Icons.chevron_right_rounded, color: theme.colorScheme.onSurfaceVariant),
-        onTap: () {
-          Navigator.push(
-            context,
-            NavigationHelper.slideUpRoute(PodcastDetailsScreen(podcast: podcast)),
+        );
+      },
+    );
+  }
+
+  Widget _buildFollowingTab() {
+    return Consumer<LibraryManager>(
+      builder: (context, libraryManager, child) {
+        final followed = libraryManager.followedPodcasts.where((p) => 
+          p.title.toLowerCase().contains(_searchQuery) || 
+          p.publisher.toLowerCase().contains(_searchQuery)
+        ).toList();
+        
+        if (followed.isEmpty) {
+          return EmptyStateWidget(
+            icon: Icons.podcasts_rounded,
+            title: _searchQuery.isEmpty ? 'No followed podcasts' : 'No results found',
+            message: _searchQuery.isEmpty 
+              ? 'Podcasts you follow will appear here for quick access.'
+              : 'Try a different search term.',
+            buttonLabel: _searchQuery.isEmpty ? 'Discover Podcasts' : 'Clear Search',
+            onButtonPressed: () {
+              if (_searchQuery.isEmpty) {
+                _tabController.animateTo(1);
+              } else {
+                _searchController.clear();
+                setState(() => _searchQuery = "");
+              }
+            },
           );
-        },
-      ),
+        }
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isTablet = constraints.maxWidth >= 600;
+            return Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: _buildPodcastListItems(followed, isTablet, constraints.maxWidth),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1345,30 +1439,30 @@ _tabController.addListener(() {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.radio_rounded, size: 18, color: theme.primaryColor),
+                        Icon(Icons.radio_rounded, size: 18, color: theme.colorScheme.primary),
                         const SizedBox(width: 8),
                         Text(
                           'Favorite Stations',
                           style: TextStyle(
-                            color: theme.primaryColor,
-                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w900,
                             fontSize: 13,
-                            letterSpacing: 0.5,
+                            letterSpacing: -0.5,
                           ),
                         ),
                         const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: theme.primaryColor.withValues(alpha: 0.1),
+                            color: theme.colorScheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             '${favoriteStations.length}',
                             style: TextStyle(
-                              color: theme.primaryColor,
+                              color: theme.colorScheme.primary,
                               fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w900,
                             ),
                           ),
                         ),
@@ -1383,30 +1477,30 @@ _tabController.addListener(() {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.bookmark_rounded, size: 18, color: theme.primaryColor),
+                        Icon(Icons.bookmark_rounded, size: 18, color: theme.colorScheme.primary),
                         const SizedBox(width: 8),
                         Text(
                           'Bookmarked Episodes',
                           style: TextStyle(
-                            color: theme.primaryColor,
-                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w900,
                             fontSize: 13,
-                            letterSpacing: 0.5,
+                            letterSpacing: -0.5,
                           ),
                         ),
                         const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: theme.primaryColor.withValues(alpha: 0.1),
+                            color: theme.colorScheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             '${bookmarkedEpisodes.length}',
                             style: TextStyle(
-                              color: theme.primaryColor,
+                              color: theme.colorScheme.primary,
                               fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w900,
                             ),
                           ),
                         ),
@@ -1428,24 +1522,24 @@ _tabController.addListener(() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          width: 1,
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1.5,
         ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: FluxImage(
             imageUrl: episode.image,
             width: 52,
             height: 52,
             errorWidget: Container(
               color: theme.colorScheme.surfaceContainerHighest,
-              child: Icon(Icons.mic_rounded, color: theme.primaryColor, size: 28),
+              child: Icon(Icons.mic_rounded, color: theme.colorScheme.primary, size: 28),
             ),
           ),
         ),
@@ -1453,8 +1547,9 @@ _tabController.addListener(() {
           episode.title,
           style: TextStyle(
             color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w900,
             fontSize: 15,
+            letterSpacing: -0.5,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -1468,6 +1563,7 @@ _tabController.addListener(() {
             style: TextStyle(
               color: theme.colorScheme.onSurfaceVariant,
               fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -1475,23 +1571,34 @@ _tabController.addListener(() {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (episode.isDownloaded)
-              const Padding(
-                padding: EdgeInsets.only(right: 8.0),
-                child: Icon(Icons.offline_pin_rounded, color: Colors.green, size: 20),
+              Padding(
+                padding: const EdgeInsets.only(right: 10.0),
+                child: Icon(Icons.offline_pin_rounded, color: theme.colorScheme.secondary, size: 20),
               ),
             Container(
               decoration: BoxDecoration(
-                color: theme.primaryColor.withValues(alpha: 0.1),
+                color: theme.colorScheme.primary.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 28),
+                icon: Icon(Icons.play_arrow_rounded, color: theme.colorScheme.primary, size: 30),
                 onPressed: () => _playEpisode(context, episode, playbackController),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
               ),
             ),
-            IconButton(
-              icon: Icon(Icons.bookmark_remove_rounded, color: theme.primaryColor, size: 24),
-              onPressed: () => libraryManager.toggleBookmark(episode),
+            const SizedBox(width: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: Icon(Icons.bookmark_remove_rounded, color: theme.colorScheme.secondary, size: 20),
+                onPressed: () => libraryManager.toggleBookmark(episode),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+              ),
             ),
           ],
         ),
@@ -1518,24 +1625,24 @@ _tabController.addListener(() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          width: 1,
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1.5,
         ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: FluxImage(
             imageUrl: station.favicon,
             width: 52,
             height: 52,
             errorWidget: Container(
               color: theme.colorScheme.surfaceContainerHighest,
-              child: Icon(Icons.radio_rounded, color: theme.primaryColor, size: 28),
+              child: Icon(Icons.radio_rounded, color: theme.colorScheme.primary, size: 30),
             ),
           ),
         ),
@@ -1543,8 +1650,9 @@ _tabController.addListener(() {
           station.name,
           style: TextStyle(
             color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w900,
             fontSize: 15,
+            letterSpacing: -0.5,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -1556,6 +1664,7 @@ _tabController.addListener(() {
             style: TextStyle(
               color: theme.colorScheme.onSurfaceVariant,
               fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1566,11 +1675,11 @@ _tabController.addListener(() {
           children: [
             Container(
               decoration: BoxDecoration(
-                color: theme.primaryColor.withValues(alpha: 0.1),
+                color: theme.colorScheme.primary.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 28),
+                icon: Icon(Icons.play_arrow_rounded, color: theme.colorScheme.primary, size: 30),
                 onPressed: () {
                   final messenger = ScaffoldMessenger.of(context);
                   playbackController.playStation(station).then((_) {
@@ -1586,13 +1695,24 @@ _tabController.addListener(() {
                     );
                   });
                 },
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
               ),
             ),
-            IconButton(
-              icon: Icon(Icons.favorite_rounded, color: theme.primaryColor, size: 24),
-              onPressed: () {
-                libraryManager.toggleFavorite(station);
-              },
+            const SizedBox(width: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: Icon(Icons.favorite_rounded, color: theme.colorScheme.secondary, size: 20),
+                onPressed: () {
+                  libraryManager.toggleFavorite(station);
+                },
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+              ),
             ),
           ],
         ),
@@ -1622,15 +1742,15 @@ _tabController.addListener(() {
     String content = "";
     VoidCallback onClear = () {};
 
-    if (tabIndex == 2) {
+    if (tabIndex == 3) {
       title = "Clear Downloads";
       content = "Are you sure you want to delete all downloaded episodes?";
       onClear = () => downloadService.clearAllDownloads();
-    } else if (tabIndex == 3) {
+    } else if (tabIndex == 4) {
       title = "Clear Favorites";
       content = "Are you sure you want to remove all your favorite stations and bookmarked episodes?";
       onClear = () => libraryManager.clearFavoritesAndBookmarks();
-    } else if (tabIndex == 4) {
+    } else if (tabIndex == 5) {
       title = "Clear History";
       content = "Are you sure you want to clear your playback history?";
       onClear = () => libraryManager.clearRecentStations();
@@ -1660,9 +1780,11 @@ _tabController.addListener(() {
 
   String _getTabName(int index) {
     switch (index) {
-      case 2: return "Downloads";
-      case 3: return "Favorites";
-      case 4: return "History";
+      case 1: return "Podcasts";
+      case 2: return "Following";
+      case 3: return "Downloads";
+      case 4: return "Favorites";
+      case 5: return "History";
       default: return "";
     }
   }
@@ -1724,34 +1846,68 @@ class _CategoryCard extends StatelessWidget {
     final theme = Theme.of(context);
     final accentColor = color ?? theme.primaryColor;
     final s = isTablet ? 1.2 : 1.0;
-    return Container(
-      decoration: BoxDecoration(
-        color: accentColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16 * s),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16 * s),
-        child: Padding(
-          padding: EdgeInsets.all(16 * s),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+    
+    return Consumer<LibraryManager>(
+      builder: (context, libraryManager, _) {
+        final isFavorite = libraryManager.isCategoryFavorite(title);
+        
+        return Container(
+          decoration: BoxDecoration(
+            color: accentColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20 * s),
+          ),
+          child: Stack(
             children: [
-              Icon(icon, size: 40 * s, color: accentColor),
-              SizedBox(height: 12 * s),
-              Text(
-                title,
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface,
-                  fontSize: 14 * s,
-                  fontWeight: FontWeight.bold,
+              InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(20 * s),
+                child: Padding(
+                  padding: EdgeInsets.all(16 * s),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(icon, size: 40 * s, color: accentColor),
+                        SizedBox(height: 12 * s),
+                        Text(
+                          title,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontSize: 14 * s,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                textAlign: TextAlign.center,
+              ),
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
+                      color: isFavorite ? Colors.amber : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      size: 18 * s,
+                    ),
+                    onPressed: () => libraryManager.toggleFavoriteCategory(title),
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints(minWidth: 32 * s, minHeight: 32 * s),
+                  ),
+                ),
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

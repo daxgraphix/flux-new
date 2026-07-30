@@ -29,7 +29,7 @@ class _RecentScreenState extends State<RecentScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recently Played', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+        title: const Text('Recently Played', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -1.0)),
         backgroundColor: theme.appBarTheme.backgroundColor,
         foregroundColor: theme.appBarTheme.foregroundColor,
         elevation: 0,
@@ -92,36 +92,53 @@ class _RecentScreenState extends State<RecentScreen> {
 
   Widget _buildRecentItem(RadioStation item, PlaybackController playback) {
     final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          width: 1,
+          color: primaryColor.withValues(alpha: 0.15),
+          width: 1.5,
         ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: FluxImage(
-            imageUrl: item.favicon,
-            width: 52,
-            height: 52,
-            errorWidget: Container(
-              color: theme.colorScheme.surfaceContainerHighest,
-              child: Icon(Icons.radio_rounded, color: theme.primaryColor, size: 28),
+        leading: Container(
+          width: 54,
+          height: 54,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: primaryColor.withValues(alpha: 0.15),
+                blurRadius: 8,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: FluxImage(
+              imageUrl: item.favicon,
+              width: 54,
+              height: 54,
+              errorWidget: Container(
+                color: theme.colorScheme.surfaceContainerHighest,
+                child: Icon(Icons.radio_rounded, color: primaryColor, size: 30),
+              ),
             ),
           ),
         ),
         title: Text(
-          item.name.isNotEmpty ? item.name : 'Unknown Station',
-          style: TextStyle(
+          item.name.isNotEmpty ? item.name.toUpperCase() : 'UNKNOWN STATION',
+          style: theme.textTheme.titleSmall?.copyWith(
             color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
+            fontWeight: FontWeight.w900,
+            fontSize: 13,
+            letterSpacing: -0.5,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -129,10 +146,12 @@ class _RecentScreenState extends State<RecentScreen> {
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4.0),
           child: Text(
-            "${item.country.isNotEmpty ? item.country : 'Unknown'} • ${item.genre}",
-            style: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontSize: 12,
+            "${item.country.isNotEmpty ? item.country : 'Unknown'} • ${item.genre}".toUpperCase(),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -140,11 +159,12 @@ class _RecentScreenState extends State<RecentScreen> {
         ),
         trailing: Container(
           decoration: BoxDecoration(
-            color: theme.primaryColor.withValues(alpha: 0.1),
+            color: primaryColor.withValues(alpha: 0.15),
             shape: BoxShape.circle,
+            border: Border.all(color: primaryColor.withValues(alpha: 0.4), width: 1.5),
           ),
           child: IconButton(
-            icon: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 24),
+            icon: Icon(Icons.play_arrow_rounded, color: primaryColor, size: 30),
             onPressed: () {
               playback.playStation(item).then((_) {
                 if (mounted) {

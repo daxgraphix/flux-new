@@ -19,6 +19,9 @@ import 'flux_engine/audio_effects_service.dart';
 import 'flux_engine/library_manager.dart';
 import 'flux_engine/settings_service.dart';
 import 'flux_storage/radio_storage.dart';
+import 'flux_engine/notification_service.dart';
+import 'flux_engine/podcast_service.dart';
+import 'flux_engine/background_service.dart';
 import 'flux_ui/route_observer.dart';
 
 late RadioAudioHandler _audioHandler;
@@ -65,6 +68,7 @@ class _FluxAppState extends State<FluxApp> {
   late AudioEffectsService _audioEffectsService;
   late LibraryManager _libraryManager;
   late SettingsService _settingsService;
+  late PodcastService _podcastService;
   AppState _appState = AppState.splash;
 
   @override
@@ -77,14 +81,21 @@ class _FluxAppState extends State<FluxApp> {
     _playbackController = PlaybackController(_audioHandler);
     _audioEffectsService = AudioEffectsService(_audioHandler);
     _libraryManager = LibraryManager();
+    _playbackController.updateLibraryManager(_libraryManager);
     _settingsService = SettingsService();
     _themeProvider = ThemeProvider();
+    _podcastService = PodcastService();
     _initializeApp();
   }
 
   Future<void> _initializeApp() async {
     try {
       await RadioStorage().init();
+      await NotificationService().init();
+      await _podcastService.init();
+      if (Platform.isAndroid) {
+        await BackgroundService.schedulePodcastChecks();
+      }
       await _stationProvider.initialize();
       await _alarmService.initialize();
       await _playbackController.initialize();
@@ -117,6 +128,7 @@ class _FluxAppState extends State<FluxApp> {
         ChangeNotifierProvider<AudioEffectsService>.value(value: _audioEffectsService),
         ChangeNotifierProvider<LibraryManager>.value(value: _libraryManager),
         ChangeNotifierProvider<SettingsService>.value(value: _settingsService),
+        Provider<PodcastService>.value(value: _podcastService),
         Provider<RadioService>(create: (_) => RadioService()),
       ],
       child: Consumer<ThemeProvider>(

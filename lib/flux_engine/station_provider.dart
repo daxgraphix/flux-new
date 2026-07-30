@@ -46,19 +46,38 @@ class StationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<Map<String, dynamic>> get categories => [
-        {'title': 'Trending', 'icon': Icons.trending_up, 'color': Colors.red, 'action': loadTopStations},
-        {'title': 'Tanzania', 'icon': Icons.location_on, 'color': Colors.red, 'action': loadTanzaniaStations},
-        {'title': 'Kenya', 'icon': Icons.location_on, 'color': Colors.red, 'action': loadKenyaStations},
-        {'title': 'Uganda', 'icon': Icons.location_on, 'color': Colors.red, 'action': loadUgandaStations},
-        {'title': 'Rwanda', 'icon': Icons.location_on, 'color': Colors.red, 'action': loadRwandaStations},
-        {'title': 'Music', 'icon': Icons.music_note, 'color': Colors.red, 'action': loadMusicStations},
-        {'title': 'Sports', 'icon': Icons.sports_soccer, 'color': Colors.red, 'action': loadSportsStations},
-        {'title': 'News', 'icon': Icons.article, 'color': Colors.red, 'action': loadNewsStations},
-        {'title': 'AM/FM', 'icon': Icons.radio, 'color': Colors.red, 'action': loadGlobalAmFmStations},
-        {'title': 'Talk', 'icon': Icons.mic, 'color': Colors.red, 'action': loadTalkStations},
-        {'title': 'Live', 'icon': Icons.wifi, 'color': Colors.red, 'action': loadLiveStations},
-      ];
+  List<Map<String, dynamic>> get categories {
+    final List<Map<String, dynamic>> items = [
+      {'title': 'Trending', 'icon': Icons.trending_up, 'color': Colors.red, 'action': loadTrendingStations},
+    ];
+
+    // Add real-time trending tags/genres
+    if (_genres.isNotEmpty) {
+      items.addAll(_genres.take(6).map((tag) => {
+        'title': tag[0].toUpperCase() + tag.substring(1),
+        'icon': Icons.tag_rounded,
+        'color': Colors.blueAccent,
+        'action': () => loadStationsByTag(tag),
+      }));
+    }
+
+    items.addAll([
+      {'title': 'Tanzania', 'icon': Icons.location_on, 'color': Colors.green, 'action': loadTanzaniaStations},
+      {'title': 'Kenya', 'icon': Icons.location_on, 'color': Colors.red, 'action': loadKenyaStations},
+      {'title': 'Uganda', 'icon': Icons.location_on, 'color': Colors.yellow, 'action': loadUgandaStations},
+      {'title': 'Music', 'icon': Icons.music_note, 'color': Colors.blue, 'action': loadMusicStations},
+      {'title': 'Sports', 'icon': Icons.sports_soccer, 'color': Colors.orange, 'action': loadSportsStations},
+      {'title': 'News', 'icon': Icons.article, 'color': Colors.blueGrey, 'action': loadNewsStations},
+      // Podcast Categories
+      {'title': 'Podcasts', 'icon': Icons.podcasts, 'color': Colors.deepOrange, 'action': loadTrendingPodcasts},
+      {'title': 'Tech', 'icon': Icons.computer, 'color': Colors.purple, 'action': () => searchPodcasts('tech')},
+      {'title': 'AI', 'icon': Icons.psychology, 'color': Colors.teal, 'action': () => searchPodcasts('ai')},
+      {'title': 'Comedy', 'icon': Icons.theater_comedy, 'color': Colors.orange, 'action': () => searchPodcasts('comedy')},
+      {'title': 'Science', 'icon': Icons.science, 'color': Colors.green, 'action': () => searchPodcasts('science')},
+    ]);
+
+    return items;
+  }
 
   Future<void> initialize() async {
     await _podcastService.init();
@@ -125,6 +144,38 @@ class StationProvider extends ChangeNotifier {
       await searchStations(query);
     } else {
       await searchPodcasts(query);
+    }
+  }
+
+  Future<void> searchGlobal(String query) async {
+    if (query.isEmpty) {
+      _stations = [];
+      _podcasts = [];
+      notifyListeners();
+      return;
+    }
+    
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    
+    try {
+      final results = await Future.wait([
+        _repository.searchStations(query).catchError((_) => <RadioStation>[]),
+        _podcastService.searchPodcasts(query).catchError((_) => <Podcast>[]),
+      ]);
+      
+      _stations = results[0] as List<RadioStation>;
+      _podcasts = results[1] as List<Podcast>;
+      
+      if (_stations.isEmpty && _podcasts.isEmpty) {
+        _errorMessage = 'No results found for "$query"';
+      }
+    } catch (e) {
+      _errorMessage = 'Search failed. Please check your connection.';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -295,6 +346,22 @@ class StationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> loadStationsByCountryCode(String code) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final service = RadioService();
+      _stations = await service.searchStations(countrycode: code, limit: 250, order: 'votes', reverse: true);
+      if (_stations.isEmpty) {
+        _errorMessage = 'No stations found for country code $code';
+      }
+    } catch (e) {
+      _errorMessage = 'Failed to load stations for $code: $e';
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
+
   Future<void> loadTrendingPodcasts() async {
     _isLoading = true;
     _errorMessage = null;
@@ -304,7 +371,21 @@ class StationProvider extends ChangeNotifier {
       _podcasts = podcasts;
       
       // Since RSS URLs are missing in trending API response for some entries,
-      // we might need to look them up when selected, but for now we just show them.
+      // we need to look them up. Doing it concurrently for better performance.
+      final futures = <Future<void>>[];
+      for (var i = 0; i < _podcasts.length; i++) {
+        if (_podcasts[i].rss.isEmpty) {
+          final podcast = _podcasts[i];
+          futures.add(_podcastService.lookupPodcastRss(podcast.id).then((rss) {
+            if (rss != null) {
+              _podcasts[i] = podcast.copyWith(rss: rss);
+            }
+          }));
+        }
+      }
+      if (futures.isNotEmpty) {
+        await Future.wait(futures);
+      }
     } catch (e) {
       _errorMessage = 'Failed to load trending podcasts: $e';
     }

@@ -75,8 +75,9 @@ class _StationsListScreenState extends State<StationsListScreen> {
                             widget.title,
                             style: TextStyle(
                               color: theme.colorScheme.onSurface,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 26,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -1.2,
                             ),
                           ),
                         ),
@@ -88,10 +89,12 @@ class _StationsListScreenState extends State<StationsListScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      '${provider.stations.length} stations found',
+                      '${provider.stations.length} stations found'.toUpperCase(),
                       style: TextStyle(
                         color: theme.colorScheme.onSurfaceVariant,
-                        fontSize: 14,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),
@@ -169,24 +172,24 @@ class _StationsListScreenState extends State<StationsListScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          width: 1,
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1.5,
         ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: FluxImage(
             imageUrl: station.favicon,
             width: 52,
             height: 52,
             errorWidget: Container(
               color: theme.colorScheme.surfaceContainerHighest,
-              child: Icon(Icons.radio_rounded, color: theme.primaryColor, size: 28),
+              child: Icon(Icons.radio_rounded, color: theme.primaryColor, size: 30),
             ),
           ),
         ),
@@ -194,8 +197,9 @@ class _StationsListScreenState extends State<StationsListScreen> {
           station.name,
           style: TextStyle(
             color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
+            fontWeight: FontWeight.w900,
+            fontSize: 16,
+            letterSpacing: -0.5,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -207,6 +211,7 @@ class _StationsListScreenState extends State<StationsListScreen> {
             style: TextStyle(
               color: theme.colorScheme.onSurfaceVariant,
               fontSize: 12,
+              fontWeight: FontWeight.w900,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -214,11 +219,15 @@ class _StationsListScreenState extends State<StationsListScreen> {
         ),
         trailing: Container(
           decoration: BoxDecoration(
-            color: theme.primaryColor.withValues(alpha: 0.1),
+            color: theme.primaryColor.withValues(alpha: 0.15),
             shape: BoxShape.circle,
+            border: Border.all(
+              color: theme.primaryColor.withValues(alpha: 0.15),
+              width: 1.5,
+            ),
           ),
           child: IconButton(
-            icon: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 24),
+            icon: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 30),
             onPressed: () {
               playback.playStation(station);
               Navigator.of(context).push(NavigationHelper.slideUpRoute(const NowPlayingScreen()));
@@ -240,10 +249,15 @@ class _StationsListScreenState extends State<StationsListScreen> {
       child: Column(
         children: [
           Text(
-            "Can't find what you're looking for?",
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7), fontSize: 13),
+            "Can't find what you're looking for?".toUpperCase(),
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           InkWell(
             onTap: () {
               final url = RadioService().getStreemaSearchUrl(query);
@@ -254,21 +268,29 @@ class _StationsListScreenState extends State<StationsListScreen> {
                 ),
               );
             },
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(24),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               decoration: BoxDecoration(
-                border: Border.all(color: theme.primaryColor.withValues(alpha: 0.3)),
-                borderRadius: BorderRadius.circular(12),
+                color: theme.primaryColor.withValues(alpha: 0.1),
+                border: Border.all(
+                  color: theme.primaryColor.withValues(alpha: 0.2),
+                  width: 1.5,
+                ),
+                borderRadius: BorderRadius.circular(24),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.travel_explore_rounded, size: 20, color: theme.primaryColor),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Text(
                     'Search Streema Directory',
-                    style: TextStyle(color: theme.primaryColor, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: theme.primaryColor,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ],
               ),

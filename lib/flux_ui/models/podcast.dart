@@ -18,6 +18,8 @@ class Podcast {
   final String rss;
   @HiveField(6)
   final List<String> genres;
+  @HiveField(7)
+  final bool notificationsEnabled;
 
   Podcast({
     required this.id,
@@ -27,7 +29,30 @@ class Podcast {
     required this.description,
     required this.rss,
     this.genres = const [],
+    this.notificationsEnabled = true,
   });
+
+  Podcast copyWith({
+    String? id,
+    String? title,
+    String? publisher,
+    String? image,
+    String? description,
+    String? rss,
+    List<String>? genres,
+    bool? notificationsEnabled,
+  }) {
+    return Podcast(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      publisher: publisher ?? this.publisher,
+      image: image ?? this.image,
+      description: description ?? this.description,
+      rss: rss ?? this.rss,
+      genres: genres ?? this.genres,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+    );
+  }
 
   factory Podcast.fromJson(Map<String, dynamic> json) {
     return Podcast(
@@ -38,6 +63,7 @@ class Podcast {
       description: json['description'] ?? '',
       rss: json['rss'] ?? '',
       genres: List<String>.from(json['genres'] ?? []),
+      notificationsEnabled: json['notifications_enabled'] ?? true,
     );
   }
 
@@ -50,6 +76,7 @@ class Podcast {
       'description': description,
       'rss': rss,
       'genres': genres,
+      'notifications_enabled': notificationsEnabled,
     };
   }
 }

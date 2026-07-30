@@ -10,10 +10,13 @@ import '../flux_ui/models/podcast.dart';
 class PodcastService {
   static const String _podcastsCacheBox = 'podcasts_cache';
   static const String _episodesCacheBox = 'episodes_cache';
+  static const String _lastCheckedBox = 'podcast_last_checked';
 
   Future<void> init() async {
     await Hive.openBox(_podcastsCacheBox);
     await Hive.openBox(_episodesCacheBox);
+    await Hive.openBox('podcast_updates');
+    await Hive.openBox(_lastCheckedBox);
   }
 
   Future<Map<String, bool>> validateStaticPodcastFeeds() async {
@@ -149,21 +152,48 @@ class PodcastService {
     return null;
   }
 
-  Future<List<Episode>> fetchEpisodes(String rssUrl) async {
+  Future<List<Episode>> fetchEpisodes(String rssUrl, {bool forceRefresh = false}) async {
     if (rssUrl.isEmpty) return [];
     
-    // Check cache first
-    try {
-      final box = Hive.box(_episodesCacheBox);
-      final cached = box.get(rssUrl);
-      if (cached != null) {
-        final List<dynamic> list = json.decode(cached);
-        return list.map((item) => Episode.fromJson(item)).toList();
+    final box = Hive.box(_episodesCacheBox);
+    final lastCheckedBox = Hive.box(_lastCheckedBox);
+    
+    // Check cache first if not forcing refresh
+    if (!forceRefresh) {
+      try {
+        final cached = box.get(rssUrl);
+        final lastChecked = lastCheckedBox.get(rssUrl) as int?;
+        
+        if (cached != null && lastChecked != null) {
+          final now = DateTime.now().millisecondsSinceEpoch;
+          // Use 1 hour as stale period for SWR
+          if (now - lastChecked < 3600000) {
+            final List<dynamic> list = json.decode(cached);
+            return list.map((item) => Episode.fromJson(item)).toList();
+          }
+          
+          // If stale, return cached but fetch in background (SWR)
+          _fetchAndCacheInBackground(rssUrl);
+          final List<dynamic> list = json.decode(cached);
+          return list.map((item) => Episode.fromJson(item)).toList();
+        }
+      } catch (e) {
+        debugPrint('Error reading episodes from cache: $e');
       }
-    } catch (e) {
-      debugPrint('Error reading episodes from cache: $e');
     }
 
+    return _performFetch(rssUrl);
+  }
+
+  Future<void> _fetchAndCacheInBackground(String rssUrl) async {
+    try {
+      await _performFetch(rssUrl);
+    } catch (e) {
+      debugPrint('Background fetch failed for $rssUrl: $e');
+    }
+  }
+
+  Future<List<Episode>> _performFetch(String rssUrl) async {
     try {
       final response = await http.get(Uri.parse(rssUrl)).timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
@@ -172,12 +202,13 @@ class PodcastService {
         try {
           document = XmlDocument.parse(body);
         } catch (e) {
-          debugPrint('Malformed XML for $rssUrl, falling back to cache');
+          debugPrint('Malformed XML for $rssUrl');
           rethrow;
         }
         final items = document.findAllElements('item');
         
-        final channelImage = document.findAllElements('channel').first.findElements('itunes:image').isNotEmpty 
+        final channelImage = document.findAllElements('channel').isNotEmpty && 
+                document.findAllElements('channel').first.findElements('itunes:image').isNotEmpty 
             ? document.findAllElements('channel').first.findElements('itunes:image').first.getAttribute('href') ?? ''
             : '';
 
@@ -225,35 +256,92 @@ class PodcastService {
               image: imageUrl,
             ));
           } catch (e) {
-            debugPrint('Error parsing episode: $e');
             continue;
           }
         }
 
         // Cache the episodes
-        try {
-          final box = Hive.box(_episodesCacheBox);
-          await box.put(rssUrl, json.encode(episodes.map((e) => e.toJson()).toList()));
-        } catch (e) {
-          debugPrint('Error caching episodes: $e');
-        }
+        final box = Hive.box(_episodesCacheBox);
+        final lastCheckedBox = Hive.box(_lastCheckedBox);
+        await box.put(rssUrl, json.encode(episodes.map((e) => e.toJson()).toList()));
+        await lastCheckedBox.put(rssUrl, DateTime.now().millisecondsSinceEpoch);
 
         return episodes;
       }
     } catch (e) {
-      debugPrint('Error fetching episodes: $e');
-      
-      // If network fails, try to return cached version again (redundant but safe)
-      try {
-        final box = Hive.box(_episodesCacheBox);
-        final cached = box.get(rssUrl);
-        if (cached != null) {
-          final List<dynamic> list = json.decode(cached);
-          return list.map((item) => Episode.fromJson(item)).toList();
-        }
-      } catch (_) {}
+      debugPrint('Error performing fetch: $e');
     }
     return [];
+  }
+
+  Future<DateTime?> getLastUpdated(String rssUrl) async {
+    final box = Hive.box('podcast_updates');
+    final timestamp = box.get(rssUrl) as int?;
+    return timestamp != null ? DateTime.fromMillisecondsSinceEpoch(timestamp) : null;
+  }
+
+  Future<void> setLastUpdated(String rssUrl, DateTime dateTime) async {
+    final box = Hive.box('podcast_updates');
+    await box.put(rssUrl, dateTime.millisecondsSinceEpoch);
+  }
+
+  Future<int> checkNewEpisodes(String rssUrl) async {
+    final lastUpdated = await getLastUpdated(rssUrl);
+    if (lastUpdated == null) {
+      // First time checking, fetch and set last updated
+      final episodes = await fetchEpisodes(rssUrl);
+      if (episodes.isNotEmpty) {
+        await setLastUpdated(rssUrl, episodes.first.pubDate);
+      }
+      return 0;
+    }
+
+    try {
+      final response = await http.get(Uri.parse(rssUrl)).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        final body = utf8.decode(response.bodyBytes);
+        XmlDocument document;
+        try {
+          document = XmlDocument.parse(body);
+        } catch (e) {
+          debugPrint('Malformed XML for $rssUrl check: $e');
+          return 0;
+        }
+        final items = document.findAllElements('item');
+        
+        int newCount = 0;
+        DateTime? newestDate;
+
+        for (final node in items) {
+          final pubDateStr = node.findElements('pubDate').isNotEmpty 
+              ? node.findElements('pubDate').first.innerText 
+              : '';
+          if (pubDateStr.isEmpty) continue;
+
+          final pubDate = _parsePubDate(pubDateStr);
+          
+          if (newestDate == null || pubDate.isAfter(newestDate)) {
+            newestDate = pubDate;
+          }
+
+          if (pubDate.isAfter(lastUpdated)) {
+            newCount++;
+          } else {
+            // Items are usually ordered by date descending
+            break;
+          }
+        }
+
+        if (newestDate != null && newestDate.isAfter(lastUpdated)) {
+          await setLastUpdated(rssUrl, newestDate);
+        }
+
+        return newCount;
+      }
+    } catch (e) {
+      debugPrint('Error checking for new episodes: $e');
+    }
+    return 0;
   }
 
   String _stripHtml(String html) {

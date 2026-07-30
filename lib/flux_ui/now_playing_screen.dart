@@ -151,169 +151,199 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     final cardColor = theme.colorScheme.surfaceContainerHighest;
     final backgroundColor = theme.colorScheme.surface;
 
-    return MultiProvider(
-      providers: [
-        Consumer<PlaybackController>(builder: (context, controller, _) => Provider.value(value: controller)),
-      ],
-      child: Consumer<PlaybackController>(
-        builder: (context, controller, _) {
-          final effectsService = Provider.of<AudioEffectsService>(context);
-          final libraryManager = Provider.of<LibraryManager>(context);
-          final stationProvider = Provider.of<StationProvider>(context);
+    return Consumer<PlaybackController>(
+      builder: (context, controller, _) {
+        final effectsService = Provider.of<AudioEffectsService>(context);
+        final libraryManager = Provider.of<LibraryManager>(context);
+        final stationProvider = Provider.of<StationProvider>(context);
 
-          final station = controller.currentStation;
-          final episode = controller.currentEpisode;
+        final station = controller.currentStation;
+        final episode = controller.currentEpisode;
 
-          if (station == null && episode == null) {
-            return Scaffold(
-              backgroundColor: backgroundColor,
-              body: Center(child: Text('Nothing playing', style: TextStyle(color: textColor))),
-            );
-          }
-
-          return Provider.value(
-            value: controller,
-            child: Scaffold(
-              backgroundColor: backgroundColor,
-              body: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth > 600;
-                  final contentWidth = isWide ? 600.0 : constraints.maxWidth;
-
-                  return GestureDetector(
-                    onTap: () => setState(() => _showControls = !_showControls),
-                    onDoubleTap: _toggleFullscreen,
-                    onVerticalDragStart: (d) => _onVerticalDragStart(d, constraints),
-                    onVerticalDragUpdate: (d) => _onVerticalDragUpdate(d, constraints),
-                    onVerticalDragEnd: (details) {
-                      _onVerticalDragEnd(details);
-                      if (details.primaryVelocity != null && details.primaryVelocity! > 300) {
-                        Navigator.pop(context);
-                      }
-                    },
-                    onHorizontalDragEnd: (details) {
-                      if (details.primaryVelocity != null && details.primaryVelocity! > 800) {
-                        Navigator.pop(context);
-                      }
-                    },
-                    child: Stack(
-                      children: [
-                        _buildBackground(station, episode, backgroundColor),
-                        Center(
-                          child: SizedBox(
-                            width: contentWidth,
-                            child: SafeArea(
-                              child: Column(
-                                children: [
-                                  AnimatedOpacity(
-                                    opacity: _showControls ? 1.0 : 0.0,
-                                    duration: const Duration(milliseconds: 300),
-                                    child: _buildTopBar(context, textColor, primaryColor),
-                                  ),
-                                  Expanded(
-                                    child: Center(
-                                      child: _buildArtwork(station, episode, controller, primaryColor, backgroundColor),
-                                    ),
-                                  ),
-                                  AnimatedOpacity(
-                                    opacity: _showControls ? 1.0 : 0.0,
-                                    duration: const Duration(milliseconds: 300),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          _buildStationInfo(controller, textColor, secondaryTextColor, primaryColor),
-                                          SizedBox(height: isWide ? 32 : 16),
-                                          if (controller.errorMessage != null)
-                                            _buildErrorMessage(controller, stationProvider, theme),
-                                          _buildSpectrumVisualizer(station, episode, controller),
-                                          SizedBox(height: isWide ? 24 : 20),
-                                          _buildProgressBar(controller, primaryColor, secondaryTextColor),
-                                          SizedBox(height: isWide ? 40 : 24),
-                                          _buildMainControls(controller, stationProvider, primaryColor, textColor),
-                                          SizedBox(height: isWide ? 40 : 24),
-                                          _buildSecondaryControls(controller, effectsService, libraryManager, cardColor, primaryColor, textColor),
-                                          SizedBox(height: isWide ? 48 : 32),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (_showOverlayText)
-                          Center(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.surface.withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(color: primaryColor.withValues(alpha: 0.5)),
-                              ),
-                              child: Text(
-                                _overlayText,
-                                style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
-                },
+        if (station == null && episode == null) {
+          return Scaffold(
+            backgroundColor: backgroundColor,
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.music_note_rounded, size: 64, color: secondaryTextColor.withValues(alpha: 0.2)),
+                  const SizedBox(height: 16),
+                  Text('Nothing playing', style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 24),
+                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('GO BACK')),
+                ],
               ),
             ),
           );
-        },
-      ),
+        }
+
+        return Scaffold(
+          backgroundColor: backgroundColor,
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 600;
+              final contentWidth = isWide ? 600.0 : constraints.maxWidth;
+
+              return GestureDetector(
+                onTap: () => setState(() => _showControls = !_showControls),
+                onDoubleTap: _toggleFullscreen,
+                onVerticalDragStart: (d) => _onVerticalDragStart(d, constraints),
+                onVerticalDragUpdate: (d) => _onVerticalDragUpdate(d, constraints),
+                onVerticalDragEnd: (details) {
+                  _onVerticalDragEnd(details);
+                  if (details.primaryVelocity != null && details.primaryVelocity! > 300) {
+                    Navigator.pop(context);
+                  }
+                },
+                onHorizontalDragEnd: (details) {
+                  if (details.primaryVelocity != null && details.primaryVelocity! > 800) {
+                    Navigator.pop(context);
+                  }
+                },
+                child: Stack(
+                  children: [
+                    _buildBackground(station, episode, backgroundColor),
+                    Center(
+                      child: SizedBox(
+                        width: contentWidth,
+                        child: SafeArea(
+                          child: Column(
+                            children: [
+                              AnimatedOpacity(
+                                opacity: _showControls ? 1.0 : 0.0,
+                                duration: const Duration(milliseconds: 300),
+                                child: _buildTopBar(context, textColor, primaryColor),
+                              ),
+                              Expanded(
+                                child: Center(
+                                  child: _buildArtwork(station, episode, controller, primaryColor, backgroundColor),
+                                ),
+                              ),
+                              AnimatedOpacity(
+                                opacity: _showControls ? 1.0 : 0.0,
+                                duration: const Duration(milliseconds: 300),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      _buildStationInfo(controller, textColor, secondaryTextColor, primaryColor),
+                                      SizedBox(height: isWide ? 32 : 16),
+                                      if (controller.errorMessage != null)
+                                        _buildErrorMessage(controller, stationProvider, theme),
+                                      _buildSpectrumVisualizer(station, episode, controller),
+                                      SizedBox(height: isWide ? 24 : 20),
+                                      _buildProgressBar(controller, primaryColor, secondaryTextColor),
+                                      SizedBox(height: isWide ? 40 : 24),
+                                      _buildMainControls(controller, stationProvider, primaryColor, textColor),
+                                      SizedBox(height: isWide ? 40 : 24),
+                                      _buildSecondaryControls(controller, effectsService, libraryManager, cardColor, primaryColor, textColor),
+                                      SizedBox(height: isWide ? 48 : 32),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (_showOverlayText)
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(30),
+                            border: Border.all(color: primaryColor.withValues(alpha: 0.5)),
+                          ),
+                          child: Text(
+                            _overlayText,
+                            style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
+
   Widget _buildBackground(RadioStation? station, Episode? episode, Color backgroundColor) {
     final imageUrl = station?.favicon ?? episode?.image ?? '';
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(color: backgroundColor),
-      child: Opacity(
-        opacity: 0.1,
-        child: FluxImage(
-          imageUrl: imageUrl,
-          fit: BoxFit.cover,
-          errorWidget: Container(color: backgroundColor),
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: backgroundColor,
         ),
-      ),
+        if (imageUrl.isNotEmpty)
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.2,
+              child: FluxImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        Positioned.fill(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+            child: Container(
+              color: backgroundColor.withValues(alpha: 0.4),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildTopBar(BuildContext context, Color textColor, Color primaryColor) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-            IconButton(
-              icon: Icon(Icons.keyboard_arrow_down_rounded, color: textColor, size: 36),
-              onPressed: () {
-                Navigator.pop(context);
-              },
+          IconButton(
+            icon: Icon(Icons.keyboard_arrow_down_rounded, color: textColor, size: 40), // Larger
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'FLUX RADIO',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: primaryColor,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 4.0,
+                  ),
+                ),
+                Text(
+                  'NOW PLAYING',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: textColor,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ],
             ),
-          Column(
-            children: [
-              Text(
-                'FLUX RADIO',
-                style: TextStyle(color: primaryColor.withValues(alpha: 0.8), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 4),
-              ),
-              Text(
-                'NOW PLAYING',
-                style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 1.5),
-              ),
-            ],
           ),
           IconButton(
-            icon: Icon(_isFullscreen ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded, color: textColor, size: 28),
+            icon: Icon(_isFullscreen ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded, color: textColor, size: 32),
             onPressed: _toggleFullscreen,
           ),
         ],
@@ -322,7 +352,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
   }
 
   Widget _buildArtwork(RadioStation? station, Episode? episode, PlaybackController controller, Color primaryColor, Color backgroundColor) {
-    final size = _isFullscreen ? 300.0 : 260.0;
+    final size = _isFullscreen ? 320.0 : 280.0;
     final theme = Theme.of(context);
     final imageUrl = station?.favicon ?? episode?.image ?? '';
 
@@ -335,15 +365,11 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
             height: size * _pulseAnim.value,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [theme.colorScheme.surfaceBright, backgroundColor],
-                stops: const [0.85, 1.0],
-              ),
               boxShadow: [
                 BoxShadow(
-                  color: primaryColor.withValues(alpha: controller.isPlaying ? 0.3 : 0.05),
-                  blurRadius: 80,
-                  spreadRadius: 5,
+                  color: primaryColor.withValues(alpha: controller.isPlaying ? 0.25 : 0.05),
+                  blurRadius: 100,
+                  spreadRadius: 10,
                 ),
               ],
             ),
@@ -351,24 +377,28 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
               padding: const EdgeInsets.all(12),
               child: Transform.rotate(
                 angle: _rotationController.value * 2 * math.pi,
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: primaryColor.withValues(alpha: 0.3), width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.shadow.withValues(alpha: 0.1),
-                        blurRadius: 20,
-                        spreadRadius: 2,
+                child: Hero(
+                  tag: 'player_artwork',
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: primaryColor.withValues(alpha: 0.3), width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 30,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: FluxImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: _buildFallbackArtwork(primaryColor, theme, station != null),
+                        errorWidget: _buildFallbackArtwork(primaryColor, theme, station != null),
                       ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: FluxImage(
-                      imageUrl: imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: _buildFallbackArtwork(primaryColor, theme, station != null),
-                      errorWidget: _buildFallbackArtwork(primaryColor, theme, station != null),
                     ),
                   ),
                 ),
@@ -392,8 +422,9 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
   }
 
   Widget _buildStationInfo(PlaybackController controller, Color textColor, Color secondaryTextColor, Color primaryColor) {
+    final theme = Theme.of(context);
     final title = controller.currentTitle;
-    final subtitle = controller.currentSubtitle;
+    final subtitle = (controller.currentEpisode?.podcastTitle ?? controller.currentSubtitle);
 
     return Column(
       children: [
@@ -402,21 +433,30 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: textColor, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            color: textColor,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -1.0,
+          ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           subtitle.toUpperCase(),
-          style: TextStyle(color: secondaryTextColor, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1.2),
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: secondaryTextColor,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.5,
+          ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         _buildLiveBadge(controller, primaryColor, secondaryTextColor),
       ],
     );
   }
 
   Widget _buildLiveBadge(PlaybackController controller, Color primaryColor, Color secondaryTextColor) {
+    final theme = Theme.of(context);
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
@@ -425,39 +465,44 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
         final hasError = controller.errorMessage != null;
         
         final color = hasError 
-            ? Theme.of(context).colorScheme.error 
-            : (isLoading ? Colors.orange : (isPlaying ? primaryColor : secondaryTextColor));
+            ? Colors.redAccent 
+            : (isLoading ? Colors.orangeAccent : (isPlaying ? primaryColor : secondaryTextColor));
             
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: color.withValues(alpha: 0.6), width: 2), // Thicker border
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (isLoading)
                 SizedBox(
-                  width: 10,
-                  height: 10,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: color),
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(strokeWidth: 3, color: color),
                 )
               else
                 Container(
-                  width: 8,
-                  height: 8,
+                  width: 10,
+                  height: 10,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: color,
-                    boxShadow: isPlaying ? [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 6)] : null,
+                    boxShadow: isPlaying ? [BoxShadow(color: color.withValues(alpha: 0.8), blurRadius: 10)] : null,
                   ),
                 ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Text(
                 hasError ? 'ERROR' : (isLoading ? 'LOADING...' : (isPlaying ? (controller.currentEpisode != null ? 'PODCAST' : 'LIVE STREAM') : 'PAUSED')),
-                style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2),
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2.5,
+                ),
               ),
             ],
           ),
@@ -486,6 +531,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
   }
 
   Widget _buildProgressBar(PlaybackController controller, Color primaryColor, Color secondaryTextColor) {
+    final theme = Theme.of(context);
     return StreamBuilder<Duration?>(
       stream: controller.durationStream,
       builder: (context, durationSnap) {
@@ -527,7 +573,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                     thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
                     thumbColor: primaryColor,
                     activeTrackColor: primaryColor,
-                    inactiveTrackColor: secondaryTextColor.withValues(alpha: 0.15),
+                    inactiveTrackColor: theme.colorScheme.outlineVariant,
                     overlayColor: primaryColor.withValues(alpha: 0.15),
                     trackShape: const RoundedRectSliderTrackShape(),
                   ),
@@ -543,8 +589,8 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(_fmt(position), style: TextStyle(color: secondaryTextColor, fontSize: 12, fontWeight: FontWeight.w500)),
-                      Text(_fmt(duration), style: TextStyle(color: secondaryTextColor, fontSize: 12, fontWeight: FontWeight.w500)),
+                      Text(_fmt(position), style: theme.textTheme.bodySmall?.copyWith(color: secondaryTextColor, fontWeight: FontWeight.w600)),
+                      Text(_fmt(duration), style: theme.textTheme.bodySmall?.copyWith(color: secondaryTextColor, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
@@ -558,32 +604,33 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
 
   Widget _buildMainControls(PlaybackController controller, StationProvider stationProvider, Color primaryColor, Color textColor) {
     final isPodcast = controller.currentEpisode != null;
+    final theme = Theme.of(context);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _ControlBtn(
           icon: Icons.skip_previous_rounded,
-          size: isPodcast ? 36 : 38,
-          color: textColor.withValues(alpha: 0.7),
+          size: isPodcast ? 32 : 36,
+          color: textColor.withValues(alpha: 0.8),
           onTap: () => controller.skipPrevious(stationProvider.stations, stationProvider.episodes),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 24),
         if (isPodcast)
           _ControlBtn(
             icon: Icons.replay_10_rounded,
             size: 28,
-            color: textColor.withValues(alpha: 0.6),
+            color: textColor.withValues(alpha: 0.7),
             onTap: () => controller.seekBackward(seconds: 10),
           )
         else
           _ControlBtn(
-            icon: Icons.stop_rounded,
-            size: 32,
+            icon: Icons.replay_30_rounded,
+            size: 28,
             color: textColor.withValues(alpha: 0.7),
-            onTap: () => controller.stop(),
+            onTap: () => controller.seekBackward(seconds: 30),
           ),
-        const SizedBox(width: 20),
+        const SizedBox(width: 24),
         GestureDetector(
           onTap: () {
             if (controller.isLoading) return;
@@ -595,55 +642,61 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
               _rotationController.repeat();
             }
           },
-          child: Container(
-            width: 88,
-            height: 88,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 84,
+            height: 84,
             decoration: BoxDecoration(
-              color: controller.isLoading ? primaryColor.withValues(alpha: 0.6) : primaryColor,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [primaryColor, primaryColor.withBlue(255)], 
+              ),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: primaryColor.withValues(alpha: 0.45),
-                  blurRadius: 35,
-                  offset: const Offset(0, 10),
+                  color: primaryColor.withValues(alpha: 0.4),
+                  blurRadius: 25,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
             child: controller.isLoading
                 ? Padding(
-                    padding: const EdgeInsets.all(24.0),
+                    padding: const EdgeInsets.all(26.0),
                     child: CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      strokeWidth: 3,
+                      color: theme.colorScheme.onPrimary,
+                      strokeWidth: 4,
                     ),
                   )
                 : Icon(
                     controller.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    size: 44,
+                    color: theme.colorScheme.onPrimary,
+                    size: 48,
                   ),
           ),
         ),
-        const SizedBox(width: 20),
+        const SizedBox(width: 24),
         if (isPodcast)
           _ControlBtn(
             icon: Icons.forward_30_rounded,
-            size: 32,
+            size: 28,
             color: textColor.withValues(alpha: 0.7),
             onTap: () => controller.seekForward(seconds: 30),
           )
         else
           _ControlBtn(
-            icon: Icons.close_rounded,
-            size: 32,
+            icon: Icons.forward_30_rounded,
+            size: 28,
             color: textColor.withValues(alpha: 0.7),
-            onTap: () => Navigator.pop(context),
+            onTap: () => controller.seekForward(seconds: 30),
           ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 24),
         _ControlBtn(
           icon: Icons.skip_next_rounded,
-          size: isPodcast ? 36 : 38,
-          color: textColor.withValues(alpha: 0.7),
+          size: isPodcast ? 32 : 36,
+          color: textColor.withValues(alpha: 0.8),
           onTap: () => controller.skipNext(stationProvider.stations, stationProvider.episodes),
         ),
       ],
@@ -651,11 +704,20 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
   }
 
   Widget _buildSecondaryControls(PlaybackController controller, AudioEffectsService effectsService, LibraryManager libraryManager, Color cardColor, Color primaryColor, Color textColor) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       decoration: BoxDecoration(
-        color: cardColor.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(30),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.colorScheme.outline, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -754,7 +816,10 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
               Expanded(
                 child: Text(
                   controller.errorMessage!,
-                  style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 13, fontWeight: FontWeight.w500),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -888,6 +953,7 @@ class _SleepTimerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final options = [
       const Duration(minutes: 5),
       const Duration(minutes: 15),
@@ -903,7 +969,7 @@ class _SleepTimerSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 24), decoration: BoxDecoration(color: textColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(2))),
-          Text('SLEEP TIMER', style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 3)),
+          Text('SLEEP TIMER', style: theme.textTheme.labelLarge?.copyWith(color: textColor, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
           const SizedBox(height: 16),
           StreamBuilder<Duration?>(
             stream: controller.sleepTimerStream,
@@ -1019,13 +1085,14 @@ class _ControlBtn extends StatelessWidget {
     final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(30),
+      borderRadius: BorderRadius.circular(24),
       child: Container(
-        width: 56,
-        height: 56,
+        width: 60,
+        height: 60,
         decoration: BoxDecoration(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-          shape: BoxShape.circle,
+          color: theme.colorScheme.primary.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1), width: 1.5),
         ),
         child: Icon(icon, color: color, size: size),
       ),
@@ -1049,7 +1116,7 @@ class _EqualizerSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 24), decoration: BoxDecoration(color: textColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(2))),
-          Text('AUDIO EQUALIZER', style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 3)),
+          Text('AUDIO EQUALIZER', style: theme.textTheme.labelLarge?.copyWith(color: textColor, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
           const SizedBox(height: 24),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -1306,7 +1373,7 @@ class _RecordingSheetState extends State<_RecordingSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 24), decoration: BoxDecoration(color: textColor?.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(2))),
-          Text('STREAM RECORDING', style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 2)),
+          Text('STREAM RECORDING', style: theme.textTheme.labelLarge?.copyWith(color: textColor, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
           const SizedBox(height: 20),
           if (recordingService.isRecording)
             Column(

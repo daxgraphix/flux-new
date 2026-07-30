@@ -23,7 +23,7 @@ class _CountriesScreenState extends State<CountriesScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Radio by Country'),
+        title: const Text('Radio by Country', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -1.0)),
         backgroundColor: theme.appBarTheme.backgroundColor,
         foregroundColor: theme.appBarTheme.foregroundColor,
         elevation: 0,
@@ -56,27 +56,31 @@ class _CountriesScreenState extends State<CountriesScreen> {
                                   _expandedRegionIndex = isExpanded ? null : index;
                                 });
                               },
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(24),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
                                   border: Border.all(
-                                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-                                    width: 1,
+                                    color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                                    width: 1.5,
                                   ),
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(24),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       region.regionName,
-                                      style: theme.textTheme.titleMedium,
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: -0.5,
+                                      ),
                                     ),
                                     Icon(
                                       isExpanded ? Icons.expand_less : Icons.expand_more, 
-                                      color: theme.colorScheme.primary
+                                      color: theme.colorScheme.primary,
+                                      size: 28,
                                     ),
                                   ],
                                 ),
@@ -173,27 +177,52 @@ class _CountryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+    
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-            width: 1,
+            color: primaryColor.withValues(alpha: 0.1),
+            width: 1.5,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(country.flag, style: const TextStyle(fontSize: 20)),
-            const SizedBox(width: 8),
-            Text(
-              country.name,
-              style: TextStyle(color: theme.textTheme.bodyLarge?.color, fontSize: 14, fontWeight: FontWeight.w500),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: Text(country.flag, style: const TextStyle(fontSize: 20)),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                country.name.toUpperCase(),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),

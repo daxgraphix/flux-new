@@ -9,6 +9,7 @@ import 'audio_service_handler.dart';
 import '../flux_hardware/radio_service.dart';
 import '../flux_ui/models/podcast.dart';
 import '../flux_storage/radio_storage.dart';
+import 'library_manager.dart';
 import 'app_exception.dart';
 
 class PlaybackController extends ChangeNotifier {
@@ -66,11 +67,16 @@ class PlaybackController extends ChangeNotifier {
     _startNetworkMonitoring();
   }
 
+  LibraryManager? _libraryManager;
+  void updateLibraryManager(LibraryManager manager) {
+    _libraryManager = manager;
+  }
+
   void _initStreams() {
     _positionSubscription = _player.positionStream.listen((p) {
       _position = p;
       if (_currentEpisode != null && p.inSeconds > 0 && p.inSeconds % 5 == 0) {
-        RadioStorage().updateEpisodePosition(
+        _libraryManager?.updateEpisodeProgress(
           _currentEpisode!.id, 
           p.inSeconds,
           episode: _currentEpisode
@@ -195,6 +201,7 @@ class PlaybackController extends ChangeNotifier {
       }
 
       await RadioStorage().saveLastPlayed('station', station.toJson());
+      _libraryManager?.addToRecent(station);
 
       final mediaItem = MediaItem(
         id: station.url,
@@ -288,7 +295,7 @@ class PlaybackController extends ChangeNotifier {
   Future<void> pause() async {
     await _audioHandler.pause();
     if (_currentEpisode != null) {
-      await RadioStorage().updateEpisodePosition(
+      await _libraryManager?.updateEpisodeProgress(
         _currentEpisode!.id, 
         _position.inSeconds,
         episode: _currentEpisode

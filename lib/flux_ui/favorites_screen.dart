@@ -28,10 +28,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Favorites', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
-        backgroundColor: theme.appBarTheme.backgroundColor,
-        foregroundColor: theme.appBarTheme.foregroundColor,
+        title: Text(
+          'Favorites',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            letterSpacing: -1.2,
+            fontSize: 24,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
+        centerTitle: false,
       ),
       body: Consumer2<LibraryManager, PlaybackController>(
         builder: (context, library, playback, child) {
@@ -95,24 +104,24 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          width: 1,
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1.5,
         ),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: FluxImage(
             imageUrl: station.favicon,
             width: 52,
             height: 52,
             errorWidget: Container(
               color: theme.colorScheme.surfaceContainerHighest,
-              child: Icon(Icons.radio_rounded, color: theme.primaryColor, size: 28),
+              child: Icon(Icons.radio_rounded, color: theme.colorScheme.primary, size: 30),
             ),
           ),
         ),
@@ -120,8 +129,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           station.name.isNotEmpty ? station.name : 'Unknown Station',
           style: TextStyle(
             color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
+            fontWeight: FontWeight.w900,
+            fontSize: 16,
+            letterSpacing: -0.5,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -133,6 +143,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             style: TextStyle(
               color: theme.colorScheme.onSurfaceVariant,
               fontSize: 12,
+              fontWeight: FontWeight.w900,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -143,11 +154,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           children: [
             Container(
               decoration: BoxDecoration(
-                color: theme.primaryColor.withValues(alpha: 0.1),
+                color: theme.colorScheme.primary.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
+                border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                  width: 1.5,
+                ),
               ),
               child: IconButton(
-                icon: Icon(Icons.play_arrow_rounded, color: theme.primaryColor, size: 24),
+                icon: Icon(Icons.play_arrow_rounded, color: theme.colorScheme.primary, size: 28),
                 onPressed: () async {
                   await playback.playStation(station);
                   if (context.mounted) {
@@ -156,8 +171,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 },
               ),
             ),
+            const SizedBox(width: 4),
             IconButton(
-              icon: const Icon(Icons.favorite, color: Colors.red, size: 24),
+              icon: Icon(Icons.favorite, color: theme.colorScheme.primary, size: 24),
               onPressed: () {
                 library.toggleFavorite(station);
               },

@@ -36,6 +36,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
 
   Widget _buildBody(BuildContext context, bool isTablet) {
     final playbackController = Provider.of<PlaybackController>(context);
+    final theme = Theme.of(context);
     final hasPlayer = playbackController.currentStation != null || playbackController.currentEpisode != null;
 
     return Row(
@@ -45,36 +46,36 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
             selectedIndex: _selectedIndex,
             onDestinationSelected: _onItemTapped,
             labelType: NavigationRailLabelType.all,
-            backgroundColor: Colors.white,
-            selectedIconTheme: IconThemeData(color: Theme.of(context).primaryColor),
-            unselectedIconTheme: const IconThemeData(color: Colors.grey),
-            selectedLabelTextStyle: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold),
-            unselectedLabelTextStyle: const TextStyle(color: Colors.grey),
+            backgroundColor: theme.colorScheme.surface,
+            selectedIconTheme: IconThemeData(color: theme.colorScheme.primary),
+            unselectedIconTheme: IconThemeData(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+            selectedLabelTextStyle: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
+            unselectedLabelTextStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
             destinations: const [
               NavigationRailDestination(
                 icon: Icon(Icons.home_outlined),
                 selectedIcon: Icon(Icons.home_rounded),
-                label: Text('Home'),
+                label: Text('Home', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5)),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.library_music_outlined),
                 selectedIcon: Icon(Icons.library_music_rounded),
-                label: Text('Library'),
+                label: Text('Library', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5)),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.public_outlined),
                 selectedIcon: Icon(Icons.public_rounded),
-                label: Text('Explore'),
+                label: Text('Explore', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5)),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.language_outlined),
                 selectedIcon: Icon(Icons.language_rounded),
-                label: Text('Streema'),
+                label: Text('Streema', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5)),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.settings_outlined),
                 selectedIcon: Icon(Icons.settings_rounded),
-                label: Text('Settings'),
+                label: Text('Settings', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.5)),
               ),
             ],
           ),
@@ -86,7 +87,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
                 children: _screens.map((screen) {
                   if (!isTablet && hasPlayer) {
                     return Padding(
-                      padding: EdgeInsets.only(bottom: 80),
+                      padding: const EdgeInsets.only(bottom: 72),
                       child: screen,
                     );
                   }
@@ -97,7 +98,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
                 Positioned(
                   left: 0,
                   right: 0,
-                  bottom: kBottomNavigationBarHeight,
+                  bottom: kBottomNavigationBarHeight + 4,
                   child: EnhancedMiniPlayer(
                     onExpandTap: () => Navigator.of(context).push(
                       NavigationHelper.slideUpRoute(const NowPlayingScreen()),
@@ -119,48 +120,46 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: _buildBody(context, isTablet),
       bottomNavigationBar: isTablet
           ? null
-          : BottomNavigationBar(
-              currentIndex: _selectedIndex,
-              onTap: _onItemTapped,
-              type: BottomNavigationBarType.fixed,
-              backgroundColor: theme.colorScheme.surface,
-              selectedItemColor: theme.primaryColor,
-              unselectedItemColor: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              showUnselectedLabels: true,
-              selectedFontSize: 12,
-              unselectedFontSize: 12,
-              elevation: 8,
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.home_outlined),
-                  activeIcon: Icon(Icons.home_rounded),
-                  label: 'Home',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.library_music_outlined),
-                  activeIcon: Icon(Icons.library_music_rounded),
-                  label: 'Library',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.public_outlined),
-                  activeIcon: Icon(Icons.public_rounded),
-                  label: 'Explore',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.language_outlined),
-                  activeIcon: Icon(Icons.language_rounded),
-                  label: 'Streema',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.settings_outlined),
-                  activeIcon: Icon(Icons.settings_rounded),
-                  label: 'Settings'),
-              ],
-            ),
+          : NavigationBar(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: _onItemTapped,
+                height: 65,
+                elevation: 0,
+                backgroundColor: theme.colorScheme.surface,
+                indicatorColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.home_outlined),
+                    selectedIcon: Icon(Icons.home_rounded),
+                    label: 'Home',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.library_music_outlined),
+                    selectedIcon: Icon(Icons.library_music_rounded),
+                    label: 'Library',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.public_outlined),
+                    selectedIcon: Icon(Icons.public_rounded),
+                    label: 'Explore',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.language_outlined),
+                    selectedIcon: Icon(Icons.language_rounded),
+                    label: 'Streema',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.settings_outlined),
+                    selectedIcon: Icon(Icons.settings_rounded),
+                    label: 'Settings',
+                  ),
+                ],
+              ),
     );
   }
 }

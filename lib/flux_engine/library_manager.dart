@@ -4,24 +4,54 @@ import 'package:flutter/foundation.dart';
 import '../flux_storage/radio_storage.dart';
 import '../flux_hardware/radio_service.dart';
 import '../flux_ui/models/podcast.dart';
+import 'podcast_service.dart';
 
 class LibraryManager extends ChangeNotifier {
+  final PodcastService _podcastService = PodcastService();
   List<RadioStation> _recentStations = [];
   List<FavoriteStation> _favorites = [];
+  List<Podcast> _followedPodcasts = [];
   List<Episode> _bookmarkedEpisodes = [];
+  List<Episode> _inProgressEpisodes = [];
   List<String> _recentSearches = [];
+  List<String> _favoriteCategories = [];
 
   List<RadioStation> get recentStations => List.unmodifiable(_recentStations);
   List<FavoriteStation> get favorites => List.unmodifiable(_favorites);
   List<RadioStation> get favoriteStations => _favorites.map((f) => f.toRadioStation()).toList();
+  List<Podcast> get followedPodcasts => List.unmodifiable(_followedPodcasts);
   List<Episode> get bookmarkedEpisodes => List.unmodifiable(_bookmarkedEpisodes);
+  List<Episode> get inProgressEpisodes => List.unmodifiable(_inProgressEpisodes);
   List<String> get recentSearches => List.unmodifiable(_recentSearches);
+  List<String> get favoriteCategories => List.unmodifiable(_favoriteCategories);
 
   Future<void> loadLibrary() async {
+    await _podcastService.init();
     await loadRecentStations();
     await loadFavorites();
+    await loadFollowedPodcasts();
     await loadBookmarks();
+    await loadInProgressEpisodes();
     await loadRecentSearches();
+    await loadFavoriteCategories();
+    
+    // Check for new episodes in the background
+    refreshFollowedPodcasts();
+  }
+
+  Future<void> refreshFollowedPodcasts() async {
+    int totalNewEpisodes = 0;
+    for (final podcast in _followedPodcasts) {
+      if (podcast.rss.isNotEmpty) {
+        final newCount = await _podcastService.checkNewEpisodes(podcast.rss);
+        totalNewEpisodes += newCount;
+      }
+    }
+    
+    if (totalNewEpisodes > 0) {
+      debugPrint('Found $totalNewEpisodes new episodes across followed podcasts');
+      // Here we could trigger a local notification
+    }
   }
 
   Future<void> loadRecentStations() async {
@@ -34,8 +64,18 @@ class LibraryManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> loadFollowedPodcasts() async {
+    _followedPodcasts = await RadioStorage().getFollowedPodcasts();
+    notifyListeners();
+  }
+
   Future<void> loadBookmarks() async {
     _bookmarkedEpisodes = await RadioStorage().getBookmarkedEpisodes();
+    notifyListeners();
+  }
+
+  Future<void> loadInProgressEpisodes() async {
+    _inProgressEpisodes = await RadioStorage().getInProgressEpisodes();
     notifyListeners();
   }
 
@@ -44,9 +84,34 @@ class LibraryManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> loadFavoriteCategories() async {
+    final list = await RadioStorage().getSettings<List<dynamic>>('favorite_categories');
+    _favoriteCategories = list?.cast<String>() ?? [];
+    notifyListeners();
+  }
+
+  Future<void> toggleFavoriteCategory(String categoryTitle) async {
+    if (_favoriteCategories.contains(categoryTitle)) {
+      _favoriteCategories.remove(categoryTitle);
+    } else {
+      _favoriteCategories.add(categoryTitle);
+    }
+    await RadioStorage().saveSettings('favorite_categories', _favoriteCategories);
+    notifyListeners();
+  }
+
+  bool isCategoryFavorite(String categoryTitle) {
+    return _favoriteCategories.contains(categoryTitle);
+  }
+
   Future<void> addToRecent(RadioStation station) async {
     await RadioStorage().addRecent(station);
     await loadRecentStations();
+  }
+
+  Future<void> updateEpisodeProgress(String id, int position, {Episode? episode}) async {
+    await RadioStorage().updateEpisodePosition(id, position, episode: episode);
+    await loadInProgressEpisodes();
   }
 
   Future<void> toggleFavorite(RadioStation station) async {
@@ -94,6 +159,30 @@ class LibraryManager extends ChangeNotifier {
   Future<void> toggleBookmark(Episode episode) async {
     await RadioStorage().toggleBookmark(episode);
     await loadBookmarks();
+  }
+
+  Future<void> toggleFollowPodcast(Podcast podcast) async {
+    await RadioStorage().toggleFollowPodcast(podcast);
+    await loadFollowedPodcasts();
+  }
+
+  bool isFollowingPodcast(String id) {
+    return _followedPodcasts.any((p) => p.id == id);
+  }
+
+  Future<void> togglePodcastNotifications(String id) async {
+    final index = _followedPodcasts.indexWhere((p) => p.id == id);
+    if (index != -1) {
+      final podcast = _followedPodcasts[index];
+      final updatedPodcast = podcast.copyWith(notificationsEnabled: !podcast.notificationsEnabled);
+      await RadioStorage().updateFollowedPodcast(updatedPodcast);
+      await loadFollowedPodcasts();
+    }
+  }
+
+  bool areNotificationsEnabled(String id) {
+    final podcast = _followedPodcasts.firstWhere((p) => p.id == id, orElse: () => Podcast(id: '', title: '', publisher: '', image: '', description: '', rss: ''));
+    return podcast.id.isNotEmpty ? podcast.notificationsEnabled : false;
   }
 
   Future<void> addRecentSearch(String query) async {
