@@ -13,6 +13,7 @@ import 'package:audio_service/audio_service.dart';
 import 'audio_service_handler.dart';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'recording_service.dart';
 import 'alarm_service.dart';
 import 'station_provider.dart';
@@ -282,6 +283,8 @@ class RadioEngine extends ChangeNotifier {
     notifyListeners();
 
     try {
+      await _ensureNotificationPermission();
+
       if (_isPlaying) {
         await _audioHandler.pause();
         _isPlaying = false;
@@ -868,6 +871,8 @@ class RadioEngine extends ChangeNotifier {
     notifyListeners();
 
     try {
+      await _ensureNotificationPermission();
+
       if (_isPlaying) {
         await _audioHandler.pause();
         _isPlaying = false;
@@ -996,6 +1001,8 @@ class RadioEngine extends ChangeNotifier {
     notifyListeners();
 
     try {
+      await _ensureNotificationPermission();
+
       if (_isPlaying) {
         await _audioHandler.pause();
         _isPlaying = false;
@@ -1062,7 +1069,7 @@ class RadioEngine extends ChangeNotifier {
         _sleepTimerDuration = null;
         notifyListeners();
       });
-      
+
       // Update the remaining time every second
       Timer.periodic(const Duration(seconds: 1), (timer) {
         if (_sleepTimerDuration == null || !(_sleepTimer?.isActive ?? false)) {
@@ -1080,6 +1087,14 @@ class RadioEngine extends ChangeNotifier {
     _sleepTimer?.cancel();
     _sleepTimerDuration = null;
     notifyListeners();
+  }
+
+  Future<void> _ensureNotificationPermission() async {
+    if (!Platform.isAndroid) return;
+    final status = await Permission.notification.status;
+    if (status.isDenied || status.isRestricted || status.isLimited) {
+      await Permission.notification.request();
+    }
   }
 
   @override

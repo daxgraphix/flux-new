@@ -216,15 +216,15 @@ class _LibraryScreenState extends State<LibraryScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
-        setState(() {
-          _searchQuery = "";
-          _searchController.clear();
-          _searchScope = "podcasts";
-        });
-      }
+_tabController.addListener(() {
+  if (!_tabController.indexIsChanging) {
+    setState(() {
+      _searchQuery = "";
+      _searchController.clear();
+      _searchScope = "podcasts";
     });
+  }
+});
   }
 
   @override
@@ -297,7 +297,18 @@ class _LibraryScreenState extends State<LibraryScreen>
                       const SizedBox(height: 8),
                       TextField(
                         controller: _searchController,
-                        onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
+                        onChanged: (value) {
+                          final trimmed = value.trim();
+                          setState(() => _searchQuery = trimmed.toLowerCase());
+                          if (_tabController.index == 1 && _searchScope == 'podcasts') {
+                            final engine = Provider.of<RadioEngine>(context, listen: false);
+                            if (trimmed.isNotEmpty) {
+                              engine.searchPodcasts(trimmed);
+                            } else {
+                              engine.loadTrendingPodcasts();
+                            }
+                          }
+                        },
                         decoration: InputDecoration(
                           hintText: _searchScope == 'episodes' && _tabController.index == 1
                             ? 'Search episodes...'
@@ -861,6 +872,13 @@ class _LibraryScreenState extends State<LibraryScreen>
         late final bool isEmpty;
 
         if (q.isEmpty) {
+          if (engine.podcasts.isEmpty && !engine.isLoading) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && _searchQuery.isEmpty) {
+                engine.loadTrendingPodcasts();
+              }
+            });
+          }
           results = [];
           isEmpty = false;
         } else if (_searchScope == 'episodes') {

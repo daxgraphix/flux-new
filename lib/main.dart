@@ -37,11 +37,11 @@ void main() async {
 
 Future<RadioAudioHandler> _createAudioHandler() async {
   try {
-    return await initAudioService().timeout(const Duration(seconds: 8));
+    return await initAudioService().timeout(const Duration(seconds: 5));
   } catch (e) {
     debugPrint('Audio service initialization failed or timed out: $e');
-    return RadioAudioHandler();
   }
+  return RadioAudioHandler();
 }
 
 class FluxApp extends StatefulWidget {

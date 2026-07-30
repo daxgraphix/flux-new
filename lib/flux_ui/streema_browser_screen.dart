@@ -73,55 +73,10 @@ class _StreemaBrowserScreenState extends State<StreemaBrowserScreen> {
       (function() {
         var style = document.createElement('style');
         style.innerHTML = `
-          html { background-color: #121212 !important; }
-          header, footer, 
-          nav, 
-          .navbar, 
-          .site-footer, 
-          .app-banner, 
-          .social-links, 
-          .ads, 
-          .sidebar, 
-          #branding, 
-          .streema-branding, 
-          .download-app-link, 
-          .nav-tabs, 
-          .breadcrumb,
-          .page-header,
-          .ad-container,
-          .promo-banner,
-          .login-prompt,
-          .signup-prompt,
-          div[class*="branding"],
-          div[class*="footer"],
-          div[class*="header"],
-          div[class*="ad-"] { 
-            display: none !important; 
-          }
-          body { 
-            padding-top: 0 !important; 
-            margin-top: 0 !important; 
-            background-color: #121212 !important;
-            color: #ffffff !important;
-          }
-          .main-container, .container { 
-            padding-top: 10px !important; 
-            margin-top: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            background-color: #121212 !important;
-          }
-          /* Make station items stand out */
-          .item, .station-item {
-            border-bottom: 1px solid rgba(255,255,255,0.1) !important;
-            padding: 15px !important;
-            background-color: #1e1e1e !important;
-            margin-bottom: 8px !important;
-            border-radius: 8px !important;
-          }
-          a { color: #ff5252 !important; }
-          .station-name, h1, h2, h3 { color: #ffffff !important; }
-          p, span, div { color: rgba(255,255,255,0.7) !important; }
+          header, footer, nav, .navbar, .site-footer, .app-banner, .social-links, .ads, .sidebar, #branding, .streema-branding, .download-app-link, .nav-tabs, .breadcrumb, .page-header, .ad-container, .promo-banner, .login-prompt, .signup-prompt, div[class*="branding"], div[class*="footer"], div[class*="header"], div[class*="ad-"] { display: none !important; }
+          body { padding-top: 0 !important; margin-top: 0 !important; }
+          .main-container, .container { padding-top: 10px !important; margin-top: 0 !important; width: 100% !important; max-width: 100% !important; }
+          .item, .station-item { border-bottom: 1px solid rgba(255,255,255,0.15) !important; padding: 12px !important; border-radius: 8px !important; }
         `;
         document.head.appendChild(style);
       })();

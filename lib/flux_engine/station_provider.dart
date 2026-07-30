@@ -304,17 +304,20 @@ class StationProvider extends ChangeNotifier {
 
   Future<void> loadEpisodes(String rssUrl) async {
     _isLoading = true;
-    _currentRss = rssUrl;
-    _episodesByRss[rssUrl] = [];
-    notifyListeners();
+    if (_currentRss == rssUrl && _episodesByRss.containsKey(rssUrl)) {
+      notifyListeners();
+    } else if (_currentRss != rssUrl) {
+      _currentRss = rssUrl;
+      _episodesByRss[rssUrl] = const [];
+      notifyListeners();
+    }
     try {
       var episodes = await _podcastService.fetchEpisodes(rssUrl);
-      
-      // Check for downloads and progress
+
       for (int i = 0; i < episodes.length; i++) {
         final downloaded = await RadioStorage().getDownloadedEpisode(episodes[i].id);
         final position = await RadioStorage().getEpisodePosition(episodes[i].id);
-        
+
         if (downloaded != null || position > 0) {
           episodes[i] = episodes[i].copyWith(
             downloadPath: downloaded?.downloadPath,
@@ -324,6 +327,9 @@ class StationProvider extends ChangeNotifier {
       }
       _episodesByRss[rssUrl] = episodes;
     } catch (e) {
+      if (_episodesByRss[rssUrl] == null || _episodesByRss[rssUrl]!.isEmpty) {
+        _episodesByRss[rssUrl] = const [];
+      }
       _errorMessage = 'Failed to load episodes: $e';
     }
     _isLoading = false;

@@ -16,6 +16,7 @@ Future<RadioAudioHandler> initAudioService() async {
       androidStopForegroundOnPause: false,
       androidShowNotificationBadge: true,
       notificationColor: const Color(0xFFE53935),
+      androidNotificationIcon: 'ic_notification',
       androidNotificationClickStartsActivity: true,
       androidResumeOnClick: true,
     ),
@@ -127,12 +128,25 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
     if (await session.setActive(true)) {
       await _player.play();
     }
+    await super.play();
   }
 
   @override
   Future<void> pause() async {
     await _player.pause();
+    await super.pause();
   }
+
+  @override
+  Future<void> stop() async {
+    await _player.stop();
+    final session = await AudioSession.instance;
+    await session.setActive(false);
+    return super.stop();
+  }
+
+  @override
+  Future<void> seek(Duration position) => _player.seek(position);
 
   @override
   Future<void> skipToNext() async => onSkipNext?.call();
@@ -145,21 +159,6 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> rewind() => seek(_player.position - const Duration(seconds: 10));
-
-  @override
-  Future<void> stop() async {
-    await _player.stop();
-    playbackState.add(playbackState.value.copyWith(
-      processingState: AudioProcessingState.idle,
-      playing: false,
-    ));
-    final session = await AudioSession.instance;
-    await session.setActive(false);
-    return super.stop();
-  }
-
-  @override
-  Future<void> seek(Duration position) => _player.seek(position);
 
   @override
   Future<void> setSpeed(double speed) => _player.setSpeed(speed);
