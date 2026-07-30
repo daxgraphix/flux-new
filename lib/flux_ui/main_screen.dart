@@ -74,6 +74,8 @@ class _HomeTabState extends State<_HomeTab>
   Widget build(BuildContext context) {
     super.build(context);
     final theme = Theme.of(context);
+    final width = MediaQuery.of(context).size.width;
+    final isTablet = width >= 600;
 
     return Container(
       color: theme.scaffoldBackgroundColor,
@@ -82,32 +84,27 @@ class _HomeTabState extends State<_HomeTab>
           return CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // ─── Header ───────────────────────────────────────────────
-              SliverToBoxAdapter(child: _buildHeader(context, engine)),
+              SliverToBoxAdapter(child: _buildHeader(context, engine, isTablet)),
 
-              // ─── Quick Actions ────────────────────────────────────────
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                sliver: SliverToBoxAdapter(
-                    child: _buildQuickActions(context, engine)),
+                padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 16, vertical: 0),
+                sliver: SliverToBoxAdapter(child: _buildQuickActions(context, engine, isTablet)),
               ),
 
-              // ─── Genres ───────────────────────────────────────────────
               SliverPadding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                sliver: SliverToBoxAdapter(
-                    child: _buildGenreChips(context, engine)),
+                padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 16, vertical: 4),
+                sliver: SliverToBoxAdapter(child: _buildGenreChips(context, engine, isTablet)),
               ),
 
-              // ─── Favourites ───────────────────────────────────────────
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 16),
                 sliver: SliverToBoxAdapter(
                   child: Selector<RadioEngine, List<RadioStation>>(
                     selector: (_, e) => e.favoriteStations,
                     builder: (context, favs, _) {
                       if (favs.isEmpty) return const SizedBox.shrink();
+                      final cardWidth = isTablet ? 160.0 : 120.0;
+                      final cardHeight = isTablet ? 160.0 : 130.0;
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -117,13 +114,13 @@ class _HomeTabState extends State<_HomeTab>
                                   context,
                                   NavigationHelper.slideUpRoute(const LibraryScreen()))),
                           SizedBox(
-                            height: 130,
+                            height: cardHeight,
                             child: ListView.builder(
                               scrollDirection: Axis.horizontal,
                               itemCount: favs.length,
-                              itemExtent: 120,
+                              itemExtent: cardWidth,
                               itemBuilder: (_, i) => Padding(
-                                padding: const EdgeInsets.only(right: 10),
+                                padding: EdgeInsets.only(right: isTablet ? 14 : 10),
                                 child: _StationCard(
                                   station: favs[i],
                                   onTap: () {
@@ -145,14 +142,15 @@ class _HomeTabState extends State<_HomeTab>
                 ),
               ),
 
-              // ─── Recently Played ──────────────────────────────────────
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 16),
                 sliver: SliverToBoxAdapter(
                   child: Selector<RadioEngine, List<RadioStation>>(
                     selector: (_, e) => e.recentStations,
                     builder: (context, recent, _) {
                       if (recent.isEmpty) return const SizedBox.shrink();
+                      final cardWidth = isTablet ? 160.0 : 120.0;
+                      final cardHeight = isTablet ? 160.0 : 130.0;
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -162,13 +160,13 @@ class _HomeTabState extends State<_HomeTab>
                                   context,
                                   NavigationHelper.slideUpRoute(const LibraryScreen()))),
                           SizedBox(
-                            height: 130,
+                            height: cardHeight,
                             child: ListView.builder(
                               scrollDirection: Axis.horizontal,
                               itemCount: recent.length,
-                              itemExtent: 120,
+                              itemExtent: cardWidth,
                               itemBuilder: (_, i) => Padding(
-                                padding: const EdgeInsets.only(right: 10),
+                                padding: EdgeInsets.only(right: isTablet ? 14 : 10),
                                 child: _StationCard(
                                   station: recent[i],
                                   onTap: () {
@@ -190,9 +188,8 @@ class _HomeTabState extends State<_HomeTab>
                 ),
               ),
 
-              // ─── Countries ────────────────────────────────────────────
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 16),
                 sliver: SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,16 +200,15 @@ class _HomeTabState extends State<_HomeTab>
                               context,
                               NavigationHelper.slideRightRoute(const CountriesScreen()))),
                       SizedBox(
-                        height: 112,
+                        height: isTablet ? 130 : 112,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount:
-                              math.min(engine.countries.length, 15),
-                          itemExtent: 90,
+                          itemCount: math.min(engine.countries.length, 15),
+                          itemExtent: isTablet ? 110 : 90,
                           itemBuilder: (_, i) {
                             final c = engine.countries[i];
                             return Padding(
-                              padding: const EdgeInsets.only(right: 10),
+                              padding: EdgeInsets.only(right: isTablet ? 14 : 10),
                               child: _CountryCard(
                                 country: c,
                                 onTap: () {
@@ -231,8 +227,7 @@ class _HomeTabState extends State<_HomeTab>
                 ),
               ),
 
-              // ─── Station List ─────────────────────────────────────────
-              _buildStationList(context, engine),
+              _buildStationList(context, engine, isTablet),
             ],
           );
         },
@@ -241,24 +236,21 @@ class _HomeTabState extends State<_HomeTab>
   }
 
   // ─── Header ───────────────────────────────────────────────────────────────
-  Widget _buildHeader(BuildContext context, RadioEngine engine) {
+  Widget _buildHeader(BuildContext context, RadioEngine engine, bool isTablet) {
     final theme = Theme.of(context);
     final textColor = theme.colorScheme.onSurface;
 
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Logo row
             Row(
               children: [
-                // Logo badge
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 5),
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: theme.primaryColor,
                     borderRadius: BorderRadius.circular(8),
@@ -273,7 +265,7 @@ class _HomeTabState extends State<_HomeTab>
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Text(
                   'RADIO',
                   style: TextStyle(
@@ -283,22 +275,19 @@ class _HomeTabState extends State<_HomeTab>
                     letterSpacing: 3,
                   ),
                 ),
-                // Live indicator
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 _LiveBadge(),
-                const Spacer(),
+                Spacer(),
               ],
             ),
-            const SizedBox(height: 16),
-            // Search bar
+            SizedBox(height: 16),
             Container(
               decoration: BoxDecoration(
                 color: theme.cardColor,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: textColor.withValues(alpha: 0.08), width: 1),
+                border: Border.all(color: textColor.withValues(alpha: 0.08), width: 1),
                 boxShadow: [
-                   BoxShadow(
+                  BoxShadow(
                     color: theme.shadowColor.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
@@ -323,7 +312,7 @@ class _HomeTabState extends State<_HomeTab>
                             }
                           },
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         _SearchTypeTab(
                           label: 'Podcasts',
                           isSelected: engine.searchType == SearchType.podcast,
@@ -339,7 +328,7 @@ class _HomeTabState extends State<_HomeTab>
                       ],
                     ),
                   ),
-                  const Divider(height: 12, thickness: 0.5, indent: 12, endIndent: 12),
+                  Divider(height: 12, thickness: 0.5, indent: 12, endIndent: 12),
                   TextField(
                     controller: _searchController,
                     style: TextStyle(color: textColor, fontSize: 15),
@@ -347,15 +336,12 @@ class _HomeTabState extends State<_HomeTab>
                       hintText: engine.searchType == SearchType.station 
                           ? 'Search 50,000+ stations...' 
                           : 'Search millions of podcasts...',
-                      hintStyle:
-                          TextStyle(color: textColor.withValues(alpha: 0.3), fontSize: 14),
+                      hintStyle: TextStyle(color: textColor.withValues(alpha: 0.3), fontSize: 14),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                      prefixIcon: Icon(Icons.search_rounded,
-                          color: theme.primaryColor, size: 22),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      prefixIcon: Icon(Icons.search_rounded, color: theme.primaryColor, size: 22),
                       suffixIcon: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -368,10 +354,9 @@ class _HomeTabState extends State<_HomeTab>
                                   engine.loadTopStationsIfNeeded();
                                 }
                               },
-                              child: Icon(Icons.close_rounded,
-                                  color: textColor.withValues(alpha: 0.4), size: 18),
+                              child: Icon(Icons.close_rounded, color: textColor.withValues(alpha: 0.4), size: 18),
                             ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4),
                         ],
                       ),
                     ),
@@ -442,7 +427,7 @@ class _HomeTabState extends State<_HomeTab>
   }
 
   // ─── Quick Actions ────────────────────────────────────────────────────────
-  Widget _buildQuickActions(BuildContext context, RadioEngine engine) {
+  Widget _buildQuickActions(BuildContext context, RadioEngine engine, bool isTablet) {
     final actions = [
       _QA(icon: Icons.public_rounded, label: 'Countries',
           onTap: () => Navigator.push(context,
@@ -459,17 +444,18 @@ class _HomeTabState extends State<_HomeTab>
           onTap: () => engine.loadNewsStations()),
     ];
     return SizedBox(
-      height: 80,
+      height: isTablet ? 96 : 80,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: actions.length,
-        itemExtent: 72,
+        itemExtent: isTablet ? 83 : 72,
         itemBuilder: (_, i) {
           final a = actions[i];
           return _QuickActionBtn(
             icon: a.icon,
             label: a.label,
             onTap: a.onTap,
+            isTablet: isTablet,
           );
         },
       ),
@@ -477,7 +463,7 @@ class _HomeTabState extends State<_HomeTab>
   }
 
   // ─── Genre Chips ──────────────────────────────────────────────────────────
-  Widget _buildGenreChips(BuildContext context, RadioEngine engine) {
+  Widget _buildGenreChips(BuildContext context, RadioEngine engine, bool isTablet) {
     final theme = Theme.of(context);
     final textColor = theme.colorScheme.onSurface;
     
@@ -538,9 +524,10 @@ class _HomeTabState extends State<_HomeTab>
   }
 
   // ─── Station List ─────────────────────────────────────────────────────────
-  Widget _buildStationList(BuildContext context, RadioEngine engine) {
+  Widget _buildStationList(BuildContext context, RadioEngine engine, bool isTablet) {
     final theme = Theme.of(context);
     final textColor = theme.colorScheme.onSurface;
+    final padding = isTablet ? 24.0 : 16.0;
 
     if (engine.isLoading && engine.stations.isEmpty && engine.podcasts.isEmpty) {
       return SliverToBoxAdapter(child: _buildShimmer(context));
@@ -563,7 +550,7 @@ class _HomeTabState extends State<_HomeTab>
               _searchController.clear();
               setState(() {});
               if (isPodcast) {
-                // podcasts don't have a "top" list currently in this view
+                engine.loadTrendingPodcasts();
               } else {
                 engine.loadTopStations();
               }
@@ -578,7 +565,7 @@ class _HomeTabState extends State<_HomeTab>
     final podcasts = engine.podcasts.take(50).toList();
 
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: EdgeInsets.fromLTRB(padding, 8, padding, 16),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
           (context, index) {
@@ -615,7 +602,7 @@ class _HomeTabState extends State<_HomeTab>
                 ),
               );
             }
-            
+
             if (isPodcast) {
               if (index <= podcasts.length) {
                 return _PodcastListItem(
@@ -639,7 +626,6 @@ class _HomeTabState extends State<_HomeTab>
               }
             }
 
-            // Streema Footer for radio search
             if (isSearching && !isPodcast) {
               return _buildStreemaFooter(context, _searchController.text);
             }
@@ -855,14 +841,16 @@ class _QuickActionBtn extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool isTablet;
 
   const _QuickActionBtn(
-      {required this.icon, required this.label, required this.onTap});
+      {required this.icon, required this.label, required this.onTap, this.isTablet = false});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final greyColor = theme.colorScheme.onSurfaceVariant;
+    final scale = isTablet ? 1.15 : 1.0;
 
     return GestureDetector(
       onTap: onTap,
@@ -870,11 +858,11 @@ class _QuickActionBtn extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 52 * scale,
+            height: 52 * scale,
             decoration: BoxDecoration(
               color: theme.cardColor,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(14 * scale),
               border: Border.all(color: theme.primaryColor.withValues(alpha: 0.3)),
               boxShadow: [
                 BoxShadow(
@@ -883,13 +871,13 @@ class _QuickActionBtn extends StatelessWidget {
                     offset: const Offset(0, 2))
               ],
             ),
-            child: Icon(icon, color: theme.primaryColor, size: 24),
+            child: Icon(icon, color: theme.primaryColor, size: 24 * scale),
           ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5 * scale),
           Text(
             label,
             style: TextStyle(
-                color: greyColor, fontSize: 10, fontWeight: FontWeight.w500),
+                color: greyColor, fontSize: 10 * scale, fontWeight: FontWeight.w500),
             textAlign: TextAlign.center,
           ),
         ],
@@ -904,8 +892,7 @@ class _StationCard extends StatelessWidget {
   final VoidCallback onTap;
   final bool isPlaying;
 
-  const _StationCard(
-      {required this.station, required this.onTap, required this.isPlaying});
+  const _StationCard({required this.station, required this.onTap, required this.isPlaying});
 
   @override
   Widget build(BuildContext context) {
@@ -947,7 +934,7 @@ class _StationCard extends StatelessWidget {
                     color: theme.primaryColor, size: 22),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Text(
@@ -994,7 +981,7 @@ class _CountryCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.flag_rounded, color: theme.primaryColor, size: 26),
-            const SizedBox(height: 5),
+            SizedBox(height: 5),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(

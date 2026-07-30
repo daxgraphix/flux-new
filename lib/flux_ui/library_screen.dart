@@ -302,10 +302,11 @@ class _LibraryScreenState extends State<LibraryScreen>
                           hintText: _searchScope == 'episodes' && _tabController.index == 1
                             ? 'Search episodes...'
                             : 'Search ${_getTabName(_tabController.index)}...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
+                          hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
+                          prefixIcon: Icon(Icons.search, size: 20, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
                           suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear, size: 20),
+                                icon: Icon(Icons.clear, size: 20, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
                                 onPressed: () {
                                   _searchController.clear();
                                   setState(() => _searchQuery = "");
@@ -321,6 +322,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                           filled: true,
                           fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                         ),
+                        style: TextStyle(color: theme.colorScheme.onSurface),
                       ),
                     ],
                   ),
@@ -544,6 +546,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Trending',
                           icon: Icons.trending_up,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -557,6 +560,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Music',
                           icon: Icons.music_note,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -570,6 +574,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'News',
                           icon: Icons.article,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -583,6 +588,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Sports',
                           icon: Icons.sports_soccer,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -596,6 +602,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Talk',
                           icon: Icons.mic,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -609,6 +616,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Live',
                           icon: Icons.wifi,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -622,6 +630,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Global AM/FM',
                           icon: Icons.public,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -635,6 +644,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Tanzania',
                           icon: Icons.location_on,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -648,6 +658,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Kenya',
                           icon: Icons.location_on,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -661,6 +672,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Uganda',
                           icon: Icons.location_on,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -674,6 +686,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Rwanda',
                           icon: Icons.location_on,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -687,6 +700,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Nearby',
                           icon: Icons.my_location,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -700,6 +714,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'All Stations',
                           icon: Icons.radio,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -713,6 +728,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Classical',
                           icon: Icons.piano,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -726,6 +742,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Jazz',
                           icon: Icons.music_note,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -752,6 +769,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Pop',
                           icon: Icons.queue_music,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -765,6 +783,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Electronic',
                           icon: Icons.surround_sound,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -778,6 +797,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Reggae',
                           icon: Icons.grass,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -791,6 +811,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Blues',
                           icon: Icons.mic_external_on,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -804,6 +825,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         _CategoryCard(
                           title: 'Country',
                           icon: Icons.agriculture,
+                          isTablet: isTablet,
                           onTap: () => Navigator.push(
                             context,
                             NavigationHelper.slideRightRoute(
@@ -1472,37 +1494,40 @@ class _CategoryCard extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final Color? color;
+  final bool isTablet;
 
   const _CategoryCard({
     required this.title,
     required this.icon,
     required this.onTap,
     this.color,
+    this.isTablet = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accentColor = color ?? theme.primaryColor;
+    final s = isTablet ? 1.2 : 1.0;
     return Card(
       elevation: 0,
       color: accentColor.withValues(alpha: 0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16 * s)),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16 * s),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16 * s),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 40, color: accentColor),
-              const SizedBox(height: 12),
+              Icon(icon, size: 40 * s, color: accentColor),
+              SizedBox(height: 12 * s),
               Text(
                 title,
                 style: TextStyle(
                   color: theme.colorScheme.onSurface,
-                  fontSize: 14,
+                  fontSize: 14 * s,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,

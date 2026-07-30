@@ -220,10 +220,10 @@ class _StreemaBrowserScreenState extends State<StreemaBrowserScreen> {
               autofocus: true,
               decoration: InputDecoration(
                 hintText: 'Search Streema Global...',
+                hintStyle: TextStyle(color: theme.colorScheme.onPrimary.withValues(alpha: 0.8)),
                 border: InputBorder.none,
-                hintStyle: TextStyle(color: theme.colorScheme.onPrimary.withValues(alpha: 0.7)),
               ),
-              style: TextStyle(color: theme.colorScheme.onPrimary),
+              style: TextStyle(color: theme.colorScheme.onPrimary, fontSize: 16),
               onSubmitted: _performSearch,
             )
           : const Text('Streema Global'),

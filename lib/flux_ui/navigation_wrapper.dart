@@ -34,9 +34,86 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
     });
   }
 
+  Widget _buildBody(BuildContext context, bool isTablet) {
+    final engine = Provider.of<RadioEngine>(context);
+    final hasPlayer = engine.currentStation != null || engine.currentEpisode != null;
+
+    return Row(
+      children: [
+        if (isTablet)
+          NavigationRail(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: _onItemTapped,
+            labelType: NavigationRailLabelType.all,
+            backgroundColor: Colors.white,
+            selectedIconTheme: IconThemeData(color: Theme.of(context).primaryColor),
+            unselectedIconTheme: const IconThemeData(color: Colors.grey),
+            selectedLabelTextStyle: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold),
+            unselectedLabelTextStyle: const TextStyle(color: Colors.grey),
+            destinations: const [
+              NavigationRailDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home_rounded),
+                label: Text('Home'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.library_music_outlined),
+                selectedIcon: Icon(Icons.library_music_rounded),
+                label: Text('Library'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.public_outlined),
+                selectedIcon: Icon(Icons.public_rounded),
+                label: Text('Explore'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.language_outlined),
+                selectedIcon: Icon(Icons.language_rounded),
+                label: Text('Streema'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.settings_outlined),
+                selectedIcon: Icon(Icons.settings_rounded),
+                label: Text('Settings'),
+              ),
+            ],
+          ),
+        Expanded(
+          child: Stack(
+            children: [
+              IndexedStack(
+                index: _selectedIndex,
+                children: _screens.map((screen) {
+                  if (!isTablet && hasPlayer) {
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: 80),
+                      child: screen,
+                    );
+                  }
+                  return screen;
+                }).toList(),
+              ),
+              if (!isTablet && hasPlayer)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: kBottomNavigationBarHeight,
+                  child: EnhancedMiniPlayer(
+                    engine: engine,
+                    onExpandTap: () => Navigator.of(context).push(
+                      NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final engine = Provider.of<RadioEngine>(context);
     final size = MediaQuery.of(context).size;
     final isTablet = size.shortestSide >= 600;
 
@@ -44,70 +121,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          Row(
-            children: [
-              if (isTablet)
-                NavigationRail(
-                  selectedIndex: _selectedIndex,
-                  onDestinationSelected: _onItemTapped,
-                  labelType: NavigationRailLabelType.all,
-                  backgroundColor: Colors.white,
-                  selectedIconTheme: IconThemeData(color: theme.primaryColor),
-                  unselectedIconTheme: const IconThemeData(color: Colors.grey),
-                  selectedLabelTextStyle: TextStyle(color: theme.primaryColor, fontWeight: FontWeight.bold),
-                  unselectedLabelTextStyle: const TextStyle(color: Colors.grey),
-                  destinations: const [
-                    NavigationRailDestination(
-                      icon: Icon(Icons.home_outlined),
-                      selectedIcon: Icon(Icons.home_rounded),
-                      label: Text('Home'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.library_music_outlined),
-                      selectedIcon: Icon(Icons.library_music_rounded),
-                      label: Text('Library'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.public_outlined),
-                      selectedIcon: Icon(Icons.public_rounded),
-                      label: Text('Explore'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.language_outlined),
-                      selectedIcon: Icon(Icons.language_rounded),
-                      label: Text('Streema'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.settings_outlined),
-                      selectedIcon: Icon(Icons.settings_rounded),
-                      label: Text('Settings'),
-                    ),
-                  ],
-                ),
-              Expanded(
-                child: IndexedStack(
-                  index: _selectedIndex,
-                  children: _screens,
-                ),
-              ),
-            ],
-          ),
-          if (engine.currentStation != null || engine.currentEpisode != null)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: isTablet ? 0 : kBottomNavigationBarHeight,
-              child: EnhancedMiniPlayer(
-                engine: engine,
-                onExpandTap: () => Navigator.of(context).push(
-                  NavigationHelper.slideUpRoute(NowPlayingScreen(engine: engine)),
-                ),
-              ),
-            ),
-        ],
-      ),
+      body: _buildBody(context, isTablet),
       bottomNavigationBar: isTablet
           ? null
           : BottomNavigationBar(
@@ -145,8 +159,7 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
                 BottomNavigationBarItem(
                   icon: Icon(Icons.settings_outlined),
                   activeIcon: Icon(Icons.settings_rounded),
-                  label: 'Settings',
-                ),
+                  label: 'Settings'),
               ],
             ),
     );

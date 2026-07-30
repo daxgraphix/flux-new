@@ -19,6 +19,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final engine = Provider.of<RadioEngine>(context);
+    final width = MediaQuery.of(context).size.width;
+    final isTablet = width >= 600;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -32,10 +34,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: Container(
         color: theme.scaffoldBackgroundColor,
         child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            physics: const BouncingScrollPhysics(),
-            children: [
+          child: Center(
+            child: SizedBox(
+              width: isTablet ? 600 : double.infinity,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                physics: const BouncingScrollPhysics(),
+                children: [
               _buildModernSection(
                 context,
                 'AUDIO ENGINE',
@@ -168,12 +173,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
-            ],
-          ),
-        ),
-      ),
-    );
+               const SizedBox(height: 32),
+             ],
+           ),
+         ),
+       ),
+     ),
+   ),
+ );
   }
 
   Widget _buildModernSection(BuildContext context, String title, List<Widget> children) {

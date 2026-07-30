@@ -534,27 +534,27 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        _ControlBtn(
+          icon: Icons.skip_previous_rounded,
+          size: isPodcast ? 36 : 38,
+          color: textColor.withValues(alpha: 0.7),
+          onTap: () => engine.skipPrevious(),
+        ),
+        const SizedBox(width: 16),
         if (isPodcast)
           _ControlBtn(
             icon: Icons.replay_10_rounded,
-            size: 32,
-            color: textColor.withValues(alpha: 0.7),
+            size: 28,
+            color: textColor.withValues(alpha: 0.6),
             onTap: () => engine.seekBackward(seconds: 10),
           )
         else
           _ControlBtn(
-            icon: Icons.skip_previous_rounded,
-            size: 38,
+            icon: Icons.stop_rounded,
+            size: 32,
             color: textColor.withValues(alpha: 0.7),
-            onTap: () => engine.skipPrevious(),
+            onTap: () => engine.stop(),
           ),
-        const SizedBox(width: 20),
-        _ControlBtn(
-          icon: Icons.stop_rounded,
-          size: 32,
-          color: textColor.withValues(alpha: 0.7),
-          onTap: () => engine.stop(),
-        ),
         const SizedBox(width: 20),
         GestureDetector(
           onTap: () {
@@ -598,16 +598,6 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
         ),
         const SizedBox(width: 20),
         if (isPodcast)
-          _SpeedButton(engine: engine, textColor: textColor)
-        else
-          _ControlBtn(
-            icon: Icons.close_rounded,
-            size: 32,
-            color: textColor.withValues(alpha: 0.7),
-            onTap: () => Navigator.maybePop(context),
-          ),
-        const SizedBox(width: 20),
-        if (isPodcast)
           _ControlBtn(
             icon: Icons.forward_30_rounded,
             size: 32,
@@ -616,11 +606,18 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
           )
         else
           _ControlBtn(
-            icon: Icons.skip_next_rounded,
-            size: 38,
+            icon: Icons.close_rounded,
+            size: 32,
             color: textColor.withValues(alpha: 0.7),
-            onTap: () => engine.skipNext(),
+            onTap: () => Navigator.pop(context),
           ),
+        const SizedBox(width: 16),
+        _ControlBtn(
+          icon: Icons.skip_next_rounded,
+          size: isPodcast ? 36 : 38,
+          color: textColor.withValues(alpha: 0.7),
+          onTap: () => engine.skipNext(),
+        ),
       ],
     );
   }
@@ -986,45 +983,6 @@ class _ControlBtn extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         child: Icon(icon, color: color, size: size),
-      ),
-    );
-  }
-}
-
-class _SpeedButton extends StatelessWidget {
-  final RadioEngine engine;
-  final Color textColor;
-
-  const _SpeedButton({required this.engine, required this.textColor});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: () {
-        final speeds = [1.0, 1.25, 1.5, 2.0, 0.75];
-        final currentSpeed = engine.speed;
-        final nextIndex = (speeds.indexOf(currentSpeed) + 1) % speeds.length;
-        engine.setPlaybackSpeed(speeds[nextIndex]);
-      },
-      borderRadius: BorderRadius.circular(30),
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Text(
-            '${engine.speed.toStringAsFixed(engine.speed == 1.0 ? 0 : 2)}x',
-            style: TextStyle(
-              color: textColor.withValues(alpha: 0.7),
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
       ),
     );
   }
